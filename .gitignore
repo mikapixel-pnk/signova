@@ -1,0 +1,28 @@
+# Environment
+.env
+.env.*
+!.env.example
+
+# Backend
+backend/vendor/
+backend/storage/logs/*
+backend/bootstrap/cache/*
+
+# Frontend
+frontend/node_modules/
+frontend/.next/
+frontend/out/
+
+# OS / Editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Logs
+*.log
+
+# Secrets / runtime
+*.pem
+*.key
+*.crt
