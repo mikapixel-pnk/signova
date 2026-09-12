@@ -84,7 +84,7 @@ class CapabilityAuthorizationTest extends TestCase
             ->assertForbidden()
             ->assertJsonPath(
                 'error.code',
-                'CAPABILITY_DENIED'
+                'FORBIDDEN_CAPABILITY'
             );
     }
 
@@ -140,7 +140,7 @@ class CapabilityAuthorizationTest extends TestCase
             ->assertForbidden()
             ->assertJsonPath(
                 'error.code',
-                'CAPABILITY_DENIED'
+                'FORBIDDEN_CAPABILITY'
             );
     }
 
@@ -171,7 +171,7 @@ class CapabilityAuthorizationTest extends TestCase
             ->assertForbidden()
             ->assertJsonPath(
                 'error.code',
-                'CAPABILITY_DENIED'
+                'FORBIDDEN_CAPABILITY'
             );
     }
 
@@ -201,7 +201,7 @@ class CapabilityAuthorizationTest extends TestCase
             ->assertForbidden()
             ->assertJsonPath(
                 'error.code',
-                'CAPABILITY_DENIED'
+                'FORBIDDEN_CAPABILITY'
             );
     }
 

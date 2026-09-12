@@ -71,13 +71,28 @@ class AuthController extends Controller
             ]);
         }
 
-        $membership = DB::table('tenant_users')
-            ->where('user_id', $user->id)
-            ->where('status', 'ACTIVE')
-            ->orderBy('joined_at')
-            ->first();
+        $memberships = DB::table('tenant_users as tu')
+            ->join(
+                'tenants as t',
+                't.id',
+                '=',
+                'tu.tenant_id'
+            )
+            ->where('tu.user_id', $user->id)
+            ->where('tu.status', 'ACTIVE')
+            ->where('t.lifecycle_status', 'ACTIVE')
+            ->orderBy('tu.joined_at')
+            ->select([
+                't.id',
+                't.name',
+                't.slug',
+                't.lifecycle_status',
+                't.timezone',
+                't.locale',
+            ])
+            ->get();
 
-        if (! $membership) {
+        if ($memberships->isEmpty()) {
             throw ValidationException::withMessages([
                 'email' => [
                     'Akun tidak memiliki workspace aktif.',
@@ -89,13 +104,33 @@ class AuthController extends Controller
             $credentials['device_name'] ?? 'signova-api'
         )->plainTextToken;
 
+        $tenant = null;
+
+        if ($memberships->count() === 1) {
+            $tenant = $this->tenantPayload(
+                $memberships->first()->id
+            );
+        }
+
         return response()->json([
             'message' => 'Login berhasil.',
             'data' => [
                 'user' => $this->userPayload($user),
-                'tenant' => $this->tenantPayload(
-                    $membership->tenant_id
-                ),
+                'tenant' => $tenant,
+                'tenants' => $memberships
+                    ->map(fn ($item) => [
+                        'id' => $item->id,
+                        'name' => $item->name,
+                        'slug' => $item->slug,
+                        'lifecycle_status' =>
+                            $item->lifecycle_status,
+                        'timezone' => $item->timezone,
+                        'locale' => $item->locale,
+                    ])
+                    ->values()
+                    ->all(),
+                'requires_tenant_selection' =>
+                    $memberships->count() > 1,
                 'token' => $token,
                 'token_type' => 'Bearer',
             ],

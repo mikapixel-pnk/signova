@@ -39,7 +39,7 @@ class RequireCapability
                 'message' =>
                     'Anda tidak memiliki hak akses untuk tindakan ini.',
                 'error' => [
-                    'code' => 'CAPABILITY_DENIED',
+                    'code' => 'FORBIDDEN_CAPABILITY',
                     'capability' => $capabilityCode,
                 ],
             ], 403);
