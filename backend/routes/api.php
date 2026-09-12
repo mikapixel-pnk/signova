@@ -31,6 +31,17 @@ Route::prefix('public/v1')->group(function () {
         '/quotations/{token}/actions/view',
         [PublicQuotationController::class, 'view']
     );
+
+
+    Route::post(
+        '/quotations/{token}/approve',
+        [PublicQuotationController::class, 'approve']
+    );
+
+    Route::post(
+        '/quotations/{token}/reject',
+        [PublicQuotationController::class, 'reject']
+    );
 });
 
 Route::prefix('v1')->group(function () {

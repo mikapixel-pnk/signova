@@ -296,6 +296,223 @@ class QuotationPublicLinkService
         );
     }
 
+    public function approve(
+        string $presentedToken
+    ): QuotationPublicLink {
+        return $this->performPublicDecision(
+            $presentedToken,
+            'APPROVE',
+            'APPROVED'
+        );
+    }
+
+    public function reject(
+        string $presentedToken,
+        string $reason
+    ): QuotationPublicLink {
+        return $this->performPublicDecision(
+            $presentedToken,
+            'REJECT',
+            'REJECTED',
+            $reason
+        );
+    }
+
+    private function performPublicDecision(
+        string $presentedToken,
+        string $action,
+        string $toState,
+        ?string $reason = null
+    ): QuotationPublicLink {
+        $rawToken = $this->extractRawToken(
+            $presentedToken
+        );
+
+        $tokenHash = $this->hashToken(
+            $rawToken
+        );
+
+        return DB::transaction(
+            function () use (
+                $tokenHash,
+                $action,
+                $toState,
+                $reason
+            ): QuotationPublicLink {
+                $link = QuotationPublicLink::query()
+                    ->where(
+                        'token_hash',
+                        $tokenHash
+                    )
+                    ->whereNull('revoked_at')
+                    ->where(function ($query): void {
+                        $query
+                            ->whereNull('expires_at')
+                            ->orWhere(
+                                'expires_at',
+                                '>',
+                                now()
+                            );
+                    })
+                    ->lockForUpdate()
+                    ->firstOrFail();
+
+                $quotation = Quotation::query()
+                    ->where(
+                        'tenant_id',
+                        $link->tenant_id
+                    )
+                    ->where(
+                        'id',
+                        $link->quotation_id
+                    )
+                    ->lockForUpdate()
+                    ->firstOrFail();
+
+                if (
+                    $quotation->current_version_id
+                    !== $link->quotation_version_id
+                ) {
+                    throw new RuntimeException(
+                        'Public quotation version is no longer current.'
+                    );
+                }
+
+                $alreadyRecorded =
+                    QuotationAction::query()
+                        ->where(
+                            'public_link_id',
+                            $link->id
+                        )
+                        ->where(
+                            'quotation_version_id',
+                            $link->quotation_version_id
+                        )
+                        ->where(
+                            'action',
+                            $action
+                        )
+                        ->exists();
+
+                if ($alreadyRecorded) {
+                    return $this->loadPublicLink(
+                        $link
+                    );
+                }
+
+                $fromState =
+                    $quotation->status;
+
+                if (
+                    ! in_array(
+                        $fromState,
+                        [
+                            'SENT',
+                            'VIEWED',
+                        ],
+                        true
+                    )
+                ) {
+                    throw new InvalidQuotationTransitionException(
+                        $fromState,
+                        $toState
+                    );
+                }
+
+                $quotation->status =
+                    $toState;
+
+                if ($toState === 'APPROVED') {
+                    $quotation->approved_at =
+                        now();
+                }
+
+                if ($toState === 'REJECTED') {
+                    $quotation->rejected_at =
+                        now();
+                }
+
+                $quotation->save();
+
+                QuotationStatusHistory::query()->create([
+                    'id' =>
+                        (string) Str::ulid(),
+
+                    'tenant_id' =>
+                        $link->tenant_id,
+
+                    'quotation_id' =>
+                        $quotation->id,
+
+                    'from_state' =>
+                        $fromState,
+
+                    'to_state' =>
+                        $toState,
+
+                    'actor_user_id' =>
+                        null,
+
+                    'reason' =>
+                        $reason,
+
+                    'source' =>
+                        'PUBLIC',
+
+                    'context' => [
+                        'public_link_id' =>
+                            $link->id,
+
+                        'quotation_version_id' =>
+                            $link->quotation_version_id,
+                    ],
+
+                    'occurred_at' =>
+                        now(),
+                ]);
+
+                QuotationAction::query()->create([
+                    'id' =>
+                        (string) Str::ulid(),
+
+                    'tenant_id' =>
+                        $link->tenant_id,
+
+                    'quotation_id' =>
+                        $link->quotation_id,
+
+                    'quotation_version_id' =>
+                        $link->quotation_version_id,
+
+                    'public_link_id' =>
+                        $link->id,
+
+                    'action' =>
+                        $action,
+
+                    'actor_type' =>
+                        'PUBLIC',
+
+                    'actor_user_id' =>
+                        null,
+
+                    'note' =>
+                        $reason,
+
+                    'context' =>
+                        [],
+
+                    'occurred_at' =>
+                        now(),
+                ]);
+
+                return $this->loadPublicLink(
+                    $link
+                );
+            }
+        );
+    }
+
     private function loadPublicLink(
         QuotationPublicLink $link
     ): QuotationPublicLink {

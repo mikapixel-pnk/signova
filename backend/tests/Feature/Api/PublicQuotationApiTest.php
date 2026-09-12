@@ -373,6 +373,519 @@ class PublicQuotationApiTest extends TestCase
         );
     }
 
+
+    public function test_public_approve_from_sent_succeeds(): void
+    {
+        $fixture = $this->publicQuotationFixture(
+            'public-approve-sent@example.test',
+            'Public Approve SENT',
+            'Q-PUBLIC-APPROVE-SENT'
+        );
+
+        $response = $this->postJson(
+            '/api/public/v1/quotations/'
+            . $fixture['presented_token']
+            . '/approve'
+        );
+
+        $response
+            ->assertOk()
+            ->assertJsonPath(
+                'success',
+                true
+            )
+            ->assertJsonPath(
+                'data.status',
+                'APPROVED'
+            );
+
+        $quotation = DB::table('quotations')
+            ->where(
+                'id',
+                $fixture['quotation_id']
+            )
+            ->first();
+
+        $this->assertSame(
+            'APPROVED',
+            $quotation->status
+        );
+
+        $this->assertNotNull(
+            $quotation->approved_at
+        );
+
+        $this->assertDatabaseHas(
+            'quotation_actions',
+            [
+                'public_link_id' =>
+                    $fixture['public_link_id'],
+                'quotation_version_id' =>
+                    $fixture['version_id'],
+                'action' =>
+                    'APPROVE',
+                'actor_type' =>
+                    'PUBLIC',
+            ]
+        );
+
+        $this->assertDatabaseHas(
+            'quotation_status_history',
+            [
+                'quotation_id' =>
+                    $fixture['quotation_id'],
+                'from_state' =>
+                    'SENT',
+                'to_state' =>
+                    'APPROVED',
+                'source' =>
+                    'PUBLIC',
+            ]
+        );
+    }
+
+    public function test_public_approve_from_viewed_succeeds(): void
+    {
+        $fixture = $this->publicQuotationFixture(
+            'public-approve-viewed@example.test',
+            'Public Approve VIEWED',
+            'Q-PUBLIC-APPROVE-VIEWED'
+        );
+
+        $viewUrl =
+            '/api/public/v1/quotations/'
+            . $fixture['presented_token']
+            . '/actions/view';
+
+        $this->postJson(
+            $viewUrl
+        )->assertOk();
+
+        $this->postJson(
+            '/api/public/v1/quotations/'
+            . $fixture['presented_token']
+            . '/approve'
+        )
+            ->assertOk()
+            ->assertJsonPath(
+                'data.status',
+                'APPROVED'
+            );
+
+        $this->assertDatabaseHas(
+            'quotation_status_history',
+            [
+                'quotation_id' =>
+                    $fixture['quotation_id'],
+                'from_state' =>
+                    'VIEWED',
+                'to_state' =>
+                    'APPROVED',
+                'source' =>
+                    'PUBLIC',
+            ]
+        );
+    }
+
+    public function test_public_reject_requires_reason(): void
+    {
+        $fixture = $this->publicQuotationFixture(
+            'public-reject-validation@example.test',
+            'Public Reject Validation',
+            'Q-PUBLIC-REJECT-VALIDATION'
+        );
+
+        $this->postJson(
+            '/api/public/v1/quotations/'
+            . $fixture['presented_token']
+            . '/reject',
+            []
+        )
+            ->assertStatus(422)
+            ->assertJsonPath(
+                'error.code',
+                'VALIDATION_FAILED'
+            );
+
+        $this->assertDatabaseHas(
+            'quotations',
+            [
+                'id' =>
+                    $fixture['quotation_id'],
+                'status' =>
+                    'SENT',
+            ]
+        );
+
+        $this->assertDatabaseMissing(
+            'quotation_actions',
+            [
+                'public_link_id' =>
+                    $fixture['public_link_id'],
+                'action' =>
+                    'REJECT',
+            ]
+        );
+    }
+
+    public function test_public_reject_with_reason_succeeds(): void
+    {
+        $fixture = $this->publicQuotationFixture(
+            'public-reject@example.test',
+            'Public Reject',
+            'Q-PUBLIC-REJECT'
+        );
+
+        $reason =
+            'Harga belum sesuai anggaran.';
+
+        $response = $this->postJson(
+            '/api/public/v1/quotations/'
+            . $fixture['presented_token']
+            . '/reject',
+            [
+                'reason' =>
+                    $reason,
+            ]
+        );
+
+        $response
+            ->assertOk()
+            ->assertJsonPath(
+                'data.status',
+                'REJECTED'
+            );
+
+        $quotation = DB::table('quotations')
+            ->where(
+                'id',
+                $fixture['quotation_id']
+            )
+            ->first();
+
+        $this->assertSame(
+            'REJECTED',
+            $quotation->status
+        );
+
+        $this->assertNotNull(
+            $quotation->rejected_at
+        );
+
+        $this->assertDatabaseHas(
+            'quotation_actions',
+            [
+                'public_link_id' =>
+                    $fixture['public_link_id'],
+                'action' =>
+                    'REJECT',
+                'note' =>
+                    $reason,
+                'actor_type' =>
+                    'PUBLIC',
+            ]
+        );
+
+        $this->assertDatabaseHas(
+            'quotation_status_history',
+            [
+                'quotation_id' =>
+                    $fixture['quotation_id'],
+                'to_state' =>
+                    'REJECTED',
+                'reason' =>
+                    $reason,
+                'source' =>
+                    'PUBLIC',
+            ]
+        );
+    }
+
+    public function test_duplicate_public_approve_is_idempotent(): void
+    {
+        $fixture = $this->publicQuotationFixture(
+            'public-approve-idempotent@example.test',
+            'Public Approve Idempotent',
+            'Q-PUBLIC-APPROVE-IDEMPOTENT'
+        );
+
+        $url =
+            '/api/public/v1/quotations/'
+            . $fixture['presented_token']
+            . '/approve';
+
+        $this->postJson(
+            $url
+        )->assertOk();
+
+        $this->postJson(
+            $url
+        )
+            ->assertOk()
+            ->assertJsonPath(
+                'data.status',
+                'APPROVED'
+            );
+
+        $this->assertSame(
+            1,
+            DB::table('quotation_actions')
+                ->where(
+                    'public_link_id',
+                    $fixture['public_link_id']
+                )
+                ->where(
+                    'action',
+                    'APPROVE'
+                )
+                ->count()
+        );
+
+        $this->assertSame(
+            1,
+            DB::table(
+                'quotation_status_history'
+            )
+                ->where(
+                    'quotation_id',
+                    $fixture['quotation_id']
+                )
+                ->where(
+                    'to_state',
+                    'APPROVED'
+                )
+                ->count()
+        );
+    }
+
+    public function test_duplicate_public_reject_is_idempotent(): void
+    {
+        $fixture = $this->publicQuotationFixture(
+            'public-reject-idempotent@example.test',
+            'Public Reject Idempotent',
+            'Q-PUBLIC-REJECT-IDEMPOTENT'
+        );
+
+        $url =
+            '/api/public/v1/quotations/'
+            . $fixture['presented_token']
+            . '/reject';
+
+        $payload = [
+            'reason' =>
+                'Belum dapat disetujui.',
+        ];
+
+        $this->postJson(
+            $url,
+            $payload
+        )->assertOk();
+
+        $this->postJson(
+            $url,
+            $payload
+        )
+            ->assertOk()
+            ->assertJsonPath(
+                'data.status',
+                'REJECTED'
+            );
+
+        $this->assertSame(
+            1,
+            DB::table('quotation_actions')
+                ->where(
+                    'public_link_id',
+                    $fixture['public_link_id']
+                )
+                ->where(
+                    'action',
+                    'REJECT'
+                )
+                ->count()
+        );
+
+        $this->assertSame(
+            1,
+            DB::table(
+                'quotation_status_history'
+            )
+                ->where(
+                    'quotation_id',
+                    $fixture['quotation_id']
+                )
+                ->where(
+                    'to_state',
+                    'REJECTED'
+                )
+                ->count()
+        );
+    }
+
+    public function test_approve_then_reject_is_rejected_atomically(): void
+    {
+        $fixture = $this->publicQuotationFixture(
+            'public-approve-then-reject@example.test',
+            'Approve Then Reject',
+            'Q-PUBLIC-APPROVE-THEN-REJECT'
+        );
+
+        $base =
+            '/api/public/v1/quotations/'
+            . $fixture['presented_token'];
+
+        $this->postJson(
+            $base . '/approve'
+        )->assertOk();
+
+        $this->postJson(
+            $base . '/reject',
+            [
+                'reason' =>
+                    'Berubah pikiran.',
+            ]
+        )
+            ->assertStatus(409)
+            ->assertJsonPath(
+                'error.code',
+                'INVALID_TRANSITION'
+            );
+
+        $this->assertDatabaseHas(
+            'quotations',
+            [
+                'id' =>
+                    $fixture['quotation_id'],
+                'status' =>
+                    'APPROVED',
+            ]
+        );
+
+        $this->assertDatabaseMissing(
+            'quotation_actions',
+            [
+                'public_link_id' =>
+                    $fixture['public_link_id'],
+                'action' =>
+                    'REJECT',
+            ]
+        );
+
+        $this->assertSame(
+            1,
+            DB::table(
+                'quotation_status_history'
+            )
+                ->where(
+                    'quotation_id',
+                    $fixture['quotation_id']
+                )
+                ->where(
+                    'to_state',
+                    'APPROVED'
+                )
+                ->count()
+        );
+
+        $this->assertSame(
+            0,
+            DB::table(
+                'quotation_status_history'
+            )
+                ->where(
+                    'quotation_id',
+                    $fixture['quotation_id']
+                )
+                ->where(
+                    'to_state',
+                    'REJECTED'
+                )
+                ->count()
+        );
+    }
+
+    public function test_reject_then_approve_is_rejected_atomically(): void
+    {
+        $fixture = $this->publicQuotationFixture(
+            'public-reject-then-approve@example.test',
+            'Reject Then Approve',
+            'Q-PUBLIC-REJECT-THEN-APPROVE'
+        );
+
+        $base =
+            '/api/public/v1/quotations/'
+            . $fixture['presented_token'];
+
+        $this->postJson(
+            $base . '/reject',
+            [
+                'reason' =>
+                    'Belum sesuai.',
+            ]
+        )->assertOk();
+
+        $this->postJson(
+            $base . '/approve'
+        )
+            ->assertStatus(409)
+            ->assertJsonPath(
+                'error.code',
+                'INVALID_TRANSITION'
+            );
+
+        $this->assertDatabaseHas(
+            'quotations',
+            [
+                'id' =>
+                    $fixture['quotation_id'],
+                'status' =>
+                    'REJECTED',
+            ]
+        );
+
+        $this->assertDatabaseMissing(
+            'quotation_actions',
+            [
+                'public_link_id' =>
+                    $fixture['public_link_id'],
+                'action' =>
+                    'APPROVE',
+            ]
+        );
+
+        $this->assertSame(
+            1,
+            DB::table(
+                'quotation_status_history'
+            )
+                ->where(
+                    'quotation_id',
+                    $fixture['quotation_id']
+                )
+                ->where(
+                    'to_state',
+                    'REJECTED'
+                )
+                ->count()
+        );
+
+        $this->assertSame(
+            0,
+            DB::table(
+                'quotation_status_history'
+            )
+                ->where(
+                    'quotation_id',
+                    $fixture['quotation_id']
+                )
+                ->where(
+                    'to_state',
+                    'APPROVED'
+                )
+                ->count()
+        );
+    }
+
     private function publicQuotationFixture(
         string $email,
         string $tenantName,
