@@ -77,9 +77,9 @@ class CommercialMasterDataIsolationTest extends TestCase
         DB::table('units')->insert([
             'id' => $unitId,
             'tenant_id' => $tenantA['tenant_id'],
-            'code' => 'PCS',
-            'name' => 'Pieces',
-            'symbol' => 'pcs',
+            'code' => 'CROSS_TENANT_TEST_UNIT',
+            'name' => 'Cross Tenant Test Unit',
+            'symbol' => 'ctu',
             'unit_type' => 'COUNT',
             'decimal_precision' => 0,
             'status' => 'ACTIVE',

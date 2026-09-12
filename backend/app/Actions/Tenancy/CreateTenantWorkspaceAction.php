@@ -2,6 +2,8 @@
 
 namespace App\Actions\Tenancy;
 
+use App\Actions\MasterData\SeedTenantMasterDataAction;
+
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
@@ -9,6 +11,11 @@ use RuntimeException;
 
 class CreateTenantWorkspaceAction
 {
+    public function __construct(
+        private readonly SeedTenantMasterDataAction $seedTenantMasterData,
+    ) {
+    }
+
     public function execute(array $data): array
     {
         return DB::transaction(function () use ($data) {
@@ -117,6 +124,10 @@ class CreateTenantWorkspaceAction
                 'created_at' => $now,
                 'updated_at' => $now,
             ]);
+
+            $this->seedTenantMasterData->execute(
+                $tenantId
+            );
 
             return [
                 'user_id' => $userId,
