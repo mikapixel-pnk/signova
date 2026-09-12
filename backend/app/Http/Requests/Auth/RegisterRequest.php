@@ -11,6 +11,23 @@ class RegisterRequest extends FormRequest
         return true;
     }
 
+    protected function prepareForValidation(): void
+    {
+        $this->merge([
+            'name' => is_string($this->name)
+                ? trim($this->name)
+                : $this->name,
+
+            'email' => is_string($this->email)
+                ? strtolower(trim($this->email))
+                : $this->email,
+
+            'tenant_name' => is_string($this->tenant_name)
+                ? trim($this->tenant_name)
+                : $this->tenant_name,
+        ]);
+    }
+
     public function rules(): array
     {
         return [

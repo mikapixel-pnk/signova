@@ -11,6 +11,19 @@ class LoginRequest extends FormRequest
         return true;
     }
 
+    protected function prepareForValidation(): void
+    {
+        $this->merge([
+            'email' => is_string($this->email)
+                ? strtolower(trim($this->email))
+                : $this->email,
+
+            'device_name' => is_string($this->device_name)
+                ? trim($this->device_name)
+                : $this->device_name,
+        ]);
+    }
+
     public function rules(): array
     {
         return [

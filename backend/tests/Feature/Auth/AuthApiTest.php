@@ -90,6 +90,37 @@ class AuthApiTest extends TestCase
         );
     }
 
+    public function test_email_is_normalized_and_duplicate_case_is_rejected(): void
+    {
+        $this->postJson('/api/v1/auth/register', [
+            'name' => 'Owner Normalized',
+            'email' => '  Owner.Mixed@Example.Test  ',
+            'password' => 'SecurePassword123!',
+            'password_confirmation' => 'SecurePassword123!',
+            'tenant_name' => 'Normalized Workspace',
+        ])
+            ->assertCreated()
+            ->assertJsonPath(
+                'data.user.email',
+                'owner.mixed@example.test'
+            );
+
+        $this->postJson('/api/v1/auth/register', [
+            'name' => 'Duplicate Owner',
+            'email' => 'OWNER.MIXED@EXAMPLE.TEST',
+            'password' => 'SecurePassword123!',
+            'password_confirmation' => 'SecurePassword123!',
+            'tenant_name' => 'Duplicate Normalized Workspace',
+        ])->assertUnprocessable();
+
+        $this->assertSame(
+            1,
+            DB::table('users')
+                ->where('email', 'owner.mixed@example.test')
+                ->count()
+        );
+    }
+
     public function test_user_can_login_me_and_logout(): void
     {
         $register = $this->postJson(
