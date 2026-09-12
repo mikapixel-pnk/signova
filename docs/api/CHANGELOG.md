@@ -3,6 +3,7 @@
 ## Unreleased - API v1
 
 ### Added
+- Tenant-scoped Quotation draft API with backend-owned pricing.
 - Tenant-scoped Customer API.
 - Tenant-scoped Catalog Barang & Jasa API.
 - Catalog category API.

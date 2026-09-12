@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Api\V1\Auth\AuthController;
 use App\Http\Controllers\Api\V1\HealthController;
+use App\Http\Controllers\Api\V1\Quotation\QuotationController;
 use App\Http\Controllers\Api\V1\Customer\CustomerController;
 use App\Http\Controllers\Api\V1\Catalog\CatalogCategoryController;
 use App\Http\Controllers\Api\V1\Catalog\CatalogItemController;
@@ -62,6 +63,34 @@ Route::prefix('v1')->group(function () {
             [CustomerController::class, 'update']
         )->middleware(
             'capability:customer.update'
+        );
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Penawaran
+        |--------------------------------------------------------------------------
+        */
+
+        Route::get(
+            '/quotations',
+            [QuotationController::class, 'index']
+        )->middleware(
+            'capability:quotation.view'
+        );
+
+        Route::post(
+            '/quotations',
+            [QuotationController::class, 'store']
+        )->middleware(
+            'capability:quotation.create'
+        );
+
+        Route::get(
+            '/quotations/{quotationId}',
+            [QuotationController::class, 'show']
+        )->middleware(
+            'capability:quotation.view'
         );
 
 

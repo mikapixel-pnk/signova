@@ -1,5 +1,6 @@
 <?php
 
+use App\Exceptions\Quotation\QuotationPricingValidationException;
 use App\Http\Middleware\ResolveTenantContext;
 use App\Http\Middleware\RequireCapability;
 use App\Http\Middleware\AssignRequestId;
@@ -59,6 +60,31 @@ return Application::configure(basePath: dirname(__DIR__))
                     [
                         'fields' =>
                             $exception->errors(),
+                    ]
+                );
+            }
+        );
+
+        $exceptions->render(
+            function (
+                QuotationPricingValidationException $exception,
+                Request $request
+            ) {
+                if (! $request->is('api/*')) {
+                    return null;
+                }
+
+                return ApiResponse::error(
+                    $request,
+                    'VALIDATION_FAILED',
+                    'Periksa kembali data yang dimasukkan.',
+                    422,
+                    [
+                        'fields' => [
+                            $exception->field() => [
+                                $exception->getMessage(),
+                            ],
+                        ],
                     ]
                 );
             }

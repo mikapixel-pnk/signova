@@ -20,6 +20,22 @@ final class CanonicalLabel
         };
     }
 
+    public static function quotationStatus(
+        ?string $code
+    ): ?string {
+        return match ($code) {
+            'DRAFT' => 'Draf',
+            'SENT' => 'Terkirim',
+            'VIEWED' => 'Sudah Dilihat',
+            'APPROVED' => 'Disetujui',
+            'REJECTED' => 'Ditolak',
+            'EXPIRED' => 'Kedaluwarsa',
+            'CANCELLED' => 'Dibatalkan',
+            null => null,
+            default => $code,
+        };
+    }
+
     public static function catalogType(?string $code): ?string
     {
         return match ($code) {

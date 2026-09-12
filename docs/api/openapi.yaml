@@ -15,6 +15,7 @@ tags:
   - name: Health
   - name: Auth
   - name: Customers
+  - name: Quotations
   - name: Catalog
 
 paths:
@@ -147,6 +148,125 @@ paths:
           $ref: '#/components/responses/ResourceNotFound'
         '422':
           $ref: '#/components/responses/ValidationFailed'
+
+
+  /quotations:
+    get:
+      tags: [Quotations]
+      operationId: listQuotations
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - name: search
+          in: query
+          required: false
+          schema:
+            type: string
+            maxLength: 190
+        - name: status
+          in: query
+          required: false
+          schema:
+            $ref: '#/components/schemas/QuotationStatus'
+        - name: customer_id
+          in: query
+          required: false
+          schema:
+            type: string
+            minLength: 26
+            maxLength: 26
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - name: per_page
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+      responses:
+        '200':
+          description: Daftar penawaran
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/QuotationListResponse'
+        '401':
+          $ref: '#/components/responses/AuthRequired'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          $ref: '#/components/responses/TenantSelectionRequired'
+        '422':
+          $ref: '#/components/responses/ValidationFailed'
+
+    post:
+      tags: [Quotations]
+      operationId: createQuotation
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateQuotationRequest'
+      responses:
+        '201':
+          description: Penawaran berhasil dibuat
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/QuotationResponse'
+        '401':
+          $ref: '#/components/responses/AuthRequired'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          $ref: '#/components/responses/TenantSelectionRequired'
+        '422':
+          $ref: '#/components/responses/ValidationFailed'
+
+  /quotations/{quotationId}:
+    parameters:
+      - name: quotationId
+        in: path
+        required: true
+        schema:
+          type: string
+          minLength: 26
+          maxLength: 26
+      - $ref: '#/components/parameters/TenantHeader'
+
+    get:
+      tags: [Quotations]
+      operationId: getQuotation
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Detail penawaran
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/QuotationResponse'
+        '401':
+          $ref: '#/components/responses/AuthRequired'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/ResourceNotFound'
+        '409':
+          $ref: '#/components/responses/TenantSelectionRequired'
 
 
   /catalog/items:
@@ -904,6 +1024,417 @@ components:
           $ref: '#/components/schemas/ActiveStatus'
         status_label:
           type: string
+
+    QuotationStatus:
+      type: string
+      enum:
+        - DRAFT
+        - SENT
+        - VIEWED
+        - APPROVED
+        - REJECTED
+        - EXPIRED
+        - CANCELLED
+
+    QuotationCustomerSummary:
+      type: object
+      required:
+        - id
+        - name
+      properties:
+        id:
+          type: string
+          minLength: 26
+          maxLength: 26
+        code:
+          type:
+            - string
+            - 'null'
+        name:
+          type: string
+          maxLength: 190
+
+    QuotationItem:
+      type: object
+      required:
+        - id
+        - name
+        - quantity
+        - pricing_method
+        - pricing_method_label
+        - pricing_config
+        - unit_price
+        - discount_amount
+        - tax_amount
+        - amount
+        - sort_order
+      properties:
+        id:
+          type: string
+          minLength: 26
+          maxLength: 26
+        catalog_item_id:
+          type:
+            - string
+            - 'null'
+        unit_id:
+          type:
+            - string
+            - 'null'
+        item_type:
+          type:
+            - string
+            - 'null'
+          enum:
+            - PRODUCT
+            - SERVICE
+            - null
+        item_type_label:
+          type:
+            - string
+            - 'null'
+        code:
+          type:
+            - string
+            - 'null'
+        name:
+          type: string
+          maxLength: 190
+        description:
+          type:
+            - string
+            - 'null'
+        quantity:
+          type: string
+          example: '2.0000'
+        unit_code:
+          type:
+            - string
+            - 'null'
+        unit_name:
+          type:
+            - string
+            - 'null'
+        unit_symbol:
+          type:
+            - string
+            - 'null'
+        pricing_method:
+          $ref: '#/components/schemas/PricingMethod'
+        pricing_method_label:
+          type: string
+        pricing_config:
+          type: object
+          additionalProperties: true
+          description: >
+            Snapshot input kalkulasi harga. Baseline mendukung
+            width, height, depth, length, duration dan tax_rate.
+        unit_price:
+          $ref: '#/components/schemas/Money'
+        discount_amount:
+          $ref: '#/components/schemas/Money'
+        tax_amount:
+          $ref: '#/components/schemas/Money'
+        amount:
+          $ref: '#/components/schemas/Money'
+        sort_order:
+          type: integer
+          minimum: 0
+
+    QuotationVersion:
+      type: object
+      required:
+        - id
+        - revision_no
+        - subtotal
+        - discount_total
+        - tax_total
+        - total
+        - currency
+        - items
+      properties:
+        id:
+          type: string
+          minLength: 26
+          maxLength: 26
+        revision_no:
+          type: integer
+          minimum: 1
+        subtotal:
+          $ref: '#/components/schemas/Money'
+        discount_total:
+          $ref: '#/components/schemas/Money'
+        tax_total:
+          $ref: '#/components/schemas/Money'
+        total:
+          $ref: '#/components/schemas/Money'
+        currency:
+          type: string
+          minLength: 3
+          maxLength: 3
+          example: IDR
+        terms:
+          type:
+            - string
+            - 'null'
+        notes:
+          type:
+            - string
+            - 'null'
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/QuotationItem'
+        created_at:
+          type:
+            - string
+            - 'null'
+          format: date-time
+
+    Quotation:
+      type: object
+      required:
+        - id
+        - quotation_number
+        - customer_id
+        - status
+        - status_label
+        - source
+        - current_version
+      properties:
+        id:
+          type: string
+          minLength: 26
+          maxLength: 26
+        quotation_number:
+          type: string
+          maxLength: 80
+        customer_id:
+          type: string
+          minLength: 26
+          maxLength: 26
+        customer:
+          $ref: '#/components/schemas/QuotationCustomerSummary'
+        status:
+          $ref: '#/components/schemas/QuotationStatus'
+        status_label:
+          type: string
+          examples:
+            - Draf
+            - Terkirim
+            - Sudah Dilihat
+            - Disetujui
+        valid_until:
+          type:
+            - string
+            - 'null'
+          format: date
+        owner_user_id:
+          type:
+            - string
+            - 'null'
+        source:
+          type: string
+          example: MANUAL
+        current_version:
+          $ref: '#/components/schemas/QuotationVersion'
+        created_at:
+          type:
+            - string
+            - 'null'
+          format: date-time
+        updated_at:
+          type:
+            - string
+            - 'null'
+          format: date-time
+
+    CreateQuotationPricingConfig:
+      type: object
+      additionalProperties: true
+      properties:
+        width:
+          type: number
+          exclusiveMinimum: 0
+        height:
+          type: number
+          exclusiveMinimum: 0
+        depth:
+          type: number
+          exclusiveMinimum: 0
+        length:
+          type: number
+          exclusiveMinimum: 0
+        duration:
+          type: number
+          exclusiveMinimum: 0
+      description: >
+        Dimension field yang diwajibkan bergantung pada pricing_method.
+        tax_rate dikirim sebagai field item terpisah pada request.
+
+    CreateQuotationItem:
+      type: object
+      properties:
+        catalog_item_id:
+          type:
+            - string
+            - 'null'
+          minLength: 26
+          maxLength: 26
+        unit_id:
+          type:
+            - string
+            - 'null'
+          minLength: 26
+          maxLength: 26
+        item_type:
+          type:
+            - string
+            - 'null'
+          enum:
+            - PRODUCT
+            - SERVICE
+            - null
+        code:
+          type:
+            - string
+            - 'null'
+          maxLength: 100
+        name:
+          type:
+            - string
+            - 'null'
+          maxLength: 190
+        description:
+          type:
+            - string
+            - 'null'
+        quantity:
+          type: number
+          exclusiveMinimum: 0
+          default: 1
+        pricing_method:
+          oneOf:
+            - $ref: '#/components/schemas/PricingMethod'
+            - type: 'null'
+          description: >
+            Wajib untuk custom line. Jika catalog_item_id diberikan,
+            metode harga dapat berasal dari snapshot catalog.
+        pricing_config:
+          oneOf:
+            - $ref: '#/components/schemas/CreateQuotationPricingConfig'
+            - type: 'null'
+        unit_price:
+          type:
+            - number
+            - 'null'
+          minimum: 0
+          description: >
+            Wajib untuk custom line. Jika catalog_item_id diberikan,
+            base_price catalog digunakan bila unit_price tidak dikirim.
+        discount_amount:
+          type: number
+          minimum: 0
+          default: 0
+        tax_rate:
+          type: number
+          minimum: 0
+          maximum: 100
+          default: 0
+        sort_order:
+          type: integer
+          minimum: 0
+      description: >
+        Item harus memiliki catalog_item_id atau data custom line
+        yang memadai. amount dan tax_amount tidak diterima sebagai
+        authoritative input; backend menghitung nilai final.
+
+    CreateQuotationRequest:
+      type: object
+      required:
+        - quotation_number
+        - customer_id
+        - items
+      properties:
+        quotation_number:
+          type: string
+          minLength: 1
+          maxLength: 80
+          description: >
+            Nomor penawaran caller-supplied sementara sampai
+            numbering policy SIGNOVA dikunci.
+        customer_id:
+          type: string
+          minLength: 26
+          maxLength: 26
+        valid_until:
+          type:
+            - string
+            - 'null'
+          format: date
+        currency:
+          type: string
+          minLength: 3
+          maxLength: 3
+          default: IDR
+        terms:
+          type:
+            - string
+            - 'null'
+        notes:
+          type:
+            - string
+            - 'null'
+        items:
+          type: array
+          minItems: 1
+          items:
+            $ref: '#/components/schemas/CreateQuotationItem'
+      description: >
+        subtotal, discount_total, tax_total, total, item tax_amount,
+        item amount, tenant_id, status dan owner_user_id adalah
+        backend-owned dan ditolak bila dikirim.
+
+    Money:
+      type: string
+      pattern: '^-?[0-9]+(\.[0-9]{2})$'
+      example: '210000.00'
+
+    QuotationResponse:
+      type: object
+      required:
+        - success
+        - data
+        - meta
+      properties:
+        success:
+          type: boolean
+          const: true
+        data:
+          $ref: '#/components/schemas/Quotation'
+        message:
+          type:
+            - string
+            - 'null'
+        meta:
+          $ref: '#/components/schemas/Meta'
+
+    QuotationListResponse:
+      type: object
+      required:
+        - success
+        - data
+        - meta
+      properties:
+        success:
+          type: boolean
+          const: true
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Quotation'
+        meta:
+          $ref: '#/components/schemas/PaginationMeta'
 
     CatalogItemResponse:
       type: object

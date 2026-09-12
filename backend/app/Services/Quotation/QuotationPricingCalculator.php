@@ -3,8 +3,8 @@
 namespace App\Services\Quotation;
 
 use Brick\Math\BigDecimal;
+use App\Exceptions\Quotation\QuotationPricingValidationException;
 use Brick\Math\RoundingMode;
-use InvalidArgumentException;
 
 class QuotationPricingCalculator
 {
@@ -22,8 +22,9 @@ class QuotationPricingCalculator
         array $items
     ): array {
         if ($items === []) {
-            throw new InvalidArgumentException(
-                'Penawaran harus memiliki minimal satu item.'
+            throw new QuotationPricingValidationException(
+                'Penawaran harus memiliki minimal satu item.',
+                'items'
             );
         }
 
@@ -34,9 +35,17 @@ class QuotationPricingCalculator
         $taxTotal = BigDecimal::zero();
         $total = BigDecimal::zero();
 
-        foreach ($items as $item) {
-            $calculated =
-                $this->calculateLine($item);
+        foreach ($items as $index => $item) {
+            try {
+                $calculated =
+                    $this->calculateLine($item);
+            } catch (
+                QuotationPricingValidationException $exception
+            ) {
+                throw $exception->withPrefix(
+                    "items.{$index}."
+                );
+            }
 
             $calculatedItems[] = $calculated;
 
@@ -98,8 +107,9 @@ class QuotationPricingCalculator
                 true
             )
         ) {
-            throw new InvalidArgumentException(
-                'Metode harga tidak valid.'
+            throw new QuotationPricingValidationException(
+                'Metode harga tidak valid.',
+                'pricing_method'
             );
         }
 
@@ -147,8 +157,9 @@ class QuotationPricingCalculator
         if (
             $discount->compareTo($gross) > 0
         ) {
-            throw new InvalidArgumentException(
-                'Diskon item tidak boleh melebihi nilai bruto.'
+            throw new QuotationPricingValidationException(
+                'Diskon item tidak boleh melebihi nilai bruto.',
+                'discount_amount'
             );
         }
 
@@ -165,8 +176,9 @@ class QuotationPricingCalculator
                 BigDecimal::of('100')
             ) > 0
         ) {
-            throw new InvalidArgumentException(
-                'Tarif pajak tidak boleh melebihi 100 persen.'
+            throw new QuotationPricingValidationException(
+                'Tarif pajak tidak boleh melebihi 100 persen.',
+                'tax_rate'
             );
         }
 
@@ -365,8 +377,9 @@ class QuotationPricingCalculator
                 $config
             )
         ) {
-            throw new InvalidArgumentException(
-                "Nilai {$key} wajib diisi untuk metode harga ini."
+            throw new QuotationPricingValidationException(
+                "Nilai {$key} wajib diisi untuk metode harga ini.",
+                'pricing_config.' . $key
             );
         }
 
@@ -391,8 +404,9 @@ class QuotationPricingCalculator
                 BigDecimal::zero()
             ) <= 0
         ) {
-            throw new InvalidArgumentException(
-                "{$field} harus lebih besar dari nol."
+            throw new QuotationPricingValidationException(
+                "{$field} harus lebih besar dari nol.",
+                $field
             );
         }
 
@@ -414,8 +428,9 @@ class QuotationPricingCalculator
                 BigDecimal::zero()
             ) < 0
         ) {
-            throw new InvalidArgumentException(
-                "{$field} tidak boleh negatif."
+            throw new QuotationPricingValidationException(
+                "{$field} tidak boleh negatif.",
+                $field
             );
         }
 
@@ -431,8 +446,9 @@ class QuotationPricingCalculator
             && ! is_float($value)
             && ! is_string($value)
         ) {
-            throw new InvalidArgumentException(
-                "{$field} harus berupa angka."
+            throw new QuotationPricingValidationException(
+                "{$field} harus berupa angka.",
+                $field
             );
         }
 
@@ -444,8 +460,9 @@ class QuotationPricingCalculator
             $value === ''
             || ! is_numeric($value)
         ) {
-            throw new InvalidArgumentException(
-                "{$field} harus berupa angka."
+            throw new QuotationPricingValidationException(
+                "{$field} harus berupa angka.",
+                $field
             );
         }
 
