@@ -1,0 +1,457 @@
+openapi: 3.1.0
+
+info:
+  title: SIGNOVA API
+  version: 1.0.0
+  description: >
+    Contract API utama SIGNOVA Platform.
+    Backend merupakan source of truth untuk tenant,
+    capability, entitlement, state dan business rules.
+
+servers:
+  - url: /api/v1
+
+tags:
+  - name: Health
+  - name: Auth
+  - name: Customers
+  - name: Catalog
+
+paths:
+  /health:
+    get:
+      tags: [Health]
+      operationId: getHealth
+      responses:
+        '200':
+          description: Service health
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /customers:
+    get:
+      tags: [Customers]
+      operationId: listCustomers
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - name: search
+          in: query
+          required: false
+          schema:
+            type: string
+            maxLength: 190
+        - name: status
+          in: query
+          required: false
+          schema:
+            $ref: '#/components/schemas/CustomerStatus'
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+      responses:
+        '200':
+          description: Daftar pelanggan
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CustomerListResponse'
+        '401':
+          $ref: '#/components/responses/AuthRequired'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          $ref: '#/components/responses/TenantSelectionRequired'
+
+    post:
+      tags: [Customers]
+      operationId: createCustomer
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateCustomerRequest'
+      responses:
+        '201':
+          description: Pelanggan berhasil dibuat
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CustomerResponse'
+        '401':
+          $ref: '#/components/responses/AuthRequired'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          $ref: '#/components/responses/TenantSelectionRequired'
+        '422':
+          $ref: '#/components/responses/ValidationFailed'
+
+  /customers/{customerId}:
+    parameters:
+      - $ref: '#/components/parameters/CustomerId'
+      - $ref: '#/components/parameters/TenantHeader'
+
+    get:
+      tags: [Customers]
+      operationId: getCustomer
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Detail pelanggan
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CustomerResponse'
+        '401':
+          $ref: '#/components/responses/AuthRequired'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/ResourceNotFound'
+
+    patch:
+      tags: [Customers]
+      operationId: updateCustomer
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateCustomerRequest'
+      responses:
+        '200':
+          description: Pelanggan berhasil diperbarui
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CustomerResponse'
+        '401':
+          $ref: '#/components/responses/AuthRequired'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/ResourceNotFound'
+        '422':
+          $ref: '#/components/responses/ValidationFailed'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+
+  parameters:
+    TenantHeader:
+      name: X-Signova-Tenant
+      in: header
+      required: false
+      description: >
+        Tenant aktif. Wajib diberikan jika user memiliki
+        lebih dari satu membership tenant aktif.
+      schema:
+        type: string
+        minLength: 26
+        maxLength: 26
+
+    CustomerId:
+      name: customerId
+      in: path
+      required: true
+      schema:
+        type: string
+        minLength: 26
+        maxLength: 26
+
+  schemas:
+    CustomerStatus:
+      type: string
+      enum:
+        - ACTIVE
+        - INACTIVE
+
+    CustomerType:
+      type: string
+      enum:
+        - COMPANY
+        - INDIVIDUAL
+
+    Customer:
+      type: object
+      required:
+        - id
+        - type
+        - name
+        - payment_terms_days
+        - status
+      properties:
+        id:
+          type: string
+          minLength: 26
+          maxLength: 26
+        code:
+          type:
+            - string
+            - 'null'
+        type:
+          $ref: '#/components/schemas/CustomerType'
+        name:
+          type: string
+          maxLength: 190
+        phone:
+          type:
+            - string
+            - 'null'
+        email:
+          type:
+            - string
+            - 'null'
+          format: email
+        tax_id:
+          type:
+            - string
+            - 'null'
+        payment_terms_days:
+          type: integer
+          minimum: 0
+        notes:
+          type:
+            - string
+            - 'null'
+        status:
+          $ref: '#/components/schemas/CustomerStatus'
+        created_at:
+          type:
+            - string
+            - 'null'
+          format: date-time
+        updated_at:
+          type:
+            - string
+            - 'null'
+          format: date-time
+
+    CreateCustomerRequest:
+      type: object
+      required:
+        - name
+      additionalProperties: false
+      properties:
+        type:
+          $ref: '#/components/schemas/CustomerType'
+        code:
+          type:
+            - string
+            - 'null'
+          maxLength: 80
+        name:
+          type: string
+          minLength: 1
+          maxLength: 190
+        phone:
+          type:
+            - string
+            - 'null'
+          maxLength: 64
+        email:
+          type:
+            - string
+            - 'null'
+          format: email
+          maxLength: 190
+        tax_id:
+          type:
+            - string
+            - 'null'
+          maxLength: 100
+        payment_terms_days:
+          type: integer
+          minimum: 0
+          maximum: 3650
+        notes:
+          type:
+            - string
+            - 'null'
+
+    UpdateCustomerRequest:
+      type: object
+      minProperties: 1
+      additionalProperties: false
+      properties:
+        type:
+          $ref: '#/components/schemas/CustomerType'
+        code:
+          type:
+            - string
+            - 'null'
+          maxLength: 80
+        name:
+          type: string
+          minLength: 1
+          maxLength: 190
+        phone:
+          type:
+            - string
+            - 'null'
+          maxLength: 64
+        email:
+          type:
+            - string
+            - 'null'
+          format: email
+          maxLength: 190
+        tax_id:
+          type:
+            - string
+            - 'null'
+          maxLength: 100
+        payment_terms_days:
+          type: integer
+          minimum: 0
+          maximum: 3650
+        notes:
+          type:
+            - string
+            - 'null'
+        status:
+          $ref: '#/components/schemas/CustomerStatus'
+
+    Meta:
+      type: object
+      required:
+        - request_id
+      properties:
+        request_id:
+          type: string
+
+    PaginationMeta:
+      allOf:
+        - $ref: '#/components/schemas/Meta'
+        - type: object
+          properties:
+            current_page:
+              type: integer
+            per_page:
+              type: integer
+            total:
+              type: integer
+            last_page:
+              type: integer
+
+    ErrorObject:
+      type: object
+      required:
+        - code
+        - message
+        - details
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+        details:
+          type: object
+          additionalProperties: true
+
+    ErrorResponse:
+      type: object
+      required:
+        - success
+        - error
+        - meta
+      properties:
+        success:
+          type: boolean
+          const: false
+        error:
+          $ref: '#/components/schemas/ErrorObject'
+        meta:
+          $ref: '#/components/schemas/Meta'
+
+    CustomerResponse:
+      type: object
+      required:
+        - success
+        - data
+        - meta
+      properties:
+        success:
+          type: boolean
+          const: true
+        data:
+          $ref: '#/components/schemas/Customer'
+        meta:
+          $ref: '#/components/schemas/Meta'
+
+    CustomerListResponse:
+      type: object
+      required:
+        - success
+        - data
+        - meta
+      properties:
+        success:
+          type: boolean
+          const: true
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Customer'
+        meta:
+          $ref: '#/components/schemas/PaginationMeta'
+
+  responses:
+    AuthRequired:
+      description: Authentication required
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+
+    Forbidden:
+      description: Capability or policy denied
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+
+    TenantSelectionRequired:
+      description: Explicit tenant selection required
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+
+    ResourceNotFound:
+      description: Resource not found in accessible tenant context
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+
+    ValidationFailed:
+      description: Request validation failed
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+
+    InternalError:
+      description: Sanitized internal error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
