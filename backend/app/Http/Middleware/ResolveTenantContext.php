@@ -3,6 +3,7 @@
 namespace App\Http\Middleware;
 
 use App\Models\User;
+use App\Support\Api\ApiResponse;
 use App\Tenancy\TenantContext;
 use App\Tenancy\TenantContextResolver;
 use Closure;
@@ -26,9 +27,12 @@ class ResolveTenantContext
         $user = $request->user();
 
         if (! $user) {
-            return response()->json([
-                'message' => 'Unauthenticated.',
-            ], 401);
+            return ApiResponse::error(
+                $request,
+                'AUTH_REQUIRED',
+                'Autentikasi diperlukan.',
+                401
+            );
         }
 
         $requestedTenantId = $request->header(
@@ -55,6 +59,7 @@ class ResolveTenantContext
             !== TenantContextResolver::RESOLVED
         ) {
             return $this->resolutionError(
+                $request,
                 $resolution['status']
             );
         }
@@ -72,38 +77,33 @@ class ResolveTenantContext
     }
 
     private function resolutionError(
+        Request $request,
         string $status
     ): JsonResponse {
         return match ($status) {
             TenantContextResolver::TENANT_SELECTION_REQUIRED =>
-                response()->json([
-                    'message' =>
-                        'Pilih workspace yang akan digunakan.',
-                    'error' => [
-                        'code' =>
-                            'TENANT_SELECTION_REQUIRED',
-                    ],
-                ], 409),
+                ApiResponse::error(
+                    $request,
+                    'TENANT_SELECTION_REQUIRED',
+                    'Pilih workspace yang akan digunakan.',
+                    409
+                ),
 
             TenantContextResolver::TENANT_ACCESS_DENIED =>
-                response()->json([
-                    'message' =>
-                        'Workspace tidak tersedia atau tidak dapat diakses.',
-                    'error' => [
-                        'code' =>
-                            'TENANT_ACCESS_DENIED',
-                    ],
-                ], 403),
+                ApiResponse::error(
+                    $request,
+                    'TENANT_ACCESS_DENIED',
+                    'Workspace tidak tersedia atau tidak dapat diakses.',
+                    403
+                ),
 
             default =>
-                response()->json([
-                    'message' =>
-                        'Akun tidak memiliki workspace aktif.',
-                    'error' => [
-                        'code' =>
-                            'ACTIVE_TENANT_REQUIRED',
-                    ],
-                ], 403),
+                ApiResponse::error(
+                    $request,
+                    'ACTIVE_TENANT_REQUIRED',
+                    'Akun tidak memiliki workspace aktif.',
+                    403
+                ),
         };
     }
 }

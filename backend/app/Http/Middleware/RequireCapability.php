@@ -4,6 +4,7 @@ namespace App\Http\Middleware;
 
 use App\Authorization\EffectiveCapabilityResolver;
 use App\Models\User;
+use App\Support\Api\ApiResponse;
 use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -24,9 +25,12 @@ class RequireCapability
         $user = $request->user();
 
         if (! $user) {
-            return response()->json([
-                'message' => 'Unauthenticated.',
-            ], 401);
+            return ApiResponse::error(
+                $request,
+                'AUTH_REQUIRED',
+                'Autentikasi diperlukan.',
+                401
+            );
         }
 
         if (
@@ -35,14 +39,16 @@ class RequireCapability
                 $capabilityCode
             )
         ) {
-            return response()->json([
-                'message' =>
-                    'Anda tidak memiliki hak akses untuk tindakan ini.',
-                'error' => [
-                    'code' => 'FORBIDDEN_CAPABILITY',
-                    'capability' => $capabilityCode,
-                ],
-            ], 403);
+            return ApiResponse::error(
+                $request,
+                'FORBIDDEN_CAPABILITY',
+                'Anda tidak memiliki hak akses untuk tindakan ini.',
+                403,
+                [
+                    'capability' =>
+                        $capabilityCode,
+                ]
+            );
         }
 
         return $next($request);

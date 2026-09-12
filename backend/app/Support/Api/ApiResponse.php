@@ -4,6 +4,7 @@ namespace App\Support\Api;
 
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 
 class ApiResponse
 {
@@ -14,14 +15,13 @@ class ApiResponse
         ?string $message = null,
         array $meta = []
     ): JsonResponse {
+        $requestId = self::requestId($request);
+
         $payload = [
             'success' => true,
             'data' => $data,
             'meta' => [
-                'request_id' =>
-                    $request->attributes->get(
-                        'request_id'
-                    ),
+                'request_id' => $requestId,
                 ...$meta,
             ],
         ];
@@ -30,10 +30,12 @@ class ApiResponse
             $payload['message'] = $message;
         }
 
-        return response()->json(
-            $payload,
-            $status
-        );
+        return response()
+            ->json($payload, $status)
+            ->header(
+                'X-Request-ID',
+                $requestId
+            );
     }
 
     public static function error(
@@ -43,19 +45,47 @@ class ApiResponse
         int $status,
         array $details = []
     ): JsonResponse {
-        return response()->json([
-            'success' => false,
-            'error' => [
-                'code' => $code,
-                'message' => $message,
-                'details' => $details,
-            ],
-            'meta' => [
-                'request_id' =>
-                    $request->attributes->get(
-                        'request_id'
-                    ),
-            ],
-        ], $status);
+        $requestId = self::requestId($request);
+
+        return response()
+            ->json([
+                'success' => false,
+                'error' => [
+                    'code' => $code,
+                    'message' => $message,
+                    'details' => $details,
+                ],
+                'meta' => [
+                    'request_id' => $requestId,
+                ],
+            ], $status)
+            ->header(
+                'X-Request-ID',
+                $requestId
+            );
+    }
+
+    private static function requestId(
+        Request $request
+    ): string {
+        $requestId = $request->attributes->get(
+            'request_id'
+        );
+
+        if (
+            ! is_string($requestId) ||
+            trim($requestId) === ''
+        ) {
+            $requestId = 'req_' . Str::lower(
+                (string) Str::ulid()
+            );
+
+            $request->attributes->set(
+                'request_id',
+                $requestId
+            );
+        }
+
+        return $requestId;
     }
 }
