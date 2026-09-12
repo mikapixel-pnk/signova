@@ -1,5 +1,6 @@
 <?php
 
+use App\Exceptions\Quotation\InvalidQuotationTransitionException;
 use App\Exceptions\Quotation\QuotationNotEditableException;
 use App\Exceptions\Quotation\QuotationPricingValidationException;
 use App\Http\Middleware\ResolveTenantContext;
@@ -62,6 +63,24 @@ return Application::configure(basePath: dirname(__DIR__))
                         'fields' =>
                             $exception->errors(),
                     ]
+                );
+            }
+        );
+
+        $exceptions->render(
+            function (
+                InvalidQuotationTransitionException $exception,
+                Request $request
+            ) {
+                if (! $request->is('api/*')) {
+                    return null;
+                }
+
+                return ApiResponse::error(
+                    $request,
+                    'INVALID_TRANSITION',
+                    $exception->getMessage(),
+                    409
                 );
             }
         );

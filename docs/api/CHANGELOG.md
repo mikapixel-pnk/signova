@@ -3,6 +3,7 @@
 ## Unreleased - API v1
 
 ### Added
+- Quotation send and cancel action API with atomic state history and transition guards.
 - Draft quotation revision API with immutable version history, backend-owned pricing, and state guard.
 - Draft quotation header update API with DRAFT-state guard and tenant-scoped validation.
 - Tenant-scoped Quotation draft API with backend-owned pricing.

@@ -913,6 +913,260 @@ class QuotationApiTest extends TestCase
         );
     }
 
+
+    public function test_owner_can_send_draft_quotation(): void
+    {
+        $workspace = $this->workspace(
+            'quotation-api-send@example.test',
+            'Quotation API Send'
+        );
+
+        $customerId = $this->insertCustomer(
+            $workspace['tenant_id'],
+            'CUST-API-SEND',
+            'Pelanggan API Send'
+        );
+
+        $quotationId = $this->insertQuotation(
+            $workspace,
+            $customerId,
+            'Q-API-SEND',
+            'DRAFT'
+        );
+
+        $this->actingAsWorkspace($workspace);
+
+        $response = $this->postJson(
+            "/api/v1/quotations/{$quotationId}/actions/send"
+        );
+
+        $response
+            ->assertOk()
+            ->assertJsonPath(
+                'success',
+                true
+            )
+            ->assertJsonPath(
+                'data.status',
+                'SENT'
+            );
+
+        $this->assertDatabaseHas(
+            'quotations',
+            [
+                'id' => $quotationId,
+                'status' => 'SENT',
+            ]
+        );
+
+        $this->assertDatabaseHas(
+            'quotation_status_history',
+            [
+                'quotation_id' => $quotationId,
+                'from_state' => 'DRAFT',
+                'to_state' => 'SENT',
+            ]
+        );
+    }
+
+    public function test_send_invalid_transition_returns_409(): void
+    {
+        $workspace = $this->workspace(
+            'quotation-api-send-invalid@example.test',
+            'Quotation API Send Invalid'
+        );
+
+        $customerId = $this->insertCustomer(
+            $workspace['tenant_id'],
+            'CUST-API-SEND-INVALID',
+            'Pelanggan API Send Invalid'
+        );
+
+        $quotationId = $this->insertQuotation(
+            $workspace,
+            $customerId,
+            'Q-API-SEND-INVALID',
+            'SENT'
+        );
+
+        $this->actingAsWorkspace($workspace);
+
+        $this->postJson(
+            "/api/v1/quotations/{$quotationId}/actions/send"
+        )
+            ->assertStatus(409)
+            ->assertJsonPath(
+                'error.code',
+                'INVALID_TRANSITION'
+            );
+    }
+
+    public function test_owner_can_cancel_quotation_with_reason(): void
+    {
+        $workspace = $this->workspace(
+            'quotation-api-cancel@example.test',
+            'Quotation API Cancel'
+        );
+
+        $customerId = $this->insertCustomer(
+            $workspace['tenant_id'],
+            'CUST-API-CANCEL',
+            'Pelanggan API Cancel'
+        );
+
+        $quotationId = $this->insertQuotation(
+            $workspace,
+            $customerId,
+            'Q-API-CANCEL',
+            'DRAFT'
+        );
+
+        $this->actingAsWorkspace($workspace);
+
+        $response = $this->postJson(
+            "/api/v1/quotations/{$quotationId}/actions/cancel",
+            [
+                'reason' =>
+                    'Pelanggan membatalkan permintaan.',
+            ]
+        );
+
+        $response
+            ->assertOk()
+            ->assertJsonPath(
+                'success',
+                true
+            )
+            ->assertJsonPath(
+                'data.status',
+                'CANCELLED'
+            );
+
+        $this->assertDatabaseHas(
+            'quotation_status_history',
+            [
+                'quotation_id' => $quotationId,
+                'to_state' => 'CANCELLED',
+                'reason' =>
+                    'Pelanggan membatalkan permintaan.',
+            ]
+        );
+    }
+
+    public function test_cancel_requires_reason(): void
+    {
+        $workspace = $this->workspace(
+            'quotation-api-cancel-reason@example.test',
+            'Quotation API Cancel Reason'
+        );
+
+        $customerId = $this->insertCustomer(
+            $workspace['tenant_id'],
+            'CUST-API-CANCEL-REASON',
+            'Pelanggan API Cancel Reason'
+        );
+
+        $quotationId = $this->insertQuotation(
+            $workspace,
+            $customerId,
+            'Q-API-CANCEL-REASON',
+            'DRAFT'
+        );
+
+        $this->actingAsWorkspace($workspace);
+
+        $this->postJson(
+            "/api/v1/quotations/{$quotationId}/actions/cancel",
+            []
+        )
+            ->assertUnprocessable()
+            ->assertJsonPath(
+                'error.code',
+                'VALIDATION_FAILED'
+            );
+    }
+
+    public function test_missing_issue_capability_blocks_send_and_cancel(): void
+    {
+        $workspace = $this->workspace(
+            'quotation-api-issue-denied@example.test',
+            'Quotation API Issue Denied'
+        );
+
+        $customerId = $this->insertCustomer(
+            $workspace['tenant_id'],
+            'CUST-API-ISSUE-DENIED',
+            'Pelanggan API Issue Denied'
+        );
+
+        $quotationId = $this->insertQuotation(
+            $workspace,
+            $customerId,
+            'Q-API-ISSUE-DENIED',
+            'DRAFT'
+        );
+
+        $this->actingAsWorkspace($workspace);
+
+        $this->denyCapability(
+            $workspace,
+            'quotation.issue'
+        );
+
+        $this->postJson(
+            "/api/v1/quotations/{$quotationId}/actions/send"
+        )
+            ->assertForbidden()
+            ->assertJsonPath(
+                'error.code',
+                'FORBIDDEN_CAPABILITY'
+            );
+
+        $this->postJson(
+            "/api/v1/quotations/{$quotationId}/actions/cancel",
+            [
+                'reason' => 'Tidak jadi.',
+            ]
+        )
+            ->assertForbidden()
+            ->assertJsonPath(
+                'error.code',
+                'FORBIDDEN_CAPABILITY'
+            );
+    }
+
+    public function test_foreign_tenant_send_is_not_found(): void
+    {
+        $first = $this->workspace(
+            'quotation-api-send-first@example.test',
+            'Quotation API Send First'
+        );
+
+        $second = $this->workspace(
+            'quotation-api-send-second@example.test',
+            'Quotation API Send Second'
+        );
+
+        $foreignCustomerId = $this->insertCustomer(
+            $second['tenant_id'],
+            'CUST-API-SEND-FOREIGN',
+            'Pelanggan API Send Foreign'
+        );
+
+        $quotationId = $this->insertQuotation(
+            $second,
+            $foreignCustomerId,
+            'Q-API-SEND-FOREIGN',
+            'DRAFT'
+        );
+
+        $this->actingAsWorkspace($first);
+
+        $this->postJson(
+            "/api/v1/quotations/{$quotationId}/actions/send"
+        )->assertNotFound();
+    }
+
     public function test_backend_owned_financial_fields_are_rejected(): void
     {
         $workspace = $this->workspace(

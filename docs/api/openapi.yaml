@@ -395,6 +395,133 @@ paths:
           $ref: '#/components/responses/ValidationFailed'
 
 
+  /quotations/{quotationId}/actions/send:
+    parameters:
+      - name: quotationId
+        in: path
+        required: true
+        schema:
+          type: string
+          minLength: 26
+          maxLength: 26
+      - $ref: '#/components/parameters/TenantHeader'
+
+    post:
+      tags: [Quotations]
+      operationId: sendQuotation
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Penawaran berhasil dikirim
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/QuotationResponse'
+        '401':
+          $ref: '#/components/responses/AuthRequired'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/ResourceNotFound'
+        '409':
+          description: State transition penawaran tidak diperbolehkan
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - success
+                  - error
+                  - meta
+                properties:
+                  success:
+                    type: boolean
+                    const: false
+                  error:
+                    type: object
+                    required:
+                      - code
+                      - message
+                    properties:
+                      code:
+                        type: string
+                        const: INVALID_TRANSITION
+                      message:
+                        type: string
+                      details:
+                        type: object
+                  meta:
+                    $ref: '#/components/schemas/Meta'
+
+  /quotations/{quotationId}/actions/cancel:
+    parameters:
+      - name: quotationId
+        in: path
+        required: true
+        schema:
+          type: string
+          minLength: 26
+          maxLength: 26
+      - $ref: '#/components/parameters/TenantHeader'
+
+    post:
+      tags: [Quotations]
+      operationId: cancelQuotation
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CancelQuotationRequest'
+      responses:
+        '200':
+          description: Penawaran berhasil dibatalkan
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/QuotationResponse'
+        '401':
+          $ref: '#/components/responses/AuthRequired'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/ResourceNotFound'
+        '409':
+          description: State transition penawaran tidak diperbolehkan
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - success
+                  - error
+                  - meta
+                properties:
+                  success:
+                    type: boolean
+                    const: false
+                  error:
+                    type: object
+                    required:
+                      - code
+                      - message
+                    properties:
+                      code:
+                        type: string
+                        const: INVALID_TRANSITION
+                      message:
+                        type: string
+                      details:
+                        type: object
+                  meta:
+                    $ref: '#/components/schemas/Meta'
+        '422':
+          $ref: '#/components/responses/ValidationFailed'
+
+
   /catalog/items:
     get:
       tags: [Catalog]
@@ -1520,6 +1647,19 @@ components:
         subtotal, discount_total, tax_total, total, item tax_amount,
         item amount, tenant_id, status dan owner_user_id adalah
         backend-owned dan ditolak bila dikirim.
+
+    CancelQuotationRequest:
+      type: object
+      required:
+        - reason
+      additionalProperties: false
+      properties:
+        reason:
+          type: string
+          minLength: 1
+          maxLength: 1000
+      description: >
+        Alasan pembatalan wajib disimpan ke status history.
 
     CreateQuotationRevisionRequest:
       type: object

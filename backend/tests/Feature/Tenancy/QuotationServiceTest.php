@@ -409,6 +409,334 @@ class QuotationServiceTest extends TestCase
         );
     }
 
+
+    public function test_send_transition_updates_status_timestamp_and_history(): void
+    {
+        $workspace = $this->workspace(
+            'quotation-send@example.test',
+            'Quotation Send'
+        );
+
+        $customerId = $this->insertCustomer(
+            $workspace['tenant_id'],
+            'CUST-SEND'
+        );
+
+        $this->setTenantContext($workspace);
+
+        $service = app(
+            QuotationService::class
+        );
+
+        $quotation = $service->createDraft(
+            [
+                'quotation_number' => 'Q-SEND',
+                'customer_id' => $customerId,
+            ],
+            [
+                'notes' => 'Siap dikirim',
+            ],
+            [
+                [
+                    'name' => 'Item Send',
+                    'pricing_method' => 'MANUAL',
+                    'quantity' => 1,
+                    'unit_price' => 100000,
+                ],
+            ]
+        );
+
+        $sent = $service->send(
+            $quotation->id
+        );
+
+        $this->assertSame(
+            'SENT',
+            $sent->status
+        );
+
+        $this->assertNotNull(
+            $sent->sent_at
+        );
+
+        $this->assertDatabaseHas(
+            'quotation_status_history',
+            [
+                'tenant_id' =>
+                    $workspace['tenant_id'],
+                'quotation_id' =>
+                    $quotation->id,
+                'from_state' => 'DRAFT',
+                'to_state' => 'SENT',
+                'actor_user_id' =>
+                    $workspace['user_id'],
+                'source' => 'USER',
+            ]
+        );
+    }
+
+    public function test_send_from_non_draft_state_is_invalid_transition(): void
+    {
+        $workspace = $this->workspace(
+            'quotation-send-invalid@example.test',
+            'Quotation Send Invalid'
+        );
+
+        $customerId = $this->insertCustomer(
+            $workspace['tenant_id'],
+            'CUST-SEND-INVALID'
+        );
+
+        $this->setTenantContext($workspace);
+
+        $service = app(
+            QuotationService::class
+        );
+
+        $quotation = $service->createDraft(
+            [
+                'quotation_number' =>
+                    'Q-SEND-INVALID',
+                'customer_id' =>
+                    $customerId,
+            ],
+            [],
+            [
+                [
+                    'name' => 'Item',
+                    'pricing_method' => 'MANUAL',
+                    'quantity' => 1,
+                    'unit_price' => 100000,
+                ],
+            ]
+        );
+
+        DB::table('quotations')
+            ->where('id', $quotation->id)
+            ->update([
+                'status' => 'SENT',
+                'sent_at' => now(),
+            ]);
+
+        $this->expectException(
+            \App\Exceptions\Quotation\InvalidQuotationTransitionException::class
+        );
+
+        $service->send(
+            $quotation->id
+        );
+    }
+
+    public function test_cancel_transition_sets_reason_timestamp_and_history(): void
+    {
+        $workspace = $this->workspace(
+            'quotation-cancel@example.test',
+            'Quotation Cancel'
+        );
+
+        $customerId = $this->insertCustomer(
+            $workspace['tenant_id'],
+            'CUST-CANCEL'
+        );
+
+        $this->setTenantContext($workspace);
+
+        $service = app(
+            QuotationService::class
+        );
+
+        $quotation = $service->createDraft(
+            [
+                'quotation_number' =>
+                    'Q-CANCEL',
+                'customer_id' =>
+                    $customerId,
+            ],
+            [],
+            [
+                [
+                    'name' => 'Item Cancel',
+                    'pricing_method' => 'MANUAL',
+                    'quantity' => 1,
+                    'unit_price' => 100000,
+                ],
+            ]
+        );
+
+        $cancelled = $service->cancel(
+            $quotation->id,
+            'Pelanggan membatalkan permintaan.'
+        );
+
+        $this->assertSame(
+            'CANCELLED',
+            $cancelled->status
+        );
+
+        $this->assertNotNull(
+            $cancelled->cancelled_at
+        );
+
+        $this->assertDatabaseHas(
+            'quotation_status_history',
+            [
+                'tenant_id' =>
+                    $workspace['tenant_id'],
+                'quotation_id' =>
+                    $quotation->id,
+                'from_state' => 'DRAFT',
+                'to_state' => 'CANCELLED',
+                'reason' =>
+                    'Pelanggan membatalkan permintaan.',
+            ]
+        );
+    }
+
+    public function test_cancel_from_approved_state_is_invalid_transition(): void
+    {
+        $workspace = $this->workspace(
+            'quotation-cancel-invalid@example.test',
+            'Quotation Cancel Invalid'
+        );
+
+        $customerId = $this->insertCustomer(
+            $workspace['tenant_id'],
+            'CUST-CANCEL-INVALID'
+        );
+
+        $this->setTenantContext($workspace);
+
+        $service = app(
+            QuotationService::class
+        );
+
+        $quotation = $service->createDraft(
+            [
+                'quotation_number' =>
+                    'Q-CANCEL-INVALID',
+                'customer_id' =>
+                    $customerId,
+            ],
+            [],
+            [
+                [
+                    'name' => 'Item',
+                    'pricing_method' => 'MANUAL',
+                    'quantity' => 1,
+                    'unit_price' => 100000,
+                ],
+            ]
+        );
+
+        DB::table('quotations')
+            ->where('id', $quotation->id)
+            ->update([
+                'status' => 'APPROVED',
+                'approved_at' => now(),
+            ]);
+
+        $this->expectException(
+            \App\Exceptions\Quotation\InvalidQuotationTransitionException::class
+        );
+
+        $service->cancel(
+            $quotation->id,
+            'Tidak valid.'
+        );
+    }
+
+
+    public function test_invalid_transition_does_not_mutate_quotation_or_history(): void
+    {
+        $workspace = $this->workspace(
+            'quotation-transition-atomic@example.test',
+            'Quotation Transition Atomic'
+        );
+
+        $customerId = $this->insertCustomer(
+            $workspace['tenant_id'],
+            'CUST-TRANSITION-ATOMIC'
+        );
+
+        $this->setTenantContext($workspace);
+
+        $service = app(
+            QuotationService::class
+        );
+
+        $quotation = $service->createDraft(
+            [
+                'quotation_number' =>
+                    'Q-TRANSITION-ATOMIC',
+                'customer_id' =>
+                    $customerId,
+            ],
+            [],
+            [
+                [
+                    'name' => 'Item',
+                    'pricing_method' => 'MANUAL',
+                    'quantity' => 1,
+                    'unit_price' => 100000,
+                ],
+            ]
+        );
+
+        DB::table('quotations')
+            ->where('id', $quotation->id)
+            ->update([
+                'status' => 'APPROVED',
+                'approved_at' => now(),
+            ]);
+
+        $historyCountBefore = DB::table(
+            'quotation_status_history'
+        )
+            ->where(
+                'quotation_id',
+                $quotation->id
+            )
+            ->count();
+
+        try {
+            $service->cancel(
+                $quotation->id,
+                'Tidak valid.'
+            );
+
+            $this->fail(
+                'Expected invalid transition exception.'
+            );
+        } catch (
+            \App\Exceptions\Quotation\InvalidQuotationTransitionException
+        ) {
+            // Expected.
+        }
+
+        $this->assertDatabaseHas(
+            'quotations',
+            [
+                'id' => $quotation->id,
+                'status' => 'APPROVED',
+                'cancelled_at' => null,
+            ]
+        );
+
+        $historyCountAfter = DB::table(
+            'quotation_status_history'
+        )
+            ->where(
+                'quotation_id',
+                $quotation->id
+            )
+            ->count();
+
+        $this->assertSame(
+            $historyCountBefore,
+            $historyCountAfter
+        );
+    }
+
     public function test_version_from_other_quotation_fails_application_invariant(): void
     {
         $workspace = $this->workspace(

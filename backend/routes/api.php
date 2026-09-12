@@ -110,6 +110,21 @@ Route::prefix('v1')->group(function () {
         );
 
 
+        Route::post(
+            '/quotations/{quotationId}/actions/send',
+            [QuotationController::class, 'send']
+        )->middleware(
+            'capability:quotation.issue'
+        );
+
+        Route::post(
+            '/quotations/{quotationId}/actions/cancel',
+            [QuotationController::class, 'cancel']
+        )->middleware(
+            'capability:quotation.issue'
+        );
+
+
         /*
         |--------------------------------------------------------------------------
         | Catalog - Barang & Jasa

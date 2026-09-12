@@ -8,6 +8,7 @@ use App\Models\Quotation;
 use App\Models\QuotationItem;
 use App\Models\QuotationStatusHistory;
 use App\Models\QuotationVersion;
+use App\Exceptions\Quotation\InvalidQuotationTransitionException;
 use App\Exceptions\Quotation\QuotationNotEditableException;
 use App\Models\Unit;
 use App\Tenancy\TenantContext;
@@ -299,6 +300,39 @@ class QuotationService
         });
     }
 
+    public function send(
+        string $quotationId
+    ): Quotation {
+        return $this->transition(
+            $quotationId,
+            'SENT',
+            ['DRAFT'],
+            null,
+            [
+                'sent_at' => now(),
+            ]
+        );
+    }
+
+    public function cancel(
+        string $quotationId,
+        string $reason
+    ): Quotation {
+        return $this->transition(
+            $quotationId,
+            'CANCELLED',
+            [
+                'DRAFT',
+                'SENT',
+                'VIEWED',
+            ],
+            $reason,
+            [
+                'cancelled_at' => now(),
+            ]
+        );
+    }
+
     public function assertVersionBelongsToQuotation(
         Quotation $quotation,
         QuotationVersion $version
@@ -315,6 +349,78 @@ class QuotationService
                 'Quotation version does not belong to quotation.'
             );
         }
+    }
+
+    private function transition(
+        string $quotationId,
+        string $toState,
+        array $allowedFromStates,
+        ?string $reason = null,
+        array $attributes = []
+    ): Quotation {
+        return DB::transaction(function () use (
+            $quotationId,
+            $toState,
+            $allowedFromStates,
+            $reason,
+            $attributes
+        ): Quotation {
+            $quotation = $this->baseQuery()
+                ->where('id', $quotationId)
+                ->lockForUpdate()
+                ->firstOrFail();
+
+            $fromState = $quotation->status;
+
+            if (
+                ! in_array(
+                    $fromState,
+                    $allowedFromStates,
+                    true
+                )
+            ) {
+                throw new InvalidQuotationTransitionException(
+                    $fromState,
+                    $toState
+                );
+            }
+
+            $quotation->fill(
+                array_merge(
+                    $attributes,
+                    [
+                        'status' => $toState,
+                    ]
+                )
+            );
+
+            $quotation->save();
+
+            QuotationStatusHistory::query()->create([
+                'id' => (string) Str::ulid(),
+                'tenant_id' =>
+                    $this->tenantContext->tenantId(),
+                'quotation_id' =>
+                    $quotation->id,
+                'from_state' =>
+                    $fromState,
+                'to_state' =>
+                    $toState,
+                'actor_user_id' =>
+                    $this->tenantContext->userId(),
+                'reason' =>
+                    $reason,
+                'source' =>
+                    'USER',
+                'context' => [],
+                'occurred_at' =>
+                    now(),
+            ]);
+
+            return $this->findOrFail(
+                $quotation->id
+            );
+        });
     }
 
     private function createVersionRecord(

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\V1\Quotation;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Quotation\CancelQuotationRequest;
 use App\Http\Requests\Quotation\CreateQuotationRevisionRequest;
 use App\Http\Requests\Quotation\ListQuotationsRequest;
 use App\Http\Requests\Quotation\StoreQuotationRequest;
@@ -102,6 +103,45 @@ class QuotationController extends Controller
             ))->resolve($request),
             201,
             'Penawaran berhasil dibuat.'
+        );
+    }
+
+    public function send(
+        Request $request,
+        string $quotationId,
+        QuotationService $service
+    ): JsonResponse {
+        $quotation = $service->send(
+            $quotationId
+        );
+
+        return ApiResponse::success(
+            $request,
+            (new QuotationResource(
+                $quotation
+            ))->resolve($request),
+            200,
+            'Penawaran berhasil dikirim.'
+        );
+    }
+
+    public function cancel(
+        CancelQuotationRequest $request,
+        string $quotationId,
+        QuotationService $service
+    ): JsonResponse {
+        $quotation = $service->cancel(
+            $quotationId,
+            $request->validated('reason')
+        );
+
+        return ApiResponse::success(
+            $request,
+            (new QuotationResource(
+                $quotation
+            ))->resolve($request),
+            200,
+            'Penawaran berhasil dibatalkan.'
         );
     }
 
