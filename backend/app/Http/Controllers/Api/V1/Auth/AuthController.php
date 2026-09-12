@@ -7,6 +7,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\LoginRequest;
 use App\Http\Requests\Auth\RegisterRequest;
 use App\Models\User;
+use App\Tenancy\TenantContext;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -101,23 +102,19 @@ class AuthController extends Controller
         ]);
     }
 
-    public function me(Request $request): JsonResponse
-    {
+    public function me(
+        Request $request,
+        TenantContext $tenantContext
+    ): JsonResponse {
         /** @var User $user */
         $user = $request->user();
-
-        $membership = DB::table('tenant_users')
-            ->where('user_id', $user->id)
-            ->where('status', 'ACTIVE')
-            ->orderBy('joined_at')
-            ->first();
 
         return response()->json([
             'data' => [
                 'user' => $this->userPayload($user),
-                'tenant' => $membership
-                    ? $this->tenantPayload($membership->tenant_id)
-                    : null,
+                'tenant' => $this->tenantPayload(
+                    $tenantContext->tenantId()
+                ),
             ],
         ]);
     }
