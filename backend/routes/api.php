@@ -102,6 +102,14 @@ Route::prefix('v1')->group(function () {
         );
 
 
+        Route::post(
+            '/quotations/{quotationId}/versions',
+            [QuotationController::class, 'storeVersion']
+        )->middleware(
+            'capability:quotation.update'
+        );
+
+
         /*
         |--------------------------------------------------------------------------
         | Catalog - Barang & Jasa

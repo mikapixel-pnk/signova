@@ -254,6 +254,12 @@ class QuotationService
                 ->lockForUpdate()
                 ->firstOrFail();
 
+            if ($quotation->status !== 'DRAFT') {
+                throw new QuotationNotEditableException(
+                    'Penawaran hanya dapat diubah saat masih berstatus Draf.'
+                );
+            }
+
             $latestRevision = QuotationVersion::query()
                 ->where(
                     'tenant_id',

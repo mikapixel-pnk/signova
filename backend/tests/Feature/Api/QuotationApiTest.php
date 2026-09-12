@@ -502,6 +502,417 @@ class QuotationApiTest extends TestCase
             );
     }
 
+
+    public function test_owner_can_create_draft_revision_with_backend_pricing(): void
+    {
+        $workspace = $this->workspace(
+            'quotation-api-revision@example.test',
+            'Quotation API Revision'
+        );
+
+        $this->actingAsWorkspace($workspace);
+
+        $customerId = $this->insertCustomer(
+            $workspace['tenant_id'],
+            'CUST-REV-API',
+            'Pelanggan Revision API'
+        );
+
+        $quotationId = $this->insertQuotation(
+            $workspace,
+            $customerId,
+            'Q-REV-API',
+            'DRAFT'
+        );
+
+        $oldVersionId = DB::table('quotations')
+            ->where('id', $quotationId)
+            ->value('current_version_id');
+
+        $response = $this->postJson(
+            "/api/v1/quotations/{$quotationId}/versions",
+            [
+                'currency' => 'idr',
+                'notes' => 'Revisi kedua',
+                'items' => [
+                    [
+                        'name' => 'Item Revisi',
+                        'item_type' => 'SERVICE',
+                        'pricing_method' => 'MANUAL',
+                        'quantity' => 2,
+                        'unit_price' => 75000,
+                    ],
+                ],
+            ]
+        );
+
+        $response
+            ->assertCreated()
+            ->assertJsonPath(
+                'success',
+                true
+            )
+            ->assertJsonPath(
+                'data.current_version.revision_no',
+                2
+            )
+            ->assertJsonPath(
+                'data.current_version.currency',
+                'IDR'
+            )
+            ->assertJsonPath(
+                'data.current_version.notes',
+                'Revisi kedua'
+            )
+            ->assertJsonPath(
+                'data.current_version.total',
+                '150000.00'
+            );
+
+        $newVersionId = DB::table('quotations')
+            ->where('id', $quotationId)
+            ->value('current_version_id');
+
+        $this->assertNotSame(
+            $oldVersionId,
+            $newVersionId
+        );
+
+        $this->assertDatabaseHas(
+            'quotation_versions',
+            [
+                'id' => $oldVersionId,
+                'quotation_id' => $quotationId,
+                'revision_no' => 1,
+            ]
+        );
+
+        $this->assertDatabaseHas(
+            'quotation_versions',
+            [
+                'id' => $newVersionId,
+                'quotation_id' => $quotationId,
+                'revision_no' => 2,
+                'total' => 150000,
+            ]
+        );
+
+        $this->assertDatabaseCount(
+            'quotation_versions',
+            2
+        );
+    }
+
+    public function test_non_draft_quotation_revision_is_rejected(): void
+    {
+        $workspace = $this->workspace(
+            'quotation-api-revision-state@example.test',
+            'Quotation API Revision State'
+        );
+
+        $this->actingAsWorkspace($workspace);
+
+        $customerId = $this->insertCustomer(
+            $workspace['tenant_id'],
+            'CUST-REV-STATE',
+            'Pelanggan Revision State'
+        );
+
+        $quotationId = $this->insertQuotation(
+            $workspace,
+            $customerId,
+            'Q-REV-SENT',
+            'SENT'
+        );
+
+        $this->postJson(
+            "/api/v1/quotations/{$quotationId}/versions",
+            [
+                'items' => [
+                    [
+                        'name' => 'Item Revisi',
+                        'pricing_method' => 'MANUAL',
+                        'quantity' => 1,
+                        'unit_price' => 100000,
+                    ],
+                ],
+            ]
+        )
+            ->assertStatus(409)
+            ->assertJsonPath(
+                'error.code',
+                'QUOTATION_NOT_EDITABLE'
+            );
+
+        $this->assertDatabaseCount(
+            'quotation_versions',
+            1
+        );
+    }
+
+    public function test_revision_of_foreign_tenant_quotation_is_not_found(): void
+    {
+        $first = $this->workspace(
+            'quotation-api-revision-first@example.test',
+            'Quotation API Revision First'
+        );
+
+        $second = $this->workspace(
+            'quotation-api-revision-second@example.test',
+            'Quotation API Revision Second'
+        );
+
+        $foreignCustomerId = $this->insertCustomer(
+            $second['tenant_id'],
+            'CUST-REV-FOREIGN',
+            'Pelanggan Revision Foreign'
+        );
+
+        $quotationId = $this->insertQuotation(
+            $second,
+            $foreignCustomerId,
+            'Q-REV-FOREIGN',
+            'DRAFT'
+        );
+
+        $this->actingAsWorkspace($first);
+
+        $this->postJson(
+            "/api/v1/quotations/{$quotationId}/versions",
+            [
+                'items' => [
+                    [
+                        'name' => 'Item Revisi',
+                        'pricing_method' => 'MANUAL',
+                        'quantity' => 1,
+                        'unit_price' => 100000,
+                    ],
+                ],
+            ]
+        )->assertNotFound();
+    }
+
+    public function test_revision_rejects_backend_owned_totals(): void
+    {
+        $workspace = $this->workspace(
+            'quotation-api-revision-forged@example.test',
+            'Quotation API Revision Forged'
+        );
+
+        $this->actingAsWorkspace($workspace);
+
+        $customerId = $this->insertCustomer(
+            $workspace['tenant_id'],
+            'CUST-REV-FORGED',
+            'Pelanggan Revision Forged'
+        );
+
+        $quotationId = $this->insertQuotation(
+            $workspace,
+            $customerId,
+            'Q-REV-FORGED',
+            'DRAFT'
+        );
+
+        $this->postJson(
+            "/api/v1/quotations/{$quotationId}/versions",
+            [
+                'total' => 1,
+                'items' => [
+                    [
+                        'name' => 'Item Revisi',
+                        'pricing_method' => 'MANUAL',
+                        'quantity' => 1,
+                        'unit_price' => 100000,
+                        'amount' => 1,
+                    ],
+                ],
+            ]
+        )
+            ->assertUnprocessable()
+            ->assertJsonPath(
+                'error.code',
+                'VALIDATION_FAILED'
+            );
+
+        $this->assertDatabaseCount(
+            'quotation_versions',
+            1
+        );
+    }
+
+
+    public function test_missing_quotation_update_capability_blocks_revision(): void
+    {
+        $workspace = $this->workspace(
+            'quotation-api-revision-denied@example.test',
+            'Quotation API Revision Denied'
+        );
+
+        $customerId = $this->insertCustomer(
+            $workspace['tenant_id'],
+            'CUST-REV-DENIED',
+            'Pelanggan Revision Denied'
+        );
+
+        $quotationId = $this->insertQuotation(
+            $workspace,
+            $customerId,
+            'Q-REV-DENIED',
+            'DRAFT'
+        );
+
+        $this->actingAsWorkspace($workspace);
+
+        $this->denyCapability(
+            $workspace,
+            'quotation.update'
+        );
+
+        $this->postJson(
+            "/api/v1/quotations/{$quotationId}/versions",
+            [
+                'items' => [
+                    [
+                        'name' => 'Item Revisi',
+                        'pricing_method' => 'MANUAL',
+                        'quantity' => 1,
+                        'unit_price' => 100000,
+                    ],
+                ],
+            ]
+        )
+            ->assertForbidden()
+            ->assertJsonPath(
+                'error.code',
+                'FORBIDDEN_CAPABILITY'
+            );
+    }
+
+    public function test_revision_rejects_cross_tenant_catalog_item(): void
+    {
+        $first = $this->workspace(
+            'quotation-api-revision-local@example.test',
+            'Quotation API Revision Local'
+        );
+
+        $second = $this->workspace(
+            'quotation-api-revision-catalog-foreign@example.test',
+            'Quotation API Revision Catalog Foreign'
+        );
+
+        $customerId = $this->insertCustomer(
+            $first['tenant_id'],
+            'CUST-REV-LOCAL',
+            'Pelanggan Revision Local'
+        );
+
+        $foreignCatalogId = $this->insertCatalogItem(
+            $second['tenant_id'],
+            'REV-FOREIGN-CAT',
+            'Catalog Asing',
+            'SERVICE',
+            'STANDARD',
+            '100000'
+        );
+
+        $quotationId = $this->insertQuotation(
+            $first,
+            $customerId,
+            'Q-REV-CROSS-CAT',
+            'DRAFT'
+        );
+
+        $this->actingAsWorkspace($first);
+
+        $this->postJson(
+            "/api/v1/quotations/{$quotationId}/versions",
+            [
+                'items' => [
+                    [
+                        'catalog_item_id' =>
+                            $foreignCatalogId,
+                        'quantity' => 1,
+                    ],
+                ],
+            ]
+        )
+            ->assertUnprocessable()
+            ->assertJsonPath(
+                'error.code',
+                'VALIDATION_FAILED'
+            );
+
+        $this->assertDatabaseCount(
+            'quotation_versions',
+            1
+        );
+    }
+
+    public function test_revision_area_pricing_missing_dimension_is_validation_error(): void
+    {
+        $workspace = $this->workspace(
+            'quotation-api-revision-area@example.test',
+            'Quotation API Revision Area'
+        );
+
+        $customerId = $this->insertCustomer(
+            $workspace['tenant_id'],
+            'CUST-REV-AREA',
+            'Pelanggan Revision Area'
+        );
+
+        $catalogId = $this->insertCatalogItem(
+            $workspace['tenant_id'],
+            'REV-AREA',
+            'Item Area Revision',
+            'SERVICE',
+            'AREA',
+            '25000'
+        );
+
+        $quotationId = $this->insertQuotation(
+            $workspace,
+            $customerId,
+            'Q-REV-AREA',
+            'DRAFT'
+        );
+
+        $this->actingAsWorkspace($workspace);
+
+        $this->postJson(
+            "/api/v1/quotations/{$quotationId}/versions",
+            [
+                'items' => [
+                    [
+                        'catalog_item_id' => $catalogId,
+                        'quantity' => 1,
+                        'pricing_config' => [],
+                    ],
+                ],
+            ]
+        )
+            ->assertUnprocessable()
+            ->assertJsonPath(
+                'error.code',
+                'VALIDATION_FAILED'
+            )
+            ->assertJsonStructure([
+                'error' => [
+                    'details' => [
+                        'fields' => [
+                            'items.0.pricing_config.width',
+                        ],
+                    ],
+                ],
+            ]);
+
+        $this->assertDatabaseCount(
+            'quotation_versions',
+            1
+        );
+    }
+
     public function test_backend_owned_financial_fields_are_rejected(): void
     {
         $workspace = $this->workspace(

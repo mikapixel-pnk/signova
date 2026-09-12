@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\V1\Quotation;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Quotation\CreateQuotationRevisionRequest;
 use App\Http\Requests\Quotation\ListQuotationsRequest;
 use App\Http\Requests\Quotation\StoreQuotationRequest;
 use App\Http\Requests\Quotation\UpdateQuotationRequest;
@@ -101,6 +102,38 @@ class QuotationController extends Controller
             ))->resolve($request),
             201,
             'Penawaran berhasil dibuat.'
+        );
+    }
+
+    public function storeVersion(
+        CreateQuotationRevisionRequest $request,
+        string $quotationId,
+        QuotationService $service
+    ): JsonResponse {
+        $data = $request->validated();
+
+        $quotation = $service->createRevision(
+            $quotationId,
+            [
+                'currency' =>
+                    $data['currency'] ?? 'IDR',
+
+                'terms' =>
+                    $data['terms'] ?? null,
+
+                'notes' =>
+                    $data['notes'] ?? null,
+            ],
+            $data['items']
+        );
+
+        return ApiResponse::success(
+            $request,
+            (new QuotationResource(
+                $quotation
+            ))->resolve($request),
+            201,
+            'Revisi penawaran berhasil dibuat.'
         );
     }
 

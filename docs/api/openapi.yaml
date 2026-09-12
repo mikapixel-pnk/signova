@@ -326,6 +326,75 @@ paths:
           $ref: '#/components/responses/ValidationFailed'
 
 
+  /quotations/{quotationId}/versions:
+    parameters:
+      - name: quotationId
+        in: path
+        required: true
+        schema:
+          type: string
+          minLength: 26
+          maxLength: 26
+      - $ref: '#/components/parameters/TenantHeader'
+
+    post:
+      tags: [Quotations]
+      operationId: createQuotationRevision
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateQuotationRevisionRequest'
+      responses:
+        '201':
+          description: Revisi penawaran berhasil dibuat
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/QuotationResponse'
+        '401':
+          $ref: '#/components/responses/AuthRequired'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/ResourceNotFound'
+        '409':
+          description: Penawaran tidak dapat direvisi pada state saat ini
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - success
+                  - error
+                  - meta
+                properties:
+                  success:
+                    type: boolean
+                    const: false
+                  error:
+                    type: object
+                    required:
+                      - code
+                      - message
+                    properties:
+                      code:
+                        type: string
+                        const: QUOTATION_NOT_EDITABLE
+                      message:
+                        type: string
+                        example: Penawaran hanya dapat diubah saat masih berstatus Draf.
+                      details:
+                        type: object
+                  meta:
+                    $ref: '#/components/schemas/Meta'
+        '422':
+          $ref: '#/components/responses/ValidationFailed'
+
+
   /catalog/items:
     get:
       tags: [Catalog]
@@ -1451,6 +1520,36 @@ components:
         subtotal, discount_total, tax_total, total, item tax_amount,
         item amount, tenant_id, status dan owner_user_id adalah
         backend-owned dan ditolak bila dikirim.
+
+    CreateQuotationRevisionRequest:
+      type: object
+      required:
+        - items
+      additionalProperties: false
+      properties:
+        currency:
+          type: string
+          minLength: 3
+          maxLength: 3
+          default: IDR
+        terms:
+          type:
+            - string
+            - 'null'
+        notes:
+          type:
+            - string
+            - 'null'
+        items:
+          type: array
+          minItems: 1
+          items:
+            $ref: '#/components/schemas/CreateQuotationItem'
+      description: >
+        Membuat versi/revisi baru tanpa menimpa versi sebelumnya.
+        Pricing dan totals dihitung oleh backend. Header quotation
+        seperti quotation_number, customer_id dan valid_until tidak
+        dapat diubah melalui endpoint revision.
 
     UpdateQuotationHeaderRequest:
       type: object
