@@ -20,6 +20,7 @@ class QuotationService
 {
     public function __construct(
         private readonly TenantContext $tenantContext,
+        private readonly QuotationPricingCalculator $pricingCalculator,
     ) {
     }
 
@@ -202,29 +203,7 @@ class QuotationService
         $userId =
             $this->tenantContext->userId();
 
-        $quotationVersion =
-            QuotationVersion::query()->create([
-                'id' => (string) Str::ulid(),
-                'tenant_id' => $tenantId,
-                'quotation_id' =>
-                    $quotation->id,
-                'revision_no' => $revisionNo,
-                'subtotal' =>
-                    $version['subtotal'] ?? 0,
-                'discount_total' =>
-                    $version['discount_total'] ?? 0,
-                'tax_total' =>
-                    $version['tax_total'] ?? 0,
-                'total' =>
-                    $version['total'] ?? 0,
-                'currency' =>
-                    $version['currency'] ?? 'IDR',
-                'terms' =>
-                    $version['terms'] ?? null,
-                'notes' =>
-                    $version['notes'] ?? null,
-                'created_by_user_id' => $userId,
-            ]);
+        $resolvedItems = [];
 
         foreach (
             array_values($items)
@@ -235,46 +214,173 @@ class QuotationService
                     $item
                 );
 
+            $resolvedItems[] = array_merge(
+                $item,
+                [
+                    'catalog_item_id' =>
+                        $snapshot['catalog_item_id'],
+
+                    'unit_id' =>
+                        $snapshot['unit_id'],
+
+                    'item_type' =>
+                        $snapshot['item_type'],
+
+                    'code' =>
+                        $snapshot['code'],
+
+                    'name' =>
+                        $snapshot['name'],
+
+                    'description' =>
+                        $snapshot['description'],
+
+                    'unit_code' =>
+                        $snapshot['unit_code'],
+
+                    'unit_name' =>
+                        $snapshot['unit_name'],
+
+                    'unit_symbol' =>
+                        $snapshot['unit_symbol'],
+
+                    'pricing_method' =>
+                        $snapshot['pricing_method'],
+
+                    'pricing_config' =>
+                        array_merge(
+                            $snapshot['pricing_config']
+                                ?? [],
+                            is_array(
+                                $item['pricing_config']
+                                ?? null
+                            )
+                                ? $item['pricing_config']
+                                : []
+                        ),
+
+                    'unit_price' =>
+                        $item['unit_price']
+                        ?? $snapshot['base_price'],
+
+                    'sort_order' =>
+                        $item['sort_order']
+                        ?? $index,
+                ]
+            );
+        }
+
+        $pricing =
+            $this->pricingCalculator
+                ->calculate(
+                    $resolvedItems
+                );
+
+        $quotationVersion =
+            QuotationVersion::query()->create([
+                'id' => (string) Str::ulid(),
+                'tenant_id' => $tenantId,
+                'quotation_id' =>
+                    $quotation->id,
+                'revision_no' => $revisionNo,
+
+                'subtotal' =>
+                    $pricing['subtotal'],
+
+                'discount_total' =>
+                    $pricing['discount_total'],
+
+                'tax_total' =>
+                    $pricing['tax_total'],
+
+                'total' =>
+                    $pricing['total'],
+
+                'currency' =>
+                    $version['currency']
+                    ?? 'IDR',
+
+                'terms' =>
+                    $version['terms']
+                    ?? null,
+
+                'notes' =>
+                    $version['notes']
+                    ?? null,
+
+                'created_by_user_id' => $userId,
+            ]);
+
+        foreach (
+            $pricing['items']
+            as $index => $item
+        ) {
             QuotationItem::query()->create([
                 'id' => (string) Str::ulid(),
                 'tenant_id' => $tenantId,
+
                 'quotation_version_id' =>
                     $quotationVersion->id,
+
                 'catalog_item_id' =>
-                    $snapshot['catalog_item_id'],
+                    $item['catalog_item_id']
+                    ?? null,
+
                 'unit_id' =>
-                    $snapshot['unit_id'],
+                    $item['unit_id']
+                    ?? null,
+
                 'item_type' =>
-                    $snapshot['item_type'],
+                    $item['item_type']
+                    ?? null,
+
                 'code' =>
-                    $snapshot['code'],
+                    $item['code']
+                    ?? null,
+
                 'name' =>
-                    $snapshot['name'],
+                    $item['name'],
+
                 'description' =>
-                    $snapshot['description'],
+                    $item['description']
+                    ?? null,
+
                 'quantity' =>
-                    $item['quantity'] ?? 1,
+                    $item['quantity'],
+
                 'unit_code' =>
-                    $snapshot['unit_code'],
+                    $item['unit_code']
+                    ?? null,
+
                 'unit_name' =>
-                    $snapshot['unit_name'],
+                    $item['unit_name']
+                    ?? null,
+
                 'unit_symbol' =>
-                    $snapshot['unit_symbol'],
+                    $item['unit_symbol']
+                    ?? null,
+
                 'pricing_method' =>
-                    $snapshot['pricing_method'],
+                    $item['pricing_method'],
+
                 'pricing_config' =>
-                    $item['pricing_config']
-                    ?? $snapshot['pricing_config'],
+                    $item['pricing_config'],
+
                 'unit_price' =>
-                    $item['unit_price'] ?? 0,
+                    $item['unit_price'],
+
                 'discount_amount' =>
-                    $item['discount_amount'] ?? 0,
+                    $item['discount_amount'],
+
                 'tax_amount' =>
-                    $item['tax_amount'] ?? 0,
+                    $item['tax_amount'],
+
                 'amount' =>
-                    $item['amount'] ?? 0,
+                    $item['amount'],
+
                 'sort_order' =>
-                    $item['sort_order'] ?? $index,
+                    $item['sort_order']
+                    ?? $index,
             ]);
         }
 
@@ -367,6 +473,10 @@ class QuotationService
 
             'pricing_config' =>
                 $catalogItem?->pricing_config,
+
+            'base_price' =>
+                $catalogItem?->base_price
+                ?? 0,
         ];
     }
 

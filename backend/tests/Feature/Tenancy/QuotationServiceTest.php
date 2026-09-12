@@ -74,7 +74,10 @@ class QuotationServiceTest extends TestCase
                     'catalog_item_id' => $catalog['id'],
                     'quantity' => 2,
                     'unit_price' => 75000,
-                    'amount' => 150000,
+                    'pricing_config' => [
+                        'width' => 1,
+                        'height' => 1,
+                    ],
                 ],
             ]
         );
@@ -517,6 +520,97 @@ class QuotationServiceTest extends TestCase
                 'quotation_number' =>
                     'Q-EMPTY',
             ]
+        );
+    }
+
+    public function test_backend_calculates_totals_and_ignores_caller_supplied_totals(): void
+    {
+        $workspace = $this->workspace(
+            'quotation-pricing-truth@example.test',
+            'Quotation Pricing Truth'
+        );
+
+        $customerId = $this->insertCustomer(
+            $workspace['tenant_id'],
+            'CUST-PRICE-TRUTH'
+        );
+
+        $this->setTenantContext($workspace);
+
+        $quotation = app(
+            QuotationService::class
+        )->createDraft(
+            [
+                'quotation_number' =>
+                    'Q-PRICE-TRUTH',
+
+                'customer_id' =>
+                    $customerId,
+            ],
+            [
+                // Nilai palsu dari caller harus diabaikan.
+                'subtotal' => 1,
+                'discount_total' => 1,
+                'tax_total' => 1,
+                'total' => 1,
+            ],
+            [
+                [
+                    'name' =>
+                        'Spanduk Custom',
+
+                    'item_type' =>
+                        'SERVICE',
+
+                    'pricing_method' =>
+                        'AREA',
+
+                    'pricing_config' => [
+                        'width' => '3.5',
+                        'height' => '1.2',
+                    ],
+
+                    'quantity' => '2',
+
+                    'unit_price' =>
+                        '25000',
+
+                    // Nilai palsu.
+                    'amount' => 1,
+                    'tax_amount' => 1,
+                ],
+            ]
+        );
+
+        $version =
+            $quotation->currentVersion;
+
+        $item =
+            $version->items->first();
+
+        $this->assertSame(
+            '210000.00',
+            $version->subtotal
+        );
+
+        $this->assertSame(
+            '0.00',
+            $version->discount_total
+        );
+
+        $this->assertSame(
+            '0.00',
+            $version->tax_total
+        );
+
+        $this->assertSame(
+            '210000.00',
+            $version->total
+        );
+
+        $this->assertSame(
+            '210000.00',
+            $item->amount
         );
     }
 
