@@ -14,6 +14,7 @@ class SignovaAccessControlSeeder extends Seeder
             $featureIds = $this->seedFeatures();
             $this->seedCapabilities($featureIds);
             $this->seedMasterRoles();
+            $this->seedMasterRoleCapabilities();
         });
     }
 
@@ -178,4 +179,110 @@ class SignovaAccessControlSeeder extends Seeder
             ]);
         }
     }
+
+    private function seedMasterRoleCapabilities(): void
+    {
+        $matrix = [
+            'OWNER' => ['*'],
+
+            'ADMIN' => [
+                'dashboard.view',
+                'customer.view',
+                'customer.create',
+                'customer.update',
+                'catalog.view',
+                'catalog.manage',
+                'quotation.view',
+                'project.view',
+                'project.create',
+                'project.update',
+                'team.user.view',
+                'team.user.manage',
+                'team.role.view',
+                'team.role.manage',
+                'settings.view',
+                'settings.manage',
+            ],
+
+            'SALES' => [
+                'dashboard.view',
+                'customer.view',
+                'customer.create',
+                'customer.update',
+                'catalog.view',
+                'quotation.view',
+                'quotation.create',
+                'quotation.update',
+                'quotation.issue',
+                'invoice.view',
+                'project.view',
+                'project.create',
+                'project.update',
+            ],
+
+            'FINANCE' => [
+                'dashboard.view',
+                'customer.view',
+                'invoice.view',
+                'invoice.create',
+                'invoice.issue',
+                'invoice.void',
+                'payment.view',
+                'payment.record',
+                'payment.verify',
+                'payment.reverse',
+                'finance.receivable.view',
+                'finance.cash_bank.view',
+                'finance.margin.view',
+                'project.view',
+            ],
+        ];
+
+        foreach ($matrix as $roleCode => $capabilityCodes) {
+            $role = DB::table('master_roles')
+                ->where('code', $roleCode)
+                ->first();
+
+            if (! $role) {
+                continue;
+            }
+
+            $query = DB::table('capabilities')
+                ->where('is_active', true);
+
+            if ($capabilityCodes !== ['*']) {
+                $query->whereIn('code', $capabilityCodes);
+            }
+
+            $capabilities = $query->get();
+
+            foreach ($capabilities as $capability) {
+                $exists = DB::table('master_role_capabilities')
+                    ->where('master_role_id', $role->id)
+                    ->where('capability_id', $capability->id)
+                    ->exists();
+
+                if ($exists) {
+                    DB::table('master_role_capabilities')
+                        ->where('master_role_id', $role->id)
+                        ->where('capability_id', $capability->id)
+                        ->update([
+                            'effect' => 'ALLOW',
+                            'updated_at' => now(),
+                        ]);
+
+                    continue;
+                }
+
+                DB::table('master_role_capabilities')->insert([
+                    'master_role_id' => $role->id,
+                    'capability_id' => $capability->id,
+                    'effect' => 'ALLOW',
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
+            }
+        }
+    }
+
 }
