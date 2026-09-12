@@ -148,6 +148,262 @@ paths:
         '422':
           $ref: '#/components/responses/ValidationFailed'
 
+
+  /catalog/items:
+    get:
+      tags: [Catalog]
+      operationId: listCatalogItems
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - name: search
+          in: query
+          required: false
+          schema:
+            type: string
+            maxLength: 190
+        - name: status
+          in: query
+          required: false
+          schema:
+            $ref: '#/components/schemas/ActiveStatus'
+        - name: type
+          in: query
+          required: false
+          schema:
+            $ref: '#/components/schemas/CatalogItemType'
+        - name: pricing_method
+          in: query
+          required: false
+          schema:
+            $ref: '#/components/schemas/PricingMethod'
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+      responses:
+        '200':
+          description: Daftar barang dan jasa
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CatalogItemListResponse'
+        '401':
+          $ref: '#/components/responses/AuthRequired'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          $ref: '#/components/responses/TenantSelectionRequired'
+        '422':
+          $ref: '#/components/responses/ValidationFailed'
+
+    post:
+      tags: [Catalog]
+      operationId: createCatalogItem
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateCatalogItemRequest'
+      responses:
+        '201':
+          description: Barang atau jasa berhasil dibuat
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CatalogItemResponse'
+        '401':
+          $ref: '#/components/responses/AuthRequired'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          $ref: '#/components/responses/TenantSelectionRequired'
+        '422':
+          $ref: '#/components/responses/ValidationFailed'
+
+  /catalog/items/{itemId}:
+    parameters:
+      - name: itemId
+        in: path
+        required: true
+        schema:
+          type: string
+          minLength: 26
+          maxLength: 26
+      - $ref: '#/components/parameters/TenantHeader'
+
+    get:
+      tags: [Catalog]
+      operationId: getCatalogItem
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Detail barang atau jasa
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CatalogItemResponse'
+        '401':
+          $ref: '#/components/responses/AuthRequired'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/ResourceNotFound'
+        '409':
+          $ref: '#/components/responses/TenantSelectionRequired'
+
+    patch:
+      tags: [Catalog]
+      operationId: updateCatalogItem
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateCatalogItemRequest'
+      responses:
+        '200':
+          description: Barang atau jasa berhasil diperbarui
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CatalogItemResponse'
+        '401':
+          $ref: '#/components/responses/AuthRequired'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/ResourceNotFound'
+        '409':
+          $ref: '#/components/responses/TenantSelectionRequired'
+        '422':
+          $ref: '#/components/responses/ValidationFailed'
+
+  /catalog/categories:
+    get:
+      tags: [Catalog]
+      operationId: listCatalogCategories
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+      responses:
+        '200':
+          description: Daftar kategori
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CatalogCategoryListResponse'
+        '401':
+          $ref: '#/components/responses/AuthRequired'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          $ref: '#/components/responses/TenantSelectionRequired'
+
+    post:
+      tags: [Catalog]
+      operationId: createCatalogCategory
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateCatalogCategoryRequest'
+      responses:
+        '201':
+          description: Kategori berhasil dibuat
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CatalogCategoryResponse'
+        '401':
+          $ref: '#/components/responses/AuthRequired'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          $ref: '#/components/responses/TenantSelectionRequired'
+        '422':
+          $ref: '#/components/responses/ValidationFailed'
+
+  /catalog/categories/{categoryId}:
+    parameters:
+      - name: categoryId
+        in: path
+        required: true
+        schema:
+          type: string
+          minLength: 26
+          maxLength: 26
+      - $ref: '#/components/parameters/TenantHeader'
+
+    patch:
+      tags: [Catalog]
+      operationId: updateCatalogCategory
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateCatalogCategoryRequest'
+      responses:
+        '200':
+          description: Kategori berhasil diperbarui
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CatalogCategoryResponse'
+        '401':
+          $ref: '#/components/responses/AuthRequired'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/ResourceNotFound'
+        '409':
+          $ref: '#/components/responses/TenantSelectionRequired'
+        '422':
+          $ref: '#/components/responses/ValidationFailed'
+
+  /units:
+    get:
+      tags: [Catalog]
+      operationId: listUnits
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+      responses:
+        '200':
+          description: Daftar satuan tenant
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnitListResponse'
+        '401':
+          $ref: '#/components/responses/AuthRequired'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          $ref: '#/components/responses/TenantSelectionRequired'
+
 components:
   securitySchemes:
     bearerAuth:
@@ -328,6 +584,415 @@ components:
             - 'null'
         status:
           $ref: '#/components/schemas/CustomerStatus'
+
+
+    ActiveStatus:
+      type: string
+      enum:
+        - ACTIVE
+        - INACTIVE
+
+    CatalogItemType:
+      type: string
+      enum:
+        - PRODUCT
+        - SERVICE
+
+    PricingMethod:
+      type: string
+      enum:
+        - STANDARD
+        - AREA
+        - LENGTH
+        - VOLUME
+        - TIME
+        - PACKAGE
+        - MANUAL
+
+    CatalogItem:
+      type: object
+      required:
+        - id
+        - type
+        - type_label
+        - name
+        - pricing_method
+        - pricing_method_label
+        - base_price
+        - currency
+        - status
+        - status_label
+      properties:
+        id:
+          type: string
+          minLength: 26
+          maxLength: 26
+        category_id:
+          type:
+            - string
+            - 'null'
+        unit_id:
+          type:
+            - string
+            - 'null'
+        type:
+          $ref: '#/components/schemas/CatalogItemType'
+        type_label:
+          type: string
+          examples:
+            - Barang
+            - Jasa
+        code:
+          type:
+            - string
+            - 'null'
+          maxLength: 100
+        name:
+          type: string
+          maxLength: 190
+        description:
+          type:
+            - string
+            - 'null'
+        pricing_method:
+          $ref: '#/components/schemas/PricingMethod'
+        pricing_method_label:
+          type: string
+          examples:
+            - Harga Standar
+            - Berdasarkan Luas
+        base_price:
+          type: string
+          pattern: '^[0-9]+(\.[0-9]{2})$'
+          example: '25000.00'
+        currency:
+          type: string
+          minLength: 3
+          maxLength: 3
+          example: IDR
+        pricing_config:
+          type:
+            - object
+            - 'null'
+          additionalProperties: true
+        status:
+          $ref: '#/components/schemas/ActiveStatus'
+        status_label:
+          type: string
+          examples:
+            - Aktif
+            - Nonaktif
+        created_at:
+          type:
+            - string
+            - 'null'
+          format: date-time
+        updated_at:
+          type:
+            - string
+            - 'null'
+          format: date-time
+
+    CreateCatalogItemRequest:
+      type: object
+      required:
+        - type
+        - name
+      additionalProperties: false
+      properties:
+        category_id:
+          type:
+            - string
+            - 'null'
+        unit_id:
+          type:
+            - string
+            - 'null'
+        type:
+          $ref: '#/components/schemas/CatalogItemType'
+        code:
+          type:
+            - string
+            - 'null'
+          maxLength: 100
+        name:
+          type: string
+          minLength: 1
+          maxLength: 190
+        description:
+          type:
+            - string
+            - 'null'
+        pricing_method:
+          $ref: '#/components/schemas/PricingMethod'
+        base_price:
+          type: number
+          minimum: 0
+        currency:
+          type: string
+          minLength: 3
+          maxLength: 3
+          default: IDR
+        pricing_config:
+          type:
+            - object
+            - 'null'
+          additionalProperties: true
+
+    UpdateCatalogItemRequest:
+      type: object
+      minProperties: 1
+      additionalProperties: false
+      properties:
+        category_id:
+          type:
+            - string
+            - 'null'
+        unit_id:
+          type:
+            - string
+            - 'null'
+        type:
+          $ref: '#/components/schemas/CatalogItemType'
+        code:
+          type:
+            - string
+            - 'null'
+          maxLength: 100
+        name:
+          type: string
+          minLength: 1
+          maxLength: 190
+        description:
+          type:
+            - string
+            - 'null'
+        pricing_method:
+          $ref: '#/components/schemas/PricingMethod'
+        base_price:
+          type: number
+          minimum: 0
+        currency:
+          type: string
+          minLength: 3
+          maxLength: 3
+        pricing_config:
+          type:
+            - object
+            - 'null'
+          additionalProperties: true
+        status:
+          $ref: '#/components/schemas/ActiveStatus'
+
+    CatalogCategory:
+      type: object
+      required:
+        - id
+        - name
+        - status
+        - status_label
+      properties:
+        id:
+          type: string
+          minLength: 26
+          maxLength: 26
+        code:
+          type:
+            - string
+            - 'null'
+          maxLength: 80
+        name:
+          type: string
+          maxLength: 160
+        description:
+          type:
+            - string
+            - 'null'
+          maxLength: 500
+        status:
+          $ref: '#/components/schemas/ActiveStatus'
+        status_label:
+          type: string
+          examples:
+            - Aktif
+            - Nonaktif
+
+    CreateCatalogCategoryRequest:
+      type: object
+      required:
+        - name
+      additionalProperties: false
+      properties:
+        code:
+          type:
+            - string
+            - 'null'
+          maxLength: 80
+        name:
+          type: string
+          minLength: 1
+          maxLength: 160
+        description:
+          type:
+            - string
+            - 'null'
+          maxLength: 500
+
+    UpdateCatalogCategoryRequest:
+      type: object
+      minProperties: 1
+      additionalProperties: false
+      properties:
+        code:
+          type:
+            - string
+            - 'null'
+          maxLength: 80
+        name:
+          type: string
+          minLength: 1
+          maxLength: 160
+        description:
+          type:
+            - string
+            - 'null'
+          maxLength: 500
+        status:
+          $ref: '#/components/schemas/ActiveStatus'
+
+    Unit:
+      type: object
+      required:
+        - id
+        - code
+        - name
+        - unit_type
+        - unit_type_label
+        - decimal_precision
+        - status
+        - status_label
+      properties:
+        id:
+          type: string
+          minLength: 26
+          maxLength: 26
+        code:
+          type: string
+          maxLength: 80
+        name:
+          type: string
+          maxLength: 120
+        symbol:
+          type:
+            - string
+            - 'null'
+          maxLength: 40
+        unit_type:
+          type: string
+        unit_type_label:
+          type: string
+          examples:
+            - Jumlah
+            - Panjang
+            - Luas
+            - Waktu
+            - Paket
+        decimal_precision:
+          type: integer
+          minimum: 0
+        status:
+          $ref: '#/components/schemas/ActiveStatus'
+        status_label:
+          type: string
+
+    CatalogItemResponse:
+      type: object
+      required:
+        - success
+        - data
+        - meta
+      properties:
+        success:
+          type: boolean
+          const: true
+        data:
+          $ref: '#/components/schemas/CatalogItem'
+        message:
+          type:
+            - string
+            - 'null'
+        meta:
+          $ref: '#/components/schemas/Meta'
+
+    CatalogItemListResponse:
+      type: object
+      required:
+        - success
+        - data
+        - meta
+      properties:
+        success:
+          type: boolean
+          const: true
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/CatalogItem'
+        meta:
+          $ref: '#/components/schemas/PaginationMeta'
+
+    CatalogCategoryResponse:
+      type: object
+      required:
+        - success
+        - data
+        - meta
+      properties:
+        success:
+          type: boolean
+          const: true
+        data:
+          $ref: '#/components/schemas/CatalogCategory'
+        message:
+          type:
+            - string
+            - 'null'
+        meta:
+          $ref: '#/components/schemas/Meta'
+
+    CatalogCategoryListResponse:
+      type: object
+      required:
+        - success
+        - data
+        - meta
+      properties:
+        success:
+          type: boolean
+          const: true
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/CatalogCategory'
+        meta:
+          $ref: '#/components/schemas/Meta'
+
+    UnitListResponse:
+      type: object
+      required:
+        - success
+        - data
+        - meta
+      properties:
+        success:
+          type: boolean
+          const: true
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Unit'
+        meta:
+          $ref: '#/components/schemas/Meta'
 
     Meta:
       type: object

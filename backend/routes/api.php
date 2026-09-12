@@ -3,6 +3,9 @@
 use App\Http\Controllers\Api\V1\Auth\AuthController;
 use App\Http\Controllers\Api\V1\HealthController;
 use App\Http\Controllers\Api\V1\Customer\CustomerController;
+use App\Http\Controllers\Api\V1\Catalog\CatalogCategoryController;
+use App\Http\Controllers\Api\V1\Catalog\CatalogItemController;
+use App\Http\Controllers\Api\V1\Catalog\UnitController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('v1')->group(function () {
@@ -59,6 +62,81 @@ Route::prefix('v1')->group(function () {
             [CustomerController::class, 'update']
         )->middleware(
             'capability:customer.update'
+        );
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Catalog - Barang & Jasa
+        |--------------------------------------------------------------------------
+        */
+
+        Route::get(
+            '/catalog/items',
+            [CatalogItemController::class, 'index']
+        )->middleware(
+            'capability:catalog.view'
+        );
+
+        Route::post(
+            '/catalog/items',
+            [CatalogItemController::class, 'store']
+        )->middleware(
+            'capability:catalog.manage'
+        );
+
+        Route::get(
+            '/catalog/items/{itemId}',
+            [CatalogItemController::class, 'show']
+        )->middleware(
+            'capability:catalog.view'
+        );
+
+        Route::patch(
+            '/catalog/items/{itemId}',
+            [CatalogItemController::class, 'update']
+        )->middleware(
+            'capability:catalog.manage'
+        );
+
+        /*
+        |--------------------------------------------------------------------------
+        | Catalog - Kategori
+        |--------------------------------------------------------------------------
+        */
+
+        Route::get(
+            '/catalog/categories',
+            [CatalogCategoryController::class, 'index']
+        )->middleware(
+            'capability:catalog.view'
+        );
+
+        Route::post(
+            '/catalog/categories',
+            [CatalogCategoryController::class, 'store']
+        )->middleware(
+            'capability:catalog.manage'
+        );
+
+        Route::patch(
+            '/catalog/categories/{categoryId}',
+            [CatalogCategoryController::class, 'update']
+        )->middleware(
+            'capability:catalog.manage'
+        );
+
+        /*
+        |--------------------------------------------------------------------------
+        | Master Satuan
+        |--------------------------------------------------------------------------
+        */
+
+        Route::get(
+            '/units',
+            [UnitController::class, 'index']
+        )->middleware(
+            'capability:catalog.view'
         );
     });
 });

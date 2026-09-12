@@ -3,6 +3,11 @@
 ## Unreleased - API v1
 
 ### Added
+- Tenant-scoped Customer API.
+- Tenant-scoped Catalog Barang & Jasa API.
+- Catalog category API.
+- Tenant unit read API.
+- Canonical catalog codes with Bahasa Indonesia display labels.
 - API request correlation ID.
 - Standard API error envelope.
 - Canonical error registry.
