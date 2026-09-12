@@ -9,7 +9,7 @@ use App\Services\Quotation\QuotationService;
 use App\Tenancy\TenantContext;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
-use RuntimeException;
+use App\Exceptions\Invoice\QuotationToInvoiceConflictException;
 
 class QuotationToInvoiceService
 {
@@ -30,16 +30,18 @@ class QuotationToInvoiceService
             );
 
         if ($quotation->status !== 'APPROVED') {
-            throw new RuntimeException(
-                'QUOTATION_NOT_APPROVED'
+            throw new QuotationToInvoiceConflictException(
+                'QUOTATION_NOT_APPROVED',
+                'Penawaran harus berstatus Disetujui sebelum dibuat menjadi Tagihan.'
             );
         }
 
         $version = $quotation->currentVersion;
 
         if (! $version) {
-            throw new RuntimeException(
-                'QUOTATION_VERSION_MISSING'
+            throw new QuotationToInvoiceConflictException(
+                'QUOTATION_VERSION_MISSING',
+                'Versi Penawaran yang akan ditagihkan tidak ditemukan.'
             );
         }
 
@@ -87,8 +89,9 @@ class QuotationToInvoiceService
                     ->first();
 
                 if (! $lockedQuotation) {
-                    throw new RuntimeException(
-                        'QUOTATION_NOT_FOUND'
+                    throw new QuotationToInvoiceConflictException(
+                        'QUOTATION_CHANGED_DURING_CONVERSION',
+                        'Penawaran berubah saat proses pembuatan Tagihan. Silakan coba lagi.'
                     );
                 }
 
@@ -96,8 +99,9 @@ class QuotationToInvoiceService
                     $lockedQuotation->status
                     !== 'APPROVED'
                 ) {
-                    throw new RuntimeException(
-                        'QUOTATION_NOT_APPROVED'
+                    throw new QuotationToInvoiceConflictException(
+                        'QUOTATION_NOT_APPROVED',
+                        'Penawaran harus berstatus Disetujui sebelum dibuat menjadi Tagihan.'
                     );
                 }
 
@@ -105,8 +109,9 @@ class QuotationToInvoiceService
                     $lockedQuotation->current_version_id
                     !== $version->id
                 ) {
-                    throw new RuntimeException(
-                        'QUOTATION_VERSION_CHANGED'
+                    throw new QuotationToInvoiceConflictException(
+                        'QUOTATION_VERSION_CHANGED',
+                        'Versi Penawaran berubah saat proses pembuatan Tagihan. Silakan coba lagi.'
                     );
                 }
 

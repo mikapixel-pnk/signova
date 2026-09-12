@@ -1687,6 +1687,315 @@ class QuotationApiTest extends TestCase
             );
     }
 
+
+    public function test_owner_can_create_invoice_from_approved_quotation(): void
+    {
+        $workspace = $this->workspace(
+            'quotation-create-invoice@example.test',
+            'Quotation Create Invoice'
+        );
+
+        $customerId = $this->insertCustomer(
+            $workspace['tenant_id'],
+            'CUST-CREATE-INVOICE',
+            'Pelanggan Create Invoice'
+        );
+
+        $quotationId = $this->insertQuotation(
+            $workspace,
+            $customerId,
+            'Q-CREATE-INVOICE',
+            'APPROVED'
+        );
+
+        $this->actingAsWorkspace(
+            $workspace
+        );
+
+        $response = $this->postJson(
+            "/api/v1/quotations/{$quotationId}/actions/create-invoice",
+            [
+                'invoice_number' =>
+                    'INV-FROM-Q-001',
+                'due_at' =>
+                    now()
+                        ->addDays(14)
+                        ->toISOString(),
+            ]
+        );
+
+        $response
+            ->assertCreated()
+            ->assertJsonPath(
+                'success',
+                true
+            )
+            ->assertJsonPath(
+                'data.invoice_number',
+                'INV-FROM-Q-001'
+            )
+            ->assertJsonPath(
+                'data.source_quotation_id',
+                $quotationId
+            )
+            ->assertJsonPath(
+                'data.status',
+                'DRAFT'
+            );
+
+        $this->assertDatabaseHas(
+            'invoices',
+            [
+                'tenant_id' =>
+                    $workspace['tenant_id'],
+                'source_quotation_id' =>
+                    $quotationId,
+                'invoice_number' =>
+                    'INV-FROM-Q-001',
+                'status' =>
+                    'DRAFT',
+            ]
+        );
+    }
+
+    public function test_create_invoice_retry_returns_existing_invoice(): void
+    {
+        $workspace = $this->workspace(
+            'quotation-invoice-retry@example.test',
+            'Quotation Invoice Retry'
+        );
+
+        $customerId = $this->insertCustomer(
+            $workspace['tenant_id'],
+            'CUST-INVOICE-RETRY',
+            'Pelanggan Invoice Retry'
+        );
+
+        $quotationId = $this->insertQuotation(
+            $workspace,
+            $customerId,
+            'Q-INVOICE-RETRY',
+            'APPROVED'
+        );
+
+        $this->actingAsWorkspace(
+            $workspace
+        );
+
+        $first = $this->postJson(
+            "/api/v1/quotations/{$quotationId}/actions/create-invoice",
+            [
+                'invoice_number' =>
+                    'INV-RETRY-API-001',
+            ]
+        );
+
+        $first->assertCreated();
+
+        $invoiceId =
+            $first->json('data.id');
+
+        $second = $this->postJson(
+            "/api/v1/quotations/{$quotationId}/actions/create-invoice",
+            [
+                'invoice_number' =>
+                    'INV-RETRY-API-OTHER',
+            ]
+        );
+
+        $second
+            ->assertOk()
+            ->assertJsonPath(
+                'data.id',
+                $invoiceId
+            )
+            ->assertJsonPath(
+                'data.invoice_number',
+                'INV-RETRY-API-001'
+            );
+
+        $this->assertDatabaseCount(
+            'invoices',
+            1
+        );
+    }
+
+    public function test_non_approved_quotation_cannot_create_invoice(): void
+    {
+        $workspace = $this->workspace(
+            'quotation-invoice-not-approved@example.test',
+            'Quotation Invoice Not Approved'
+        );
+
+        $customerId = $this->insertCustomer(
+            $workspace['tenant_id'],
+            'CUST-INVOICE-NOT-APPROVED',
+            'Pelanggan Belum Approved'
+        );
+
+        $quotationId = $this->insertQuotation(
+            $workspace,
+            $customerId,
+            'Q-INVOICE-NOT-APPROVED',
+            'DRAFT'
+        );
+
+        $this->actingAsWorkspace(
+            $workspace
+        );
+
+        $this->postJson(
+            "/api/v1/quotations/{$quotationId}/actions/create-invoice",
+            [
+                'invoice_number' =>
+                    'INV-NOT-APPROVED',
+            ]
+        )
+            ->assertStatus(409)
+            ->assertJsonPath(
+                'success',
+                false
+            )
+            ->assertJsonPath(
+                'error.code',
+                'QUOTATION_NOT_APPROVED'
+            );
+
+        $this->assertDatabaseMissing(
+            'invoices',
+            [
+                'source_quotation_id' =>
+                    $quotationId,
+            ]
+        );
+    }
+
+    public function test_foreign_tenant_cannot_create_invoice_from_quotation(): void
+    {
+        $first = $this->workspace(
+            'quotation-invoice-local@example.test',
+            'Quotation Invoice Local'
+        );
+
+        $second = $this->workspace(
+            'quotation-invoice-foreign@example.test',
+            'Quotation Invoice Foreign'
+        );
+
+        $foreignCustomerId =
+            $this->insertCustomer(
+                $second['tenant_id'],
+                'CUST-INVOICE-FOREIGN',
+                'Pelanggan Asing'
+            );
+
+        $foreignQuotationId =
+            $this->insertQuotation(
+                $second,
+                $foreignCustomerId,
+                'Q-INVOICE-FOREIGN',
+                'APPROVED'
+            );
+
+        $this->actingAsWorkspace(
+            $first
+        );
+
+        $this->postJson(
+            "/api/v1/quotations/{$foreignQuotationId}/actions/create-invoice",
+            [
+                'invoice_number' =>
+                    'INV-FOREIGN',
+            ]
+        )
+            ->assertNotFound()
+            ->assertJsonPath(
+                'error.code',
+                'RESOURCE_NOT_FOUND'
+            );
+    }
+
+    public function test_missing_invoice_create_capability_blocks_conversion(): void
+    {
+        $workspace = $this->workspace(
+            'quotation-invoice-denied@example.test',
+            'Quotation Invoice Denied'
+        );
+
+        $customerId = $this->insertCustomer(
+            $workspace['tenant_id'],
+            'CUST-INVOICE-DENIED',
+            'Pelanggan Invoice Denied'
+        );
+
+        $quotationId = $this->insertQuotation(
+            $workspace,
+            $customerId,
+            'Q-INVOICE-DENIED',
+            'APPROVED'
+        );
+
+        $this->actingAsWorkspace(
+            $workspace
+        );
+
+        $this->denyCapability(
+            $workspace,
+            'invoice.create'
+        );
+
+        $this->postJson(
+            "/api/v1/quotations/{$quotationId}/actions/create-invoice",
+            [
+                'invoice_number' =>
+                    'INV-DENIED',
+            ]
+        )
+            ->assertForbidden()
+            ->assertJsonPath(
+                'error.code',
+                'FORBIDDEN_CAPABILITY'
+            );
+    }
+
+    public function test_create_invoice_validates_payload(): void
+    {
+        $workspace = $this->workspace(
+            'quotation-invoice-validation@example.test',
+            'Quotation Invoice Validation'
+        );
+
+        $customerId = $this->insertCustomer(
+            $workspace['tenant_id'],
+            'CUST-INVOICE-VALIDATION',
+            'Pelanggan Invoice Validation'
+        );
+
+        $quotationId = $this->insertQuotation(
+            $workspace,
+            $customerId,
+            'Q-INVOICE-VALIDATION',
+            'APPROVED'
+        );
+
+        $this->actingAsWorkspace(
+            $workspace
+        );
+
+        $this->postJson(
+            "/api/v1/quotations/{$quotationId}/actions/create-invoice",
+            [
+                'invoice_number' => '   ',
+                'due_at' => 'not-a-date',
+            ]
+        )
+            ->assertUnprocessable()
+            ->assertJsonPath(
+                'error.code',
+                'VALIDATION_FAILED'
+            );
+    }
+
     private function workspace(
         string $email,
         string $businessName

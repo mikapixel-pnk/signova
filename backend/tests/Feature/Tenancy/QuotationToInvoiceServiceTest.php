@@ -3,6 +3,7 @@
 namespace Tests\Feature\Tenancy;
 
 use App\Actions\Tenancy\CreateTenantWorkspaceAction;
+use App\Exceptions\Invoice\QuotationToInvoiceConflictException;
 use App\Models\Invoice;
 use App\Services\Invoice\QuotationToInvoiceService;
 use App\Services\Quotation\QuotationService;
@@ -12,7 +13,6 @@ use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
-use RuntimeException;
 use Tests\TestCase;
 
 class QuotationToInvoiceServiceTest extends TestCase
@@ -192,10 +192,12 @@ class QuotationToInvoiceServiceTest extends TestCase
             $this->fail(
                 'Expected quotation approval guard.'
             );
-        } catch (RuntimeException $e) {
+        } catch (
+            QuotationToInvoiceConflictException $e
+        ) {
             $this->assertSame(
                 'QUOTATION_NOT_APPROVED',
-                $e->getMessage()
+                $e->errorCode()
             );
         }
 

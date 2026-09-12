@@ -4,11 +4,14 @@ namespace App\Http\Controllers\Api\V1\Quotation;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Quotation\CancelQuotationRequest;
+use App\Http\Requests\Quotation\CreateInvoiceFromQuotationRequest;
 use App\Http\Requests\Quotation\CreateQuotationRevisionRequest;
 use App\Http\Requests\Quotation\ListQuotationsRequest;
 use App\Http\Requests\Quotation\StoreQuotationRequest;
 use App\Http\Requests\Quotation\UpdateQuotationRequest;
+use App\Http\Resources\Invoice\InvoiceResource;
 use App\Http\Resources\Quotation\QuotationResource;
+use App\Services\Invoice\QuotationToInvoiceService;
 use App\Services\Quotation\QuotationPdfService;
 use App\Services\Quotation\QuotationService;
 use App\Support\Api\ApiResponse;
@@ -105,6 +108,36 @@ class QuotationController extends Controller
             ))->resolve($request),
             201,
             'Penawaran berhasil dibuat.'
+        );
+    }
+
+    public function createInvoice(
+        CreateInvoiceFromQuotationRequest $request,
+        string $quotationId,
+        QuotationToInvoiceService $service
+    ): JsonResponse {
+        $data = $request->validated();
+
+        $invoice = $service->convert(
+            $quotationId,
+            $data['invoice_number'],
+            $data['due_at'] ?? null
+        );
+
+        $status =
+            $invoice->wasRecentlyCreated
+                ? 201
+                : 200;
+
+        return ApiResponse::success(
+            $request,
+            (new InvoiceResource(
+                $invoice
+            ))->resolve($request),
+            $status,
+            $invoice->wasRecentlyCreated
+                ? 'Tagihan berhasil dibuat dari Penawaran.'
+                : 'Tagihan dari Penawaran ini sudah tersedia.'
         );
     }
 

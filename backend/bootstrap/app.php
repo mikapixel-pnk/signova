@@ -105,6 +105,24 @@ return Application::configure(basePath: dirname(__DIR__))
 
         $exceptions->render(
             function (
+                \App\Exceptions\Invoice\QuotationToInvoiceConflictException $exception,
+                Request $request
+            ) {
+                if (! $request->is('api/*')) {
+                    return null;
+                }
+
+                return ApiResponse::error(
+                    $request,
+                    $exception->errorCode(),
+                    $exception->getMessage(),
+                    409
+                );
+            }
+        );
+
+        $exceptions->render(
+            function (
                 QuotationPricingValidationException $exception,
                 Request $request
             ) {

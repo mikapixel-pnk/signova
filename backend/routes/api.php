@@ -159,6 +159,14 @@ Route::prefix('v1')->group(function () {
             'capability:quotation.issue'
         );
 
+
+        Route::post(
+            '/quotations/{quotationId}/actions/create-invoice',
+            [QuotationController::class, 'createInvoice']
+        )->middleware(
+            'capability:invoice.create'
+        );
+
         Route::post(
             '/quotations/{quotationId}/actions/cancel',
             [QuotationController::class, 'cancel']
