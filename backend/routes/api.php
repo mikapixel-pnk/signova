@@ -3,6 +3,7 @@
 use App\Http\Controllers\Api\V1\Auth\AuthController;
 use App\Http\Controllers\Api\Public\V1\Quotation\PublicQuotationController;
 use App\Http\Controllers\Api\V1\HealthController;
+use App\Http\Controllers\Api\V1\Invoice\InvoiceController;
 use App\Http\Controllers\Api\V1\Quotation\QuotationController;
 use App\Http\Controllers\Api\V1\Customer\CustomerController;
 use App\Http\Controllers\Api\V1\Catalog\CatalogCategoryController;
@@ -172,6 +173,27 @@ Route::prefix('v1')->group(function () {
             [QuotationController::class, 'cancel']
         )->middleware(
             'capability:quotation.issue'
+        );
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Tagihan
+        |--------------------------------------------------------------------------
+        */
+
+        Route::get(
+            '/invoices',
+            [InvoiceController::class, 'index']
+        )->middleware(
+            'capability:invoice.view'
+        );
+
+        Route::get(
+            '/invoices/{invoiceId}',
+            [InvoiceController::class, 'show']
+        )->middleware(
+            'capability:invoice.view'
         );
 
 

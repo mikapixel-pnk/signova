@@ -2,6 +2,7 @@
 
 namespace App\Http\Resources\Invoice;
 
+use App\Support\Localization\CanonicalLabel;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -19,6 +20,21 @@ class InvoiceResource extends JsonResource
             'customer_id' =>
                 $this->customer_id,
 
+            'customer' =>
+                $this->whenLoaded(
+                    'customer',
+                    fn () => [
+                        'id' =>
+                            $this->customer->id,
+
+                        'code' =>
+                            $this->customer->code,
+
+                        'name' =>
+                            $this->customer->name,
+                    ]
+                ),
+
             'project_id' =>
                 $this->project_id,
 
@@ -30,6 +46,11 @@ class InvoiceResource extends JsonResource
 
             'status' =>
                 $this->status,
+
+            'status_label' =>
+                CanonicalLabel::status(
+                    $this->status
+                ),
 
             'issued_at' =>
                 $this->issued_at?->toISOString(),
@@ -111,6 +132,44 @@ class InvoiceResource extends JsonResource
                             ->values()
                             ->all()
                 ),
+
+            'status_history' =>
+                $this->whenLoaded(
+                    'statusHistory',
+                    fn () =>
+                        $this->statusHistory
+                            ->map(
+                                fn ($history) => [
+                                    'id' =>
+                                        $history->id,
+
+                                    'from_state' =>
+                                        $history->from_state,
+
+                                    'to_state' =>
+                                        $history->to_state,
+
+                                    'reason' =>
+                                        $history->reason,
+
+                                    'source' =>
+                                        $history->source,
+
+                                    'occurred_at' =>
+                                        $history
+                                            ->occurred_at
+                                            ?->toISOString(),
+                                ]
+                            )
+                            ->values()
+                            ->all()
+                ),
+
+            'created_at' =>
+                $this->created_at?->toISOString(),
+
+            'updated_at' =>
+                $this->updated_at?->toISOString(),
         ];
     }
 }
