@@ -268,6 +268,63 @@ paths:
         '409':
           $ref: '#/components/responses/TenantSelectionRequired'
 
+    patch:
+      tags: [Quotations]
+      operationId: updateQuotationDraftHeader
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateQuotationHeaderRequest'
+      responses:
+        '200':
+          description: Penawaran berhasil diperbarui
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/QuotationResponse'
+        '401':
+          $ref: '#/components/responses/AuthRequired'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/ResourceNotFound'
+        '409':
+          description: Penawaran tidak dapat diedit pada state saat ini
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - success
+                  - error
+                  - meta
+                properties:
+                  success:
+                    type: boolean
+                    const: false
+                  error:
+                    type: object
+                    required:
+                      - code
+                      - message
+                    properties:
+                      code:
+                        type: string
+                        const: QUOTATION_NOT_EDITABLE
+                      message:
+                        type: string
+                        example: Penawaran hanya dapat diubah saat masih berstatus Draf.
+                      details:
+                        type: object
+                  meta:
+                    $ref: '#/components/schemas/Meta'
+        '422':
+          $ref: '#/components/responses/ValidationFailed'
+
 
   /catalog/items:
     get:
@@ -1394,6 +1451,27 @@ components:
         subtotal, discount_total, tax_total, total, item tax_amount,
         item amount, tenant_id, status dan owner_user_id adalah
         backend-owned dan ditolak bila dikirim.
+
+    UpdateQuotationHeaderRequest:
+      type: object
+      minProperties: 1
+      additionalProperties: false
+      properties:
+        customer_id:
+          type: string
+          minLength: 26
+          maxLength: 26
+          description: Pelanggan harus berasal dari tenant aktif.
+        valid_until:
+          type:
+            - string
+            - 'null'
+          format: date
+      description: >
+        Hanya header editable pada penawaran berstatus DRAFT.
+        Status, nomor penawaran, item, pricing, totals, owner,
+        source, terms, notes dan currency tidak dapat diubah
+        melalui endpoint ini.
 
     Money:
       type: string

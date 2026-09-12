@@ -224,6 +224,284 @@ class QuotationApiTest extends TestCase
         );
     }
 
+
+    public function test_owner_can_update_draft_header(): void
+    {
+        $workspace = $this->workspace(
+            'quotation-api-update@example.test',
+            'Quotation API Update'
+        );
+
+        $this->actingAsWorkspace($workspace);
+
+        $firstCustomerId = $this->insertCustomer(
+            $workspace['tenant_id'],
+            'CUST-UPDATE-OLD',
+            'Pelanggan Lama'
+        );
+
+        $secondCustomerId = $this->insertCustomer(
+            $workspace['tenant_id'],
+            'CUST-UPDATE-NEW',
+            'Pelanggan Baru'
+        );
+
+        $quotationId = $this->insertQuotation(
+            $workspace,
+            $firstCustomerId,
+            'Q-UPDATE-DRAFT',
+            'DRAFT'
+        );
+
+        $response = $this->patchJson(
+            "/api/v1/quotations/{$quotationId}",
+            [
+                'customer_id' => $secondCustomerId,
+                'valid_until' => now()
+                    ->addDays(30)
+                    ->toDateString(),
+            ]
+        );
+
+        $response
+            ->assertOk()
+            ->assertJsonPath(
+                'success',
+                true
+            )
+            ->assertJsonPath(
+                'data.customer.id',
+                $secondCustomerId
+            )
+            ->assertJsonPath(
+                'data.status',
+                'DRAFT'
+            );
+
+        $this->assertDatabaseHas(
+            'quotations',
+            [
+                'id' => $quotationId,
+                'tenant_id' => $workspace['tenant_id'],
+                'customer_id' => $secondCustomerId,
+                'status' => 'DRAFT',
+            ]
+        );
+
+        $this->assertDatabaseCount(
+            'quotation_versions',
+            1
+        );
+    }
+
+    public function test_non_draft_quotation_header_cannot_be_updated(): void
+    {
+        $workspace = $this->workspace(
+            'quotation-api-update-state@example.test',
+            'Quotation API Update State'
+        );
+
+        $this->actingAsWorkspace($workspace);
+
+        $customerId = $this->insertCustomer(
+            $workspace['tenant_id'],
+            'CUST-UPDATE-STATE',
+            'Pelanggan Update State'
+        );
+
+        $quotationId = $this->insertQuotation(
+            $workspace,
+            $customerId,
+            'Q-UPDATE-SENT',
+            'SENT'
+        );
+
+        $this->patchJson(
+            "/api/v1/quotations/{$quotationId}",
+            [
+                'valid_until' => now()
+                    ->addDays(30)
+                    ->toDateString(),
+            ]
+        )
+            ->assertStatus(409)
+            ->assertJsonPath(
+                'success',
+                false
+            )
+            ->assertJsonPath(
+                'error.code',
+                'QUOTATION_NOT_EDITABLE'
+            );
+    }
+
+    public function test_update_draft_rejects_cross_tenant_customer(): void
+    {
+        $first = $this->workspace(
+            'quotation-api-update-first@example.test',
+            'Quotation API Update First'
+        );
+
+        $second = $this->workspace(
+            'quotation-api-update-second@example.test',
+            'Quotation API Update Second'
+        );
+
+        $localCustomerId = $this->insertCustomer(
+            $first['tenant_id'],
+            'CUST-UPDATE-LOCAL',
+            'Pelanggan Lokal'
+        );
+
+        $foreignCustomerId = $this->insertCustomer(
+            $second['tenant_id'],
+            'CUST-UPDATE-FOREIGN',
+            'Pelanggan Asing'
+        );
+
+        $quotationId = $this->insertQuotation(
+            $first,
+            $localCustomerId,
+            'Q-UPDATE-CROSS',
+            'DRAFT'
+        );
+
+        $this->actingAsWorkspace($first);
+
+        $this->patchJson(
+            "/api/v1/quotations/{$quotationId}",
+            [
+                'customer_id' => $foreignCustomerId,
+            ]
+        )
+            ->assertUnprocessable()
+            ->assertJsonPath(
+                'error.code',
+                'VALIDATION_FAILED'
+            );
+
+        $this->assertDatabaseHas(
+            'quotations',
+            [
+                'id' => $quotationId,
+                'customer_id' => $localCustomerId,
+            ]
+        );
+    }
+
+
+    public function test_update_draft_requires_at_least_one_editable_field(): void
+    {
+        $workspace = $this->workspace(
+            'quotation-api-update-empty@example.test',
+            'Quotation API Update Empty'
+        );
+
+        $customerId = $this->insertCustomer(
+            $workspace['tenant_id'],
+            'CUST-UPDATE-EMPTY',
+            'Pelanggan Update Empty'
+        );
+
+        $quotationId = $this->insertQuotation(
+            $workspace,
+            $customerId,
+            'Q-UPDATE-EMPTY',
+            'DRAFT'
+        );
+
+        $this->actingAsWorkspace($workspace);
+
+        $this->patchJson(
+            "/api/v1/quotations/{$quotationId}",
+            []
+        )
+            ->assertUnprocessable()
+            ->assertJsonPath(
+                'error.code',
+                'VALIDATION_FAILED'
+            );
+    }
+
+    public function test_update_draft_from_other_tenant_is_not_found(): void
+    {
+        $first = $this->workspace(
+            'quotation-api-update-owner@example.test',
+            'Quotation API Update Owner'
+        );
+
+        $second = $this->workspace(
+            'quotation-api-update-foreign@example.test',
+            'Quotation API Update Foreign'
+        );
+
+        $foreignCustomerId = $this->insertCustomer(
+            $second['tenant_id'],
+            'CUST-UPDATE-FOREIGN-Q',
+            'Pelanggan Foreign Quotation'
+        );
+
+        $quotationId = $this->insertQuotation(
+            $second,
+            $foreignCustomerId,
+            'Q-UPDATE-FOREIGN',
+            'DRAFT'
+        );
+
+        $this->actingAsWorkspace($first);
+
+        $this->patchJson(
+            "/api/v1/quotations/{$quotationId}",
+            [
+                'valid_until' => now()
+                    ->addDays(20)
+                    ->toDateString(),
+            ]
+        )->assertNotFound();
+    }
+
+    public function test_missing_quotation_update_capability_is_denied(): void
+    {
+        $workspace = $this->workspace(
+            'quotation-api-update-denied@example.test',
+            'Quotation API Update Denied'
+        );
+
+        $customerId = $this->insertCustomer(
+            $workspace['tenant_id'],
+            'CUST-UPDATE-DENIED',
+            'Pelanggan Update Denied'
+        );
+
+        $quotationId = $this->insertQuotation(
+            $workspace,
+            $customerId,
+            'Q-UPDATE-DENIED',
+            'DRAFT'
+        );
+
+        $this->actingAsWorkspace($workspace);
+
+        $this->denyCapability(
+            $workspace,
+            'quotation.update'
+        );
+
+        $this->patchJson(
+            "/api/v1/quotations/{$quotationId}",
+            [
+                'valid_until' => now()
+                    ->addDays(15)
+                    ->toDateString(),
+            ]
+        )
+            ->assertForbidden()
+            ->assertJsonPath(
+                'error.code',
+                'FORBIDDEN_CAPABILITY'
+            );
+    }
+
     public function test_backend_owned_financial_fields_are_rejected(): void
     {
         $workspace = $this->workspace(

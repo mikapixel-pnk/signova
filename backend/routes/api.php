@@ -94,6 +94,14 @@ Route::prefix('v1')->group(function () {
         );
 
 
+        Route::patch(
+            '/quotations/{quotationId}',
+            [QuotationController::class, 'update']
+        )->middleware(
+            'capability:quotation.update'
+        );
+
+
         /*
         |--------------------------------------------------------------------------
         | Catalog - Barang & Jasa

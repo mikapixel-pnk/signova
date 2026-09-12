@@ -3,6 +3,7 @@
 ## Unreleased - API v1
 
 ### Added
+- Draft quotation header update API with DRAFT-state guard and tenant-scoped validation.
 - Tenant-scoped Quotation draft API with backend-owned pricing.
 - Tenant-scoped Customer API.
 - Tenant-scoped Catalog Barang & Jasa API.

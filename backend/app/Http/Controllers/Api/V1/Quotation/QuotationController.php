@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\V1\Quotation;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Quotation\ListQuotationsRequest;
 use App\Http\Requests\Quotation\StoreQuotationRequest;
+use App\Http\Requests\Quotation\UpdateQuotationRequest;
 use App\Http\Resources\Quotation\QuotationResource;
 use App\Services\Quotation\QuotationService;
 use App\Support\Api\ApiResponse;
@@ -100,6 +101,26 @@ class QuotationController extends Controller
             ))->resolve($request),
             201,
             'Penawaran berhasil dibuat.'
+        );
+    }
+
+    public function update(
+        UpdateQuotationRequest $request,
+        string $quotationId,
+        QuotationService $service
+    ): JsonResponse {
+        $quotation = $service->updateDraftHeader(
+            $quotationId,
+            $request->validated()
+        );
+
+        return ApiResponse::success(
+            $request,
+            (new QuotationResource(
+                $quotation
+            ))->resolve($request),
+            200,
+            'Penawaran berhasil diperbarui.'
         );
     }
 

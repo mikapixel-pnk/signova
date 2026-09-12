@@ -18,6 +18,7 @@ Frontend menampilkan pesan manusia tanpa mengandalkan exception teknis backend.
 | METHOD_NOT_ALLOWED | 405 | HTTP method tidak didukung |
 | VALIDATION_FAILED | 422 | Request field tidak valid |
 | INVALID_TRANSITION | 409 | State transition tidak diperbolehkan |
+| QUOTATION_NOT_EDITABLE | 409 | Penawaran tidak dapat diedit pada state saat ini |
 | DUPLICATE_ACTION | 409 | Command yang sama sudah diproses |
 | RATE_LIMITED | 429 | Request terlalu banyak |
 | INTERNAL_ERROR | 500 | Internal server error yang sudah disanitasi |

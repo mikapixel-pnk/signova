@@ -1,5 +1,6 @@
 <?php
 
+use App\Exceptions\Quotation\QuotationNotEditableException;
 use App\Exceptions\Quotation\QuotationPricingValidationException;
 use App\Http\Middleware\ResolveTenantContext;
 use App\Http\Middleware\RequireCapability;
@@ -61,6 +62,24 @@ return Application::configure(basePath: dirname(__DIR__))
                         'fields' =>
                             $exception->errors(),
                     ]
+                );
+            }
+        );
+
+        $exceptions->render(
+            function (
+                QuotationNotEditableException $exception,
+                Request $request
+            ) {
+                if (! $request->is('api/*')) {
+                    return null;
+                }
+
+                return ApiResponse::error(
+                    $request,
+                    'QUOTATION_NOT_EDITABLE',
+                    $exception->getMessage(),
+                    409
                 );
             }
         );

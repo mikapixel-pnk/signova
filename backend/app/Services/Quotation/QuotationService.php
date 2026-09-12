@@ -8,6 +8,7 @@ use App\Models\Quotation;
 use App\Models\QuotationItem;
 use App\Models\QuotationStatusHistory;
 use App\Models\QuotationVersion;
+use App\Exceptions\Quotation\QuotationNotEditableException;
 use App\Models\Unit;
 use App\Tenancy\TenantContext;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
@@ -174,6 +175,57 @@ class QuotationService
                 ],
                 'occurred_at' => now(),
             ]);
+
+            return $this->findOrFail(
+                $quotation->id
+            );
+        });
+    }
+
+    public function updateDraftHeader(
+        string $quotationId,
+        array $attributes
+    ): Quotation {
+        return DB::transaction(function () use (
+            $quotationId,
+            $attributes
+        ): Quotation {
+            $quotation = $this->baseQuery()
+                ->where('id', $quotationId)
+                ->lockForUpdate()
+                ->firstOrFail();
+
+            if ($quotation->status !== 'DRAFT') {
+                throw new QuotationNotEditableException(
+                    'Penawaran hanya dapat diubah saat masih berstatus Draf.'
+                );
+            }
+
+            if (
+                array_key_exists(
+                    'customer_id',
+                    $attributes
+                )
+            ) {
+                $this->findCustomerOrFail(
+                    $attributes['customer_id']
+                );
+
+                $quotation->customer_id =
+                    $attributes['customer_id'];
+            }
+
+            if (
+                array_key_exists(
+                    'valid_until',
+                    $attributes
+                )
+            ) {
+                $quotation->valid_until =
+                    $attributes['valid_until'];
+            }
+
+            $quotation->save();
 
             return $this->findOrFail(
                 $quotation->id
