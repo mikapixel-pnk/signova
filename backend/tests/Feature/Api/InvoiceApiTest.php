@@ -479,6 +479,225 @@ class InvoiceApiTest extends TestCase
             ]);
     }
 
+
+    public function test_owner_can_issue_draft_invoice(): void
+    {
+        $workspace = $this->workspace(
+            'invoice-issue@example.test',
+            'Invoice Issue'
+        );
+
+        $customerId = $this->insertCustomer(
+            $workspace['tenant_id'],
+            'CUST-ISSUE',
+            'Pelanggan Issue'
+        );
+
+        $invoiceId = $this->insertInvoice(
+            $workspace,
+            $customerId,
+            'INV-ISSUE-001',
+            'DRAFT'
+        );
+
+        $this->actingAsWorkspace(
+            $workspace
+        );
+
+        $response = $this->postJson(
+            "/api/v1/invoices/{$invoiceId}/actions/issue"
+        );
+
+        $response
+            ->assertOk()
+            ->assertJsonPath(
+                'success',
+                true
+            )
+            ->assertJsonPath(
+                'data.status',
+                'ISSUED'
+            )
+            ->assertJsonPath(
+                'data.status_label',
+                'Diterbitkan'
+            );
+
+        $this->assertDatabaseHas(
+            'invoices',
+            [
+                'id' =>
+                    $invoiceId,
+
+                'tenant_id' =>
+                    $workspace['tenant_id'],
+
+                'status' =>
+                    'ISSUED',
+            ]
+        );
+
+        $issuedAt = DB::table('invoices')
+            ->where(
+                'id',
+                $invoiceId
+            )
+            ->value('issued_at');
+
+        $this->assertNotNull(
+            $issuedAt
+        );
+
+        $this->assertDatabaseHas(
+            'invoice_status_history',
+            [
+                'invoice_id' =>
+                    $invoiceId,
+
+                'from_state' =>
+                    'DRAFT',
+
+                'to_state' =>
+                    'ISSUED',
+
+                'actor_user_id' =>
+                    $workspace['user_id'],
+
+                'source' =>
+                    'USER',
+            ]
+        );
+    }
+
+    public function test_non_draft_invoice_cannot_be_issued(): void
+    {
+        $workspace = $this->workspace(
+            'invoice-issue-invalid@example.test',
+            'Invoice Issue Invalid'
+        );
+
+        $customerId = $this->insertCustomer(
+            $workspace['tenant_id'],
+            'CUST-ISSUE-INVALID',
+            'Pelanggan Issue Invalid'
+        );
+
+        $invoiceId = $this->insertInvoice(
+            $workspace,
+            $customerId,
+            'INV-ISSUE-INVALID',
+            'ISSUED'
+        );
+
+        $this->actingAsWorkspace(
+            $workspace
+        );
+
+        $this->postJson(
+            "/api/v1/invoices/{$invoiceId}/actions/issue"
+        )
+            ->assertStatus(409)
+            ->assertJsonPath(
+                'success',
+                false
+            )
+            ->assertJsonPath(
+                'error.code',
+                'INVALID_TRANSITION'
+            );
+    }
+
+    public function test_foreign_tenant_invoice_cannot_be_issued(): void
+    {
+        $first = $this->workspace(
+            'invoice-issue-local@example.test',
+            'Invoice Issue Local'
+        );
+
+        $second = $this->workspace(
+            'invoice-issue-foreign@example.test',
+            'Invoice Issue Foreign'
+        );
+
+        $foreignCustomerId =
+            $this->insertCustomer(
+                $second['tenant_id'],
+                'CUST-ISSUE-FOREIGN',
+                'Foreign Issue Customer'
+            );
+
+        $foreignInvoiceId =
+            $this->insertInvoice(
+                $second,
+                $foreignCustomerId,
+                'INV-ISSUE-FOREIGN',
+                'DRAFT'
+            );
+
+        $this->actingAsWorkspace(
+            $first
+        );
+
+        $this->postJson(
+            "/api/v1/invoices/{$foreignInvoiceId}/actions/issue"
+        )
+            ->assertNotFound()
+            ->assertJsonPath(
+                'error.code',
+                'RESOURCE_NOT_FOUND'
+            );
+    }
+
+    public function test_missing_invoice_issue_capability_blocks_issue(): void
+    {
+        $workspace = $this->workspace(
+            'invoice-issue-denied@example.test',
+            'Invoice Issue Denied'
+        );
+
+        $customerId = $this->insertCustomer(
+            $workspace['tenant_id'],
+            'CUST-ISSUE-DENIED',
+            'Pelanggan Issue Denied'
+        );
+
+        $invoiceId = $this->insertInvoice(
+            $workspace,
+            $customerId,
+            'INV-ISSUE-DENIED',
+            'DRAFT'
+        );
+
+        $this->actingAsWorkspace(
+            $workspace
+        );
+
+        $this->denyCapability(
+            $workspace,
+            'invoice.issue'
+        );
+
+        $this->postJson(
+            "/api/v1/invoices/{$invoiceId}/actions/issue"
+        )
+            ->assertForbidden()
+            ->assertJsonPath(
+                'error.code',
+                'FORBIDDEN_CAPABILITY'
+            );
+
+        $this->assertDatabaseHas(
+            'invoices',
+            [
+                'id' =>
+                    $invoiceId,
+
+                'status' =>
+                    'DRAFT',
+            ]
+        );
+    }
+
     private function workspace(
         string $email,
         string $businessName

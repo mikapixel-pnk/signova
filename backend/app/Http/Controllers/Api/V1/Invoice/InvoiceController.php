@@ -58,6 +58,26 @@ class InvoiceController extends Controller
         );
     }
 
+    public function issue(
+        Request $request,
+        string $invoiceId,
+        InvoiceService $service
+    ): JsonResponse {
+        $invoice =
+            $service->issue(
+                $invoiceId
+            );
+
+        return ApiResponse::success(
+            $request,
+            (new InvoiceResource(
+                $invoice
+            ))->resolve($request),
+            200,
+            'Tagihan berhasil diterbitkan.'
+        );
+    }
+
     public function show(
         Request $request,
         string $invoiceId,

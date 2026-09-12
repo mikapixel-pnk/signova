@@ -2,10 +2,14 @@
 
 namespace App\Services\Invoice;
 
+use App\Exceptions\Invoice\InvalidInvoiceTransitionException;
 use App\Models\Invoice;
+use App\Models\InvoiceStatusHistory;
 use App\Tenancy\TenantContext;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 
 class InvoiceService
 {
@@ -94,6 +98,108 @@ class InvoiceService
                 $invoiceId
             )
             ->firstOrFail();
+    }
+
+    public function issue(
+        string $invoiceId
+    ): Invoice {
+        return $this->transition(
+            $invoiceId,
+            'ISSUED',
+            ['DRAFT'],
+            null,
+            [
+                'issued_at' => now(),
+            ]
+        );
+    }
+
+    private function transition(
+        string $invoiceId,
+        string $toState,
+        array $allowedFromStates,
+        ?string $reason = null,
+        array $attributes = []
+    ): Invoice {
+        return DB::transaction(function () use (
+            $invoiceId,
+            $toState,
+            $allowedFromStates,
+            $reason,
+            $attributes
+        ): Invoice {
+            $invoice = $this->baseQuery()
+                ->where(
+                    'id',
+                    $invoiceId
+                )
+                ->lockForUpdate()
+                ->firstOrFail();
+
+            $fromState =
+                $invoice->status;
+
+            if (
+                ! in_array(
+                    $fromState,
+                    $allowedFromStates,
+                    true
+                )
+            ) {
+                throw new InvalidInvoiceTransitionException(
+                    $fromState,
+                    $toState
+                );
+            }
+
+            $invoice->fill(
+                array_merge(
+                    $attributes,
+                    [
+                        'status' =>
+                            $toState,
+                    ]
+                )
+            );
+
+            $invoice->save();
+
+            InvoiceStatusHistory::query()
+                ->create([
+                    'id' =>
+                        (string) Str::ulid(),
+
+                    'tenant_id' =>
+                        $this->tenantContext->tenantId(),
+
+                    'invoice_id' =>
+                        $invoice->id,
+
+                    'from_state' =>
+                        $fromState,
+
+                    'to_state' =>
+                        $toState,
+
+                    'actor_user_id' =>
+                        $this->tenantContext->userId(),
+
+                    'reason' =>
+                        $reason,
+
+                    'source' =>
+                        'USER',
+
+                    'context' => [],
+
+                    'occurred_at' =>
+                        now(),
+                ]);
+
+            return $this->findOrFail(
+                $invoice->id
+            );
+        });
     }
 
     private function baseQuery(): Builder

@@ -189,6 +189,13 @@ Route::prefix('v1')->group(function () {
             'capability:invoice.view'
         );
 
+        Route::post(
+            '/invoices/{invoiceId}/actions/issue',
+            [InvoiceController::class, 'issue']
+        )->middleware(
+            'capability:invoice.issue'
+        );
+
         Route::get(
             '/invoices/{invoiceId}',
             [InvoiceController::class, 'show']

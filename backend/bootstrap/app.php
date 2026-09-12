@@ -69,6 +69,24 @@ return Application::configure(basePath: dirname(__DIR__))
 
         $exceptions->render(
             function (
+                \App\Exceptions\Invoice\InvalidInvoiceTransitionException $exception,
+                Request $request
+            ) {
+                if (! $request->is('api/*')) {
+                    return null;
+                }
+
+                return ApiResponse::error(
+                    $request,
+                    'INVALID_TRANSITION',
+                    $exception->getMessage(),
+                    409
+                );
+            }
+        );
+
+        $exceptions->render(
+            function (
                 InvalidQuotationTransitionException $exception,
                 Request $request
             ) {
