@@ -1531,6 +1531,162 @@ class QuotationApiTest extends TestCase
             );
     }
 
+
+    public function test_owner_can_download_quotation_pdf(): void
+    {
+        $workspace = $this->workspace(
+            'quotation-pdf-download@example.test',
+            'Quotation PDF Download'
+        );
+
+        $this->actingAsWorkspace(
+            $workspace
+        );
+
+        $customerId = $this->insertCustomer(
+            $workspace['tenant_id'],
+            'CUST-PDF-DOWNLOAD',
+            'Pelanggan PDF'
+        );
+
+        $quotationId = $this->insertQuotation(
+            $workspace,
+            $customerId,
+            'Q-PDF-DOWNLOAD',
+            'DRAFT'
+        );
+
+        $response = $this->get(
+            "/api/v1/quotations/{$quotationId}/pdf"
+        );
+
+        $response
+            ->assertOk()
+            ->assertHeader(
+                'Content-Type',
+                'application/pdf'
+            )
+            ->assertHeader(
+                'X-Content-Type-Options',
+                'nosniff'
+            )
+            ->assertHeader(
+                'Cache-Control'
+            );
+
+        $this->assertStringStartsWith(
+            '%PDF-',
+            $response->getContent()
+        );
+
+        $contentDisposition =
+            $response->headers->get(
+                'Content-Disposition'
+            );
+
+        $this->assertNotNull(
+            $contentDisposition
+        );
+
+        $this->assertStringContainsString(
+            'attachment;',
+            $contentDisposition
+        );
+
+        $this->assertStringContainsString(
+            'Penawaran-Q-PDF-DOWNLOAD.pdf',
+            $contentDisposition
+        );
+    }
+
+    public function test_foreign_tenant_quotation_pdf_returns_not_found(): void
+    {
+        $first = $this->workspace(
+            'quotation-pdf-first@example.test',
+            'Quotation PDF First'
+        );
+
+        $second = $this->workspace(
+            'quotation-pdf-second@example.test',
+            'Quotation PDF Second'
+        );
+
+        $foreignCustomerId =
+            $this->insertCustomer(
+                $second['tenant_id'],
+                'CUST-PDF-FOREIGN',
+                'Pelanggan PDF Asing'
+            );
+
+        $foreignQuotationId =
+            $this->insertQuotation(
+                $second,
+                $foreignCustomerId,
+                'Q-PDF-FOREIGN',
+                'DRAFT'
+            );
+
+        $this->actingAsWorkspace(
+            $first
+        );
+
+        $this->getJson(
+            "/api/v1/quotations/{$foreignQuotationId}/pdf"
+        )
+            ->assertNotFound()
+            ->assertJsonPath(
+                'success',
+                false
+            )
+            ->assertJsonPath(
+                'error.code',
+                'RESOURCE_NOT_FOUND'
+            );
+    }
+
+    public function test_missing_quotation_view_capability_blocks_pdf(): void
+    {
+        $workspace = $this->workspace(
+            'quotation-pdf-view-denied@example.test',
+            'Quotation PDF View Denied'
+        );
+
+        $customerId = $this->insertCustomer(
+            $workspace['tenant_id'],
+            'CUST-PDF-DENIED',
+            'Pelanggan PDF Denied'
+        );
+
+        $quotationId = $this->insertQuotation(
+            $workspace,
+            $customerId,
+            'Q-PDF-DENIED',
+            'DRAFT'
+        );
+
+        $this->actingAsWorkspace(
+            $workspace
+        );
+
+        $this->denyCapability(
+            $workspace,
+            'quotation.view'
+        );
+
+        $this->getJson(
+            "/api/v1/quotations/{$quotationId}/pdf"
+        )
+            ->assertForbidden()
+            ->assertJsonPath(
+                'success',
+                false
+            )
+            ->assertJsonPath(
+                'error.code',
+                'FORBIDDEN_CAPABILITY'
+            );
+    }
+
     private function workspace(
         string $email,
         string $businessName

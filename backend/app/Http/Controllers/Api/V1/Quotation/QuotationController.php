@@ -9,10 +9,12 @@ use App\Http\Requests\Quotation\ListQuotationsRequest;
 use App\Http\Requests\Quotation\StoreQuotationRequest;
 use App\Http\Requests\Quotation\UpdateQuotationRequest;
 use App\Http\Resources\Quotation\QuotationResource;
+use App\Services\Quotation\QuotationPdfService;
 use App\Services\Quotation\QuotationService;
 use App\Support\Api\ApiResponse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 
 class QuotationController extends Controller
 {
@@ -194,6 +196,36 @@ class QuotationController extends Controller
             ))->resolve($request),
             200,
             'Penawaran berhasil diperbarui.'
+        );
+    }
+
+    public function pdf(
+        string $quotationId,
+        QuotationPdfService $service
+    ): Response {
+        $document =
+            $service->document(
+                $quotationId
+            );
+
+        return response(
+            $document['content'],
+            200,
+            [
+                'Content-Type' =>
+                    'application/pdf',
+
+                'Content-Disposition' =>
+                    'attachment; filename="'
+                    . $document['filename']
+                    . '"',
+
+                'X-Content-Type-Options' =>
+                    'nosniff',
+
+                'Cache-Control' =>
+                    'private, no-store',
+            ]
         );
     }
 

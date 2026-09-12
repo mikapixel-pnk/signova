@@ -122,6 +122,13 @@ Route::prefix('v1')->group(function () {
         );
 
         Route::get(
+            '/quotations/{quotationId}/pdf',
+            [QuotationController::class, 'pdf']
+        )->middleware(
+            'capability:quotation.view'
+        );
+
+        Route::get(
             '/quotations/{quotationId}',
             [QuotationController::class, 'show']
         )->middleware(
