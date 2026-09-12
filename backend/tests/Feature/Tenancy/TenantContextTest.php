@@ -6,6 +6,7 @@ use App\Actions\Tenancy\CreateTenantWorkspaceAction;
 use App\Models\User;
 use Database\Seeders\SignovaAccessControlSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
 
@@ -17,23 +18,23 @@ class TenantContextTest extends TestCase
     {
         parent::setUp();
 
-        $this->seed(SignovaAccessControlSeeder::class);
+        $this->seed(
+            SignovaAccessControlSeeder::class
+        );
     }
 
-    public function test_first_active_membership_is_used_when_no_tenant_header_is_sent(): void
+    public function test_single_active_membership_is_resolved_automatically(): void
     {
-        $workspace = app(
-            CreateTenantWorkspaceAction::class
-        )->execute([
-            'name' => 'Owner A',
-            'email' => 'owner-a@example.test',
-            'password' => 'SecurePassword123!',
-            'tenant_name' => 'Workspace A',
-        ]);
+        $workspace = $this->workspace(
+            'single@example.test',
+            'Single Workspace'
+        );
 
-        $user = User::findOrFail($workspace['user_id']);
-
-        Sanctum::actingAs($user);
+        Sanctum::actingAs(
+            User::findOrFail(
+                $workspace['user_id']
+            )
+        );
 
         $this->getJson('/api/v1/auth/me')
             ->assertOk()
@@ -43,76 +44,49 @@ class TenantContextTest extends TestCase
             );
     }
 
-    public function test_user_can_select_an_active_tenant_membership(): void
+    public function test_explicit_active_tenant_is_resolved(): void
     {
-        $first = app(
-            CreateTenantWorkspaceAction::class
-        )->execute([
-            'name' => 'Multi Tenant Owner',
-            'email' => 'multi@example.test',
-            'password' => 'SecurePassword123!',
-            'tenant_name' => 'Workspace Pertama',
-        ]);
+        $workspace = $this->workspace(
+            'explicit@example.test',
+            'Explicit Workspace'
+        );
 
-        $second = app(
-            CreateTenantWorkspaceAction::class
-        )->execute([
-            'name' => 'Second Owner',
-            'email' => 'second@example.test',
-            'password' => 'SecurePassword123!',
-            'tenant_name' => 'Workspace Kedua',
-        ]);
-
-        \DB::table('tenant_users')->insert([
-            'tenant_id' => $second['tenant_id'],
-            'user_id' => $first['user_id'],
-            'status' => 'ACTIVE',
-            'joined_at' => now(),
-            'context' => '{}',
-            'created_at' => now(),
-            'updated_at' => now(),
-        ]);
-
-        $user = User::findOrFail($first['user_id']);
-
-        Sanctum::actingAs($user);
+        Sanctum::actingAs(
+            User::findOrFail(
+                $workspace['user_id']
+            )
+        );
 
         $this
             ->withHeader(
                 'X-Signova-Tenant',
-                $second['tenant_id']
+                $workspace['tenant_id']
             )
             ->getJson('/api/v1/auth/me')
             ->assertOk()
             ->assertJsonPath(
                 'data.tenant.id',
-                $second['tenant_id']
+                $workspace['tenant_id']
             );
     }
 
-    public function test_user_cannot_access_tenant_without_membership(): void
+    public function test_foreign_tenant_is_denied(): void
     {
-        $first = app(
-            CreateTenantWorkspaceAction::class
-        )->execute([
-            'name' => 'Owner A',
-            'email' => 'tenant-a@example.test',
-            'password' => 'SecurePassword123!',
-            'tenant_name' => 'Tenant A',
-        ]);
+        $first = $this->workspace(
+            'first@example.test',
+            'First Workspace'
+        );
 
-        $second = app(
-            CreateTenantWorkspaceAction::class
-        )->execute([
-            'name' => 'Owner B',
-            'email' => 'tenant-b@example.test',
-            'password' => 'SecurePassword123!',
-            'tenant_name' => 'Tenant B',
-        ]);
+        $second = $this->workspace(
+            'second@example.test',
+            'Second Workspace'
+        );
 
-        $user = User::findOrFail($first['user_id']);
-
-        Sanctum::actingAs($user);
+        Sanctum::actingAs(
+            User::findOrFail(
+                $first['user_id']
+            )
+        );
 
         $this
             ->withHeader(
@@ -125,5 +99,178 @@ class TenantContextTest extends TestCase
                 'error.code',
                 'TENANT_ACCESS_DENIED'
             );
+    }
+
+    public function test_inactive_membership_is_denied(): void
+    {
+        $workspace = $this->workspace(
+            'inactive-member@example.test',
+            'Inactive Membership Workspace'
+        );
+
+        DB::table('tenant_users')
+            ->where(
+                'tenant_id',
+                $workspace['tenant_id']
+            )
+            ->where(
+                'user_id',
+                $workspace['user_id']
+            )
+            ->update([
+                'status' => 'INACTIVE',
+                'updated_at' => now(),
+            ]);
+
+        Sanctum::actingAs(
+            User::findOrFail(
+                $workspace['user_id']
+            )
+        );
+
+        $this
+            ->withHeader(
+                'X-Signova-Tenant',
+                $workspace['tenant_id']
+            )
+            ->getJson('/api/v1/auth/me')
+            ->assertForbidden()
+            ->assertJsonPath(
+                'error.code',
+                'TENANT_ACCESS_DENIED'
+            );
+    }
+
+    public function test_inactive_tenant_is_denied(): void
+    {
+        $workspace = $this->workspace(
+            'inactive-tenant@example.test',
+            'Inactive Tenant Workspace'
+        );
+
+        DB::table('tenants')
+            ->where(
+                'id',
+                $workspace['tenant_id']
+            )
+            ->update([
+                'lifecycle_status' => 'SUSPENDED',
+                'updated_at' => now(),
+            ]);
+
+        Sanctum::actingAs(
+            User::findOrFail(
+                $workspace['user_id']
+            )
+        );
+
+        $this
+            ->withHeader(
+                'X-Signova-Tenant',
+                $workspace['tenant_id']
+            )
+            ->getJson('/api/v1/auth/me')
+            ->assertForbidden()
+            ->assertJsonPath(
+                'error.code',
+                'TENANT_ACCESS_DENIED'
+            );
+    }
+
+    public function test_multiple_active_memberships_require_explicit_selection(): void
+    {
+        $first = $this->workspace(
+            'multi-first@example.test',
+            'Multi First'
+        );
+
+        $second = $this->workspace(
+            'multi-second@example.test',
+            'Multi Second'
+        );
+
+        DB::table('tenant_users')->insert([
+            'tenant_id' =>
+                $second['tenant_id'],
+            'user_id' =>
+                $first['user_id'],
+            'status' => 'ACTIVE',
+            'joined_at' => now(),
+            'context' => null,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        Sanctum::actingAs(
+            User::findOrFail(
+                $first['user_id']
+            )
+        );
+
+        $this->getJson('/api/v1/auth/me')
+            ->assertStatus(409)
+            ->assertJsonPath(
+                'error.code',
+                'TENANT_SELECTION_REQUIRED'
+            );
+    }
+
+    public function test_explicit_selection_works_with_multiple_memberships(): void
+    {
+        $first = $this->workspace(
+            'select-first@example.test',
+            'Select First'
+        );
+
+        $second = $this->workspace(
+            'select-second@example.test',
+            'Select Second'
+        );
+
+        DB::table('tenant_users')->insert([
+            'tenant_id' =>
+                $second['tenant_id'],
+            'user_id' =>
+                $first['user_id'],
+            'status' => 'ACTIVE',
+            'joined_at' => now(),
+            'context' => null,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        Sanctum::actingAs(
+            User::findOrFail(
+                $first['user_id']
+            )
+        );
+
+        $this
+            ->withHeader(
+                'X-Signova-Tenant',
+                $second['tenant_id']
+            )
+            ->getJson('/api/v1/auth/me')
+            ->assertOk()
+            ->assertJsonPath(
+                'data.tenant.id',
+                $second['tenant_id']
+            );
+    }
+
+    private function workspace(
+        string $email,
+        string $tenantName
+    ): array {
+        return app(
+            CreateTenantWorkspaceAction::class
+        )->execute([
+            'name' => 'Tenant Context Test',
+            'email' => $email,
+            'password' =>
+                'SecurePassword123!',
+            'tenant_name' =>
+                $tenantName,
+        ]);
     }
 }

@@ -35,19 +35,32 @@ class ResolveTenantContext
             'X-Signova-Tenant'
         );
 
-        $tenantId = $this->resolver->resolve(
+        if (is_string($requestedTenantId)) {
+            $requestedTenantId = trim(
+                $requestedTenantId
+            );
+
+            if ($requestedTenantId === '') {
+                $requestedTenantId = null;
+            }
+        }
+
+        $resolution = $this->resolver->resolve(
             $user,
             $requestedTenantId
         );
 
-        if (! $tenantId) {
-            return $this->tenantAccessDeniedResponse(
-                $requestedTenantId
+        if (
+            $resolution['status']
+            !== TenantContextResolver::RESOLVED
+        ) {
+            return $this->resolutionError(
+                $resolution['status']
             );
         }
 
         $this->context->set(
-            $tenantId,
+            $resolution['tenant_id'],
             $user->id
         );
 
@@ -58,23 +71,39 @@ class ResolveTenantContext
         }
     }
 
-    private function tenantAccessDeniedResponse(
-        ?string $requestedTenantId
+    private function resolutionError(
+        string $status
     ): JsonResponse {
-        if ($requestedTenantId !== null) {
-            return response()->json([
-                'message' => 'Workspace tidak tersedia atau tidak dapat diakses.',
-                'error' => [
-                    'code' => 'TENANT_ACCESS_DENIED',
-                ],
-            ], 403);
-        }
+        return match ($status) {
+            TenantContextResolver::TENANT_SELECTION_REQUIRED =>
+                response()->json([
+                    'message' =>
+                        'Pilih workspace yang akan digunakan.',
+                    'error' => [
+                        'code' =>
+                            'TENANT_SELECTION_REQUIRED',
+                    ],
+                ], 409),
 
-        return response()->json([
-            'message' => 'Akun tidak memiliki workspace aktif.',
-            'error' => [
-                'code' => 'ACTIVE_TENANT_REQUIRED',
-            ],
-        ], 403);
+            TenantContextResolver::TENANT_ACCESS_DENIED =>
+                response()->json([
+                    'message' =>
+                        'Workspace tidak tersedia atau tidak dapat diakses.',
+                    'error' => [
+                        'code' =>
+                            'TENANT_ACCESS_DENIED',
+                    ],
+                ], 403),
+
+            default =>
+                response()->json([
+                    'message' =>
+                        'Akun tidak memiliki workspace aktif.',
+                    'error' => [
+                        'code' =>
+                            'ACTIVE_TENANT_REQUIRED',
+                    ],
+                ], 403),
+        };
     }
 }
