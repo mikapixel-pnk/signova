@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\V1\Auth\AuthController;
+use App\Http\Controllers\Api\Public\V1\Quotation\PublicQuotationController;
 use App\Http\Controllers\Api\V1\HealthController;
 use App\Http\Controllers\Api\V1\Quotation\QuotationController;
 use App\Http\Controllers\Api\V1\Customer\CustomerController;
@@ -8,6 +9,29 @@ use App\Http\Controllers\Api\V1\Catalog\CatalogCategoryController;
 use App\Http\Controllers\Api\V1\Catalog\CatalogItemController;
 use App\Http\Controllers\Api\V1\Catalog\UnitController;
 use Illuminate\Support\Facades\Route;
+
+
+/*
+|--------------------------------------------------------------------------
+| Public quotation
+|--------------------------------------------------------------------------
+|
+| Token-based customer access. No auth / tenant context.
+| GET must remain side-effect free.
+|
+*/
+
+Route::prefix('public/v1')->group(function () {
+    Route::get(
+        '/quotations/{token}',
+        [PublicQuotationController::class, 'show']
+    );
+
+    Route::post(
+        '/quotations/{token}/actions/view',
+        [PublicQuotationController::class, 'view']
+    );
+});
 
 Route::prefix('v1')->group(function () {
     Route::get('/health', HealthController::class);

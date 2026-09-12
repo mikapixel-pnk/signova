@@ -4,7 +4,9 @@ namespace App\Services\Quotation;
 
 use App\Exceptions\Quotation\InvalidQuotationTransitionException;
 use App\Models\Quotation;
+use App\Models\QuotationAction;
 use App\Models\QuotationPublicLink;
+use App\Models\QuotationStatusHistory;
 use App\Tenancy\TenantContext;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -120,6 +122,188 @@ class QuotationPublicLinkService
                 'quotationVersion.items',
             ])
             ->firstOrFail();
+    }
+
+    public function markViewed(
+        string $presentedToken
+    ): QuotationPublicLink {
+        $rawToken = $this->extractRawToken(
+            $presentedToken
+        );
+
+        $tokenHash = $this->hashToken(
+            $rawToken
+        );
+
+        return DB::transaction(
+            function () use (
+                $tokenHash
+            ): QuotationPublicLink {
+                $link = QuotationPublicLink::query()
+                    ->where(
+                        'token_hash',
+                        $tokenHash
+                    )
+                    ->whereNull('revoked_at')
+                    ->where(function ($query): void {
+                        $query
+                            ->whereNull('expires_at')
+                            ->orWhere(
+                                'expires_at',
+                                '>',
+                                now()
+                            );
+                    })
+                    ->lockForUpdate()
+                    ->firstOrFail();
+
+                $quotation = Quotation::query()
+                    ->where(
+                        'tenant_id',
+                        $link->tenant_id
+                    )
+                    ->where(
+                        'id',
+                        $link->quotation_id
+                    )
+                    ->lockForUpdate()
+                    ->firstOrFail();
+
+                if (
+                    $quotation->current_version_id
+                    !== $link->quotation_version_id
+                ) {
+                    throw new RuntimeException(
+                        'Public quotation version is no longer current.'
+                    );
+                }
+
+                $alreadyRecorded =
+                    QuotationAction::query()
+                        ->where(
+                            'public_link_id',
+                            $link->id
+                        )
+                        ->where(
+                            'quotation_version_id',
+                            $link->quotation_version_id
+                        )
+                        ->where(
+                            'action',
+                            'VIEW'
+                        )
+                        ->exists();
+
+                if ($alreadyRecorded) {
+                    return $this->loadPublicLink(
+                        $link
+                    );
+                }
+
+                if ($quotation->status === 'SENT') {
+                    $quotation->status = 'VIEWED';
+
+                    if ($quotation->viewed_at === null) {
+                        $quotation->viewed_at = now();
+                    }
+
+                    $quotation->save();
+
+                    QuotationStatusHistory::query()->create([
+                        'id' =>
+                            (string) Str::ulid(),
+
+                        'tenant_id' =>
+                            $link->tenant_id,
+
+                        'quotation_id' =>
+                            $quotation->id,
+
+                        'from_state' =>
+                            'SENT',
+
+                        'to_state' =>
+                            'VIEWED',
+
+                        'actor_user_id' =>
+                            null,
+
+                        'reason' =>
+                            null,
+
+                        'source' =>
+                            'PUBLIC',
+
+                        'context' => [
+                            'public_link_id' =>
+                                $link->id,
+
+                            'quotation_version_id' =>
+                                $link->quotation_version_id,
+                        ],
+
+                        'occurred_at' =>
+                            now(),
+                    ]);
+                } elseif (
+                    $quotation->status !== 'VIEWED'
+                ) {
+                    throw new InvalidQuotationTransitionException(
+                        $quotation->status,
+                        'VIEWED'
+                    );
+                }
+
+                QuotationAction::query()->create([
+                    'id' =>
+                        (string) Str::ulid(),
+
+                    'tenant_id' =>
+                        $link->tenant_id,
+
+                    'quotation_id' =>
+                        $link->quotation_id,
+
+                    'quotation_version_id' =>
+                        $link->quotation_version_id,
+
+                    'public_link_id' =>
+                        $link->id,
+
+                    'action' =>
+                        'VIEW',
+
+                    'actor_type' =>
+                        'PUBLIC',
+
+                    'actor_user_id' =>
+                        null,
+
+                    'note' =>
+                        null,
+
+                    'context' =>
+                        [],
+
+                    'occurred_at' =>
+                        now(),
+                ]);
+
+                return $this->loadPublicLink(
+                    $link
+                );
+            }
+        );
+    }
+
+    private function loadPublicLink(
+        QuotationPublicLink $link
+    ): QuotationPublicLink {
+        return $link
+            ->fresh([
+                'quotation.customer',
+                'quotationVersion.items',
+            ]);
     }
 
     public function buildPublicUrl(
