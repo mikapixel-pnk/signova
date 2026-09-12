@@ -40,6 +40,22 @@ class QuotationVersion extends Model
         );
     }
 
+    public function publicLinks(): HasMany
+    {
+        return $this->hasMany(
+            QuotationPublicLink::class,
+            'quotation_version_id'
+        );
+    }
+
+    public function actions(): HasMany
+    {
+        return $this->hasMany(
+            QuotationAction::class,
+            'quotation_version_id'
+        );
+    }
+
     public function items(): HasMany
     {
         return $this->hasMany(

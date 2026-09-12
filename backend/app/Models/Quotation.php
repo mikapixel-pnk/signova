@@ -56,6 +56,20 @@ class Quotation extends Model
         );
     }
 
+    public function publicLinks(): HasMany
+    {
+        return $this->hasMany(
+            QuotationPublicLink::class
+        );
+    }
+
+    public function actions(): HasMany
+    {
+        return $this->hasMany(
+            QuotationAction::class
+        );
+    }
+
     public function statusHistory(): HasMany
     {
         return $this->hasMany(
