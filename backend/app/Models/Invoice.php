@@ -57,6 +57,13 @@ class Invoice extends Model
         );
     }
 
+    public function paymentAllocations(): HasMany
+    {
+        return $this->hasMany(
+            PaymentAllocation::class
+        );
+    }
+
     public function statusHistory(): HasMany
     {
         return $this->hasMany(
