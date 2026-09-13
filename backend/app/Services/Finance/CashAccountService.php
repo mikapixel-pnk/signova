@@ -452,6 +452,19 @@ class CashAccountService
                             'cash_account_id',
                             $account->id
                         )
+                        ->exists()
+                    || DB::table(
+                        'incomes'
+                    )
+                        ->where(
+                            'tenant_id',
+                            $this->tenantContext
+                                ->tenantId()
+                        )
+                        ->where(
+                            'cash_account_id',
+                            $account->id
+                        )
                         ->exists();
 
                 if ($hasActivity) {

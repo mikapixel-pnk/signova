@@ -806,6 +806,124 @@ class CashAccountApiTest extends TestCase
             );
     }
 
+    public function test_account_referenced_by_income_cannot_be_deleted(): void
+    {
+        $workspace = $this->workspace(
+            'cash-delete-income@example.test',
+            'Cash Delete Income'
+        );
+
+        $this->insertAccount(
+            $workspace,
+            'Kas Default',
+            'CASH',
+            true
+        );
+
+        $account =
+            $this->insertAccount(
+                $workspace,
+                'Kas Income',
+                'CASH',
+                false
+            );
+
+        DB::table('incomes')->insert([
+            'id' =>
+                (string) Str::ulid(),
+
+            'tenant_id' =>
+                $workspace['tenant_id'],
+
+            'cash_account_id' =>
+                $account,
+
+            'amount' =>
+                '75000.00',
+
+            'currency' =>
+                'IDR',
+
+            'occurred_at' =>
+                now(),
+
+            'category' =>
+                'Lain-lain',
+
+            'description' =>
+                'Income test',
+
+            'reference' =>
+                null,
+
+            'status' =>
+                'DRAFT',
+
+            'created_by_user_id' =>
+                $workspace['user_id'],
+
+            'posted_by_user_id' =>
+                null,
+
+            'posted_at' =>
+                null,
+
+            'voided_by_user_id' =>
+                null,
+
+            'voided_at' =>
+                null,
+
+            'void_reason' =>
+                null,
+
+            'created_at' =>
+                now(),
+
+            'updated_at' =>
+                now(),
+        ]);
+
+        $this->actingAsWorkspace(
+            $workspace
+        );
+
+        $this->deleteJson(
+            '/api/v1/finance/cash-accounts/'
+            . $account
+        )
+            ->assertStatus(409)
+            ->assertJsonPath(
+                'error.code',
+                'ENTITY_HAS_ACTIVITY'
+            );
+
+        $this->assertDatabaseHas(
+            'cash_accounts',
+            [
+                'id' =>
+                    $account,
+
+                'tenant_id' =>
+                    $workspace['tenant_id'],
+            ]
+        );
+
+        $this->assertDatabaseHas(
+            'incomes',
+            [
+                'tenant_id' =>
+                    $workspace['tenant_id'],
+
+                'cash_account_id' =>
+                    $account,
+
+                'status' =>
+                    'DRAFT',
+            ]
+        );
+    }
+
     public function test_foreign_account_delete_returns_not_found(): void
     {
         $first = $this->workspace(

@@ -101,6 +101,8 @@ class SignovaAccessControlSeeder extends Seeder
             ['finance', 'finance.receivable.view', 'Melihat Piutang', true],
             ['finance', 'finance.cash_bank.view', 'Melihat Kas & Bank', true],
             ['finance', 'finance.cash_bank.manage', 'Mengelola Kas & Bank', true],
+            ['finance', 'finance.income.view', 'Melihat Pemasukan', true],
+            ['finance', 'finance.income.manage', 'Mengelola Pemasukan', true],
             ['finance', 'finance.margin.view', 'Melihat Margin', true],
 
             ['project', 'project.view', 'Melihat Proyek', false],
@@ -236,6 +238,8 @@ class SignovaAccessControlSeeder extends Seeder
                 'finance.receivable.view',
                 'finance.cash_bank.view',
                 'finance.cash_bank.manage',
+                'finance.income.view',
+                'finance.income.manage',
                 'finance.margin.view',
                 'project.view',
             ],

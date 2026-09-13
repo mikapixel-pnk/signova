@@ -4,6 +4,7 @@ use App\Http\Controllers\Api\V1\Auth\AuthController;
 use App\Http\Controllers\Api\Public\V1\Quotation\PublicQuotationController;
 use App\Http\Controllers\Api\V1\HealthController;
 use App\Http\Controllers\Api\V1\Finance\CashAccountController;
+use App\Http\Controllers\Api\V1\Finance\IncomeController;
 use App\Http\Controllers\Api\V1\Invoice\InvoiceController;
 use App\Http\Controllers\Api\V1\Payment\PaymentController;
 use App\Http\Controllers\Api\V1\Settings\DocumentSettingController;
@@ -360,6 +361,62 @@ Route::prefix('v1')->group(function () {
             [CashAccountController::class, 'setDefault']
         )->middleware(
             'capability:finance.cash_bank.manage'
+        );
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Pemasukan
+        |--------------------------------------------------------------------------
+        */
+
+        Route::get(
+            '/finance/incomes',
+            [IncomeController::class, 'index']
+        )->middleware(
+            'capability:finance.income.view'
+        );
+
+        Route::post(
+            '/finance/incomes',
+            [IncomeController::class, 'store']
+        )->middleware(
+            'capability:finance.income.manage'
+        );
+
+        Route::get(
+            '/finance/incomes/{incomeId}',
+            [IncomeController::class, 'show']
+        )->middleware(
+            'capability:finance.income.view'
+        );
+
+        Route::patch(
+            '/finance/incomes/{incomeId}',
+            [IncomeController::class, 'update']
+        )->middleware(
+            'capability:finance.income.manage'
+        );
+
+        Route::delete(
+            '/finance/incomes/{incomeId}',
+            [IncomeController::class, 'destroy']
+        )->middleware(
+            'capability:finance.income.manage'
+        );
+
+        Route::post(
+            '/finance/incomes/{incomeId}/actions/post',
+            [IncomeController::class, 'post']
+        )->middleware(
+            'capability:finance.income.manage'
+        );
+
+        Route::post(
+            '/finance/incomes/{incomeId}/actions/void',
+            [IncomeController::class, 'void']
+        )->middleware(
+            'capability:finance.income.manage'
         );
 
 
