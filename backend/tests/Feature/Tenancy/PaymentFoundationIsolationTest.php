@@ -50,6 +50,101 @@ class PaymentFoundationIsolationTest extends TestCase
         );
     }
 
+    public function test_payment_cash_account_must_belong_to_same_tenant(): void
+    {
+        $first = $this->workspace(
+            'payment-cash-a@example.test',
+            'Payment Cash A'
+        );
+
+        $second = $this->workspace(
+            'payment-cash-b@example.test',
+            'Payment Cash B'
+        );
+
+        $customer = $this->customer(
+            $first['tenant_id'],
+            'CUST-CASH-A'
+        );
+
+        $foreignCashAccountId =
+            (string) Str::ulid();
+
+        DB::table('cash_accounts')->insert([
+            'id' =>
+                $foreignCashAccountId,
+
+            'tenant_id' =>
+                $second['tenant_id'],
+
+            'name' =>
+                'Bank Tenant B',
+
+            'type' =>
+                'BANK',
+
+            'currency' =>
+                'IDR',
+
+            'status' =>
+                'ACTIVE',
+
+            'is_default' =>
+                false,
+
+            'created_by_user_id' =>
+                $second['user_id'],
+
+            'created_at' =>
+                now(),
+
+            'updated_at' =>
+                now(),
+        ]);
+
+        $this->expectException(
+            QueryException::class
+        );
+
+        DB::table('payments')->insert([
+            'id' =>
+                (string) Str::ulid(),
+
+            'tenant_id' =>
+                $first['tenant_id'],
+
+            'customer_id' =>
+                $customer,
+
+            'cash_account_id' =>
+                $foreignCashAccountId,
+
+            'amount' =>
+                '10000.00',
+
+            'currency' =>
+                'IDR',
+
+            'paid_at' =>
+                now(),
+
+            'method' =>
+                'BANK_TRANSFER',
+
+            'status' =>
+                'PENDING',
+
+            'created_by_user_id' =>
+                $first['user_id'],
+
+            'created_at' =>
+                now(),
+
+            'updated_at' =>
+                now(),
+        ]);
+    }
+
     public function test_payment_evidence_file_must_belong_to_same_tenant(): void
     {
         $first = $this->workspace(

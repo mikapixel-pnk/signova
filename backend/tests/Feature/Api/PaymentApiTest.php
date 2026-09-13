@@ -44,6 +44,11 @@ class PaymentApiTest extends TestCase
             'Customer A'
         );
 
+        $cashAccountId =
+            $this->cashAccount(
+                $workspace
+            );
+
         $this->actingAsWorkspace(
             $workspace
         );
@@ -53,6 +58,9 @@ class PaymentApiTest extends TestCase
             [
                 'customer_id' =>
                     $customer->id,
+
+                'cash_account_id' =>
+                    $cashAccountId,
 
                 'amount' =>
                     250000,
@@ -80,6 +88,14 @@ class PaymentApiTest extends TestCase
             ->assertJsonPath(
                 'data.customer_id',
                 $customer->id
+            )
+            ->assertJsonPath(
+                'data.cash_account_id',
+                $cashAccountId
+            )
+            ->assertJsonPath(
+                'data.cash_account.id',
+                $cashAccountId
             )
             ->assertJsonPath(
                 'data.amount',
@@ -123,6 +139,9 @@ class PaymentApiTest extends TestCase
                 'customer_id' =>
                     $customer->id,
 
+                'cash_account_id' =>
+                    $cashAccountId,
+
                 'method' =>
                     'BANK_TRANSFER',
 
@@ -156,6 +175,11 @@ class PaymentApiTest extends TestCase
             'Customer QR'
         );
 
+        $cashAccountId =
+            $this->cashAccount(
+                $workspace
+            );
+
         $this->actingAsWorkspace(
             $workspace
         );
@@ -165,6 +189,9 @@ class PaymentApiTest extends TestCase
             [
                 'customer_id' =>
                     $customer->id,
+
+                'cash_account_id' =>
+                    $cashAccountId,
 
                 'amount' =>
                     175000,
@@ -178,6 +205,10 @@ class PaymentApiTest extends TestCase
         )
             ->assertCreated()
             ->assertJsonPath(
+                'data.cash_account_id',
+                $cashAccountId
+            )
+            ->assertJsonPath(
                 'data.method',
                 'STATIC_QR'
             )
@@ -185,6 +216,242 @@ class PaymentApiTest extends TestCase
                 'data.status',
                 'PENDING'
             );
+    }
+
+    public function test_manual_payment_requires_cash_account(): void
+    {
+        $workspace = $this->workspace(
+            'payment-account-required@example.test',
+            'Payment Account Required'
+        );
+
+        $customer = $this->customer(
+            $workspace,
+            'Account Required Customer'
+        );
+
+        $this->actingAsWorkspace(
+            $workspace
+        );
+
+        $this->postJson(
+            '/api/v1/payments',
+            [
+                'customer_id' =>
+                    $customer->id,
+
+                'amount' =>
+                    100000,
+
+                'paid_at' =>
+                    now()->toISOString(),
+
+                'method' =>
+                    'BANK_TRANSFER',
+            ]
+        )
+            ->assertUnprocessable()
+            ->assertJsonPath(
+                'error.code',
+                'VALIDATION_FAILED'
+            )
+            ->assertJsonStructure([
+                'error' => [
+                    'details' => [
+                        'fields' => [
+                            'cash_account_id',
+                        ],
+                    ],
+                ],
+            ]);
+    }
+
+    public function test_manual_payment_rejects_inactive_cash_account(): void
+    {
+        $workspace = $this->workspace(
+            'payment-account-inactive@example.test',
+            'Payment Account Inactive'
+        );
+
+        $customer = $this->customer(
+            $workspace,
+            'Inactive Account Customer'
+        );
+
+        $cashAccountId =
+            $this->cashAccount(
+                $workspace,
+                'INACTIVE'
+            );
+
+        $this->actingAsWorkspace(
+            $workspace
+        );
+
+        $this->postJson(
+            '/api/v1/payments',
+            [
+                'customer_id' =>
+                    $customer->id,
+
+                'cash_account_id' =>
+                    $cashAccountId,
+
+                'amount' =>
+                    100000,
+
+                'paid_at' =>
+                    now()->toISOString(),
+
+                'method' =>
+                    'BANK_TRANSFER',
+            ]
+        )
+            ->assertUnprocessable()
+            ->assertJsonPath(
+                'error.code',
+                'VALIDATION_FAILED'
+            );
+
+        $this->assertDatabaseCount(
+            'payments',
+            0
+        );
+    }
+
+    public function test_manual_payment_rejects_cash_account_from_other_tenant(): void
+    {
+        $first = $this->workspace(
+            'payment-account-first@example.test',
+            'Payment Account First'
+        );
+
+        $second = $this->workspace(
+            'payment-account-second@example.test',
+            'Payment Account Second'
+        );
+
+        $customer = $this->customer(
+            $first,
+            'First Customer'
+        );
+
+        $foreignCashAccount =
+            $this->cashAccount(
+                $second
+            );
+
+        $this->actingAsWorkspace(
+            $first
+        );
+
+        $this->postJson(
+            '/api/v1/payments',
+            [
+                'customer_id' =>
+                    $customer->id,
+
+                'cash_account_id' =>
+                    $foreignCashAccount,
+
+                'amount' =>
+                    100000,
+
+                'paid_at' =>
+                    now()->toISOString(),
+
+                'method' =>
+                    'BANK_TRANSFER',
+            ]
+        )
+            ->assertUnprocessable()
+            ->assertJsonPath(
+                'error.code',
+                'VALIDATION_FAILED'
+            );
+
+        $this->assertDatabaseCount(
+            'payments',
+            0
+        );
+    }
+
+    public function test_manual_payment_stores_selected_cash_account(): void
+    {
+        $workspace = $this->workspace(
+            'payment-account-store@example.test',
+            'Payment Account Store'
+        );
+
+        $customer = $this->customer(
+            $workspace,
+            'Stored Account Customer'
+        );
+
+        $cashAccountId =
+            $this->cashAccount(
+                $workspace
+            );
+
+        $this->actingAsWorkspace(
+            $workspace
+        );
+
+        $response =
+            $this->postJson(
+                '/api/v1/payments',
+                [
+                    'customer_id' =>
+                        $customer->id,
+
+                    'cash_account_id' =>
+                        $cashAccountId,
+
+                    'amount' =>
+                        100000,
+
+                    'paid_at' =>
+                        now()->toISOString(),
+
+                    'method' =>
+                        'BANK_TRANSFER',
+                ]
+            );
+
+        $response
+            ->assertCreated()
+            ->assertJsonPath(
+                'data.cash_account_id',
+                $cashAccountId
+            )
+            ->assertJsonPath(
+                'data.cash_account.id',
+                $cashAccountId
+            )
+            ->assertJsonPath(
+                'data.cash_account.name',
+                'Bank Utama'
+            )
+            ->assertJsonPath(
+                'data.cash_account.type',
+                'BANK'
+            );
+
+        $this->assertDatabaseHas(
+            'payments',
+            [
+                'id' =>
+                    $response->json(
+                        'data.id'
+                    ),
+
+                'tenant_id' =>
+                    $workspace['tenant_id'],
+
+                'cash_account_id' =>
+                    $cashAccountId,
+            ]
+        );
     }
 
     public function test_manual_payment_rejects_more_than_two_decimal_places(): void
@@ -410,6 +677,12 @@ class PaymentApiTest extends TestCase
             [
                 'customer_id' =>
                     $firstCustomer->id,
+
+                'cash_account_id' =>
+                    $this->cashAccount(
+                        $first
+                    ),
+
                 'amount' => 125000,
                 'paid_at' =>
                     now()->toISOString(),
@@ -429,6 +702,12 @@ class PaymentApiTest extends TestCase
             [
                 'customer_id' =>
                     $secondCustomer->id,
+
+                'cash_account_id' =>
+                    $this->cashAccount(
+                        $second
+                    ),
+
                 'amount' => 999000,
                 'paid_at' =>
                     now()->toISOString(),
@@ -494,6 +773,12 @@ class PaymentApiTest extends TestCase
                 [
                     'customer_id' =>
                         $customer->id,
+
+                    'cash_account_id' =>
+                        $this->cashAccount(
+                            $second
+                        ),
+
                     'amount' =>
                         100000,
                     'paid_at' =>
@@ -540,6 +825,12 @@ class PaymentApiTest extends TestCase
                 [
                     'customer_id' =>
                         $customer->id,
+
+                    'cash_account_id' =>
+                        $this->cashAccount(
+                            $workspace
+                        ),
+
                     'amount' =>
                         300000,
                     'paid_at' =>
@@ -3333,6 +3624,11 @@ class PaymentApiTest extends TestCase
                     'customer_id' =>
                         $customer->id,
 
+                    'cash_account_id' =>
+                        $this->cashAccount(
+                            $workspace
+                        ),
+
                     'amount' =>
                         $amount,
 
@@ -3461,6 +3757,11 @@ class PaymentApiTest extends TestCase
                     'customer_id' =>
                         $customer->id,
 
+                    'cash_account_id' =>
+                        $this->cashAccount(
+                            $workspace
+                        ),
+
                     'amount' =>
                         100000,
 
@@ -3477,6 +3778,75 @@ class PaymentApiTest extends TestCase
         return (string) $response->json(
             'data.id'
         );
+    }
+
+    private function cashAccount(
+        array $workspace,
+        string $status = 'ACTIVE'
+    ): string {
+        $existing =
+            DB::table('cash_accounts')
+                ->where(
+                    'tenant_id',
+                    $workspace['tenant_id']
+                )
+                ->where(
+                    'status',
+                    $status
+                )
+                ->value('id');
+
+        if ($existing !== null) {
+            return (string) $existing;
+        }
+
+        $id =
+            (string) \Illuminate\Support\Str::ulid();
+
+        DB::table('cash_accounts')->insert([
+            'id' =>
+                $id,
+
+            'tenant_id' =>
+                $workspace['tenant_id'],
+
+            'name' =>
+                $status === 'ACTIVE'
+                    ? 'Bank Utama'
+                    : 'Bank Nonaktif',
+
+            'type' =>
+                'BANK',
+
+            'bank_name' =>
+                'Bank Test',
+
+            'account_number' =>
+                '1234567890',
+
+            'account_name' =>
+                'Signova Test',
+
+            'currency' =>
+                'IDR',
+
+            'status' =>
+                $status,
+
+            'is_default' =>
+                false,
+
+            'created_by_user_id' =>
+                $workspace['user_id'],
+
+            'created_at' =>
+                now(),
+
+            'updated_at' =>
+                now(),
+        ]);
+
+        return $id;
     }
 
     private function customer(

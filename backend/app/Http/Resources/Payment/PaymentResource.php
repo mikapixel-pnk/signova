@@ -32,6 +32,27 @@ class PaymentResource extends JsonResource
                     ]
                 ),
 
+            'cash_account_id' =>
+                $this->cash_account_id,
+
+            'cash_account' =>
+                $this->whenLoaded(
+                    'cashAccount',
+                    fn () =>
+                        $this->cashAccount === null
+                            ? null
+                            : [
+                                'id' =>
+                                    $this->cashAccount->id,
+
+                                'name' =>
+                                    $this->cashAccount->name,
+
+                                'type' =>
+                                    $this->cashAccount->type,
+                            ]
+                ),
+
             'amount' =>
                 $this->amount,
 

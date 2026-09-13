@@ -20,6 +20,7 @@ class StorePaymentRequest extends FormRequest
         foreach (
             [
                 'customer_id',
+                'cash_account_id',
                 'method',
                 'currency',
                 'reference',
@@ -67,6 +68,26 @@ class StorePaymentRequest extends FormRequest
                 'string',
                 Rule::exists(
                     'customers',
+                    'id'
+                )->where(
+                    fn ($query) =>
+                        $query
+                            ->where(
+                                'tenant_id',
+                                $tenantId
+                            )
+                            ->where(
+                                'status',
+                                'ACTIVE'
+                            )
+                ),
+            ],
+
+            'cash_account_id' => [
+                'required',
+                'string',
+                Rule::exists(
+                    'cash_accounts',
                     'id'
                 )->where(
                     fn ($query) =>

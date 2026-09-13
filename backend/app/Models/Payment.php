@@ -14,6 +14,7 @@ class Payment extends Model
     protected $fillable = [
         'tenant_id',
         'customer_id',
+        'cash_account_id',
         'amount',
         'currency',
         'paid_at',
@@ -39,6 +40,14 @@ class Payment extends Model
         'verified_at' => 'datetime',
         'rejected_at' => 'datetime',
     ];
+
+    public function cashAccount(): BelongsTo
+    {
+        return $this->belongsTo(
+            CashAccount::class,
+            'cash_account_id'
+        );
+    }
 
     public function customer(): BelongsTo
     {

@@ -37,6 +37,7 @@ class PaymentService
         return $this->baseQuery()
             ->with([
                 'customer',
+                'cashAccount',
                 'evidenceFile',
             ])
             ->when(
@@ -115,6 +116,7 @@ class PaymentService
         return $this->baseQuery()
             ->with([
                 'customer',
+                'cashAccount',
                 'evidenceFile',
             ])
             ->where(
@@ -138,6 +140,9 @@ class PaymentService
 
                 'customer_id' =>
                     $data['customer_id'],
+
+                'cash_account_id' =>
+                    $data['cash_account_id'],
 
                 'amount' =>
                     $data['amount'],
