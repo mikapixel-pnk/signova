@@ -22,8 +22,30 @@ class FileService
     ) {
     }
 
+    public function storePaymentQr(
+        UploadedFile $uploadedFile
+    ): FileAsset {
+        return $this->storePrivateImage(
+            $uploadedFile,
+            'PAYMENT_QR',
+            'payment-qr'
+        );
+    }
+
     public function storeSignature(
         UploadedFile $uploadedFile
+    ): FileAsset {
+        return $this->storePrivateImage(
+            $uploadedFile,
+            'DOCUMENT_SIGNATURE',
+            'document-signatures'
+        );
+    }
+
+    private function storePrivateImage(
+        UploadedFile $uploadedFile,
+        string $purpose,
+        string $folder
     ): FileAsset {
         $tenantId =
             $this->tenantContext->tenantId();
@@ -42,7 +64,7 @@ class FileService
             )
         ) {
             throw new RuntimeException(
-                'Unsupported signature file type.'
+                'Unsupported image file type.'
             );
         }
 
@@ -60,10 +82,18 @@ class FileService
                 'local'
             );
 
+        if ($disk === 'public') {
+            throw new RuntimeException(
+                'Public disk cannot be used for private files.'
+            );
+        }
+
         $objectKey =
             'tenants/'
             . $tenantId
-            . '/document-signatures/'
+            . '/'
+            . $folder
+            . '/'
             . $fileId
             . '.'
             . $extension;
@@ -79,15 +109,14 @@ class FileService
             );
         }
 
-        $stored = Storage::disk(
-            $disk
-        )->put(
-            $objectKey,
-            $contents,
-            [
-                'visibility' => 'private',
-            ]
-        );
+        $stored =
+            Storage::disk($disk)->put(
+                $objectKey,
+                $contents,
+                [
+                    'visibility' => 'private',
+                ]
+            );
 
         if (! $stored) {
             throw new RuntimeException(
@@ -97,47 +126,31 @@ class FileService
 
         try {
             return FileAsset::query()->create([
-                'id' =>
-                    $fileId,
-
-                'tenant_id' =>
-                    $tenantId,
-
-                'purpose' =>
-                    'DOCUMENT_SIGNATURE',
-
-                'storage_disk' =>
-                    $disk,
-
-                'object_key' =>
-                    $objectKey,
-
+                'id' => $fileId,
+                'tenant_id' => $tenantId,
+                'purpose' => $purpose,
+                'storage_disk' => $disk,
+                'object_key' => $objectKey,
                 'original_name' =>
-                    $uploadedFile
-                        ->getClientOriginalName(),
-
-                'mime_type' =>
-                    $mimeType,
-
+                    mb_substr(
+                        $uploadedFile
+                            ->getClientOriginalName(),
+                        0,
+                        255
+                    ),
+                'mime_type' => $mimeType,
                 'size_bytes' =>
-                    $uploadedFile->getSize(),
-
+                    (int) $uploadedFile->getSize(),
                 'checksum_sha256' =>
                     hash(
                         'sha256',
                         $contents
                     ),
-
-                'visibility' =>
-                    'PRIVATE',
-
-                'uploaded_by_user_id' =>
-                    $userId,
+                'visibility' => 'PRIVATE',
+                'uploaded_by_user_id' => $userId,
             ]);
         } catch (\Throwable $exception) {
-            Storage::disk(
-                $disk
-            )->delete(
+            Storage::disk($disk)->delete(
                 $objectKey
             );
 

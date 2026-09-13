@@ -5,6 +5,7 @@ use App\Http\Controllers\Api\Public\V1\Quotation\PublicQuotationController;
 use App\Http\Controllers\Api\V1\HealthController;
 use App\Http\Controllers\Api\V1\Invoice\InvoiceController;
 use App\Http\Controllers\Api\V1\Settings\DocumentSettingController;
+use App\Http\Controllers\Api\V1\Settings\PaymentSettingController;
 use App\Http\Controllers\Api\V1\Quotation\QuotationController;
 use App\Http\Controllers\Api\V1\Customer\CustomerController;
 use App\Http\Controllers\Api\V1\Catalog\CatalogCategoryController;
@@ -257,6 +258,48 @@ Route::prefix('v1')->group(function () {
         Route::delete(
             '/settings/document/signature',
             [DocumentSettingController::class, 'destroySignature']
+        )->middleware(
+            'capability:settings.manage'
+        );
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Pengaturan Pembayaran
+        |--------------------------------------------------------------------------
+        */
+
+        Route::get(
+            '/settings/payment',
+            [PaymentSettingController::class, 'show']
+        )->middleware(
+            'capability:settings.view'
+        );
+
+        Route::patch(
+            '/settings/payment',
+            [PaymentSettingController::class, 'update']
+        )->middleware(
+            'capability:settings.manage'
+        );
+
+        Route::post(
+            '/settings/payment/static-qr',
+            [PaymentSettingController::class, 'uploadStaticQr']
+        )->middleware(
+            'capability:settings.manage'
+        );
+
+        Route::get(
+            '/settings/payment/static-qr',
+            [PaymentSettingController::class, 'staticQr']
+        )->middleware(
+            'capability:settings.view'
+        );
+
+        Route::delete(
+            '/settings/payment/static-qr',
+            [PaymentSettingController::class, 'destroyStaticQr']
         )->middleware(
             'capability:settings.manage'
         );
