@@ -4,6 +4,7 @@ namespace App\Services\Payment;
 
 use App\Exceptions\Payment\InvalidPaymentTransitionException;
 use App\Exceptions\Payment\PaymentAllocationConflictException;
+use App\Exceptions\Payment\PaymentEvidenceLockedException;
 use App\Models\FileAsset;
 use App\Models\Invoice;
 use App\Models\InvoiceStatusHistory;
@@ -466,6 +467,12 @@ class PaymentService
                         $invoiceTotalMinor
                         - $paidMinor;
 
+                    $this->assertReceivableInvariant(
+                        $invoiceTotalMinor,
+                        $paidMinor,
+                        $outstandingMinor
+                    );
+
                     $fromState =
                         $invoice->status;
 
@@ -565,7 +572,8 @@ class PaymentService
                     'invoices' =>
                         $affectedInvoices,
                 ];
-            }
+            },
+            3
         );
     }
 
@@ -832,6 +840,12 @@ class PaymentService
                     );
                 }
 
+                $this->assertReceivableInvariant(
+                    $invoiceTotalMinor,
+                    $newPaidMinor,
+                    $outstandingMinor
+                );
+
                 $fromState =
                     $invoice->status;
 
@@ -937,7 +951,8 @@ class PaymentService
                             $paymentUnallocatedMinor
                         ),
                 ];
-            }
+            },
+            3
         );
     }
 
@@ -968,6 +983,14 @@ class PaymentService
                             )
                             ->lockForUpdate()
                             ->firstOrFail();
+
+                    if (
+                        $payment->status !== 'PENDING'
+                    ) {
+                        throw new PaymentEvidenceLockedException(
+                            $payment->status
+                        );
+                    }
 
                     if (
                         $payment
@@ -1082,6 +1105,14 @@ class PaymentService
                         ->firstOrFail();
 
                 if (
+                    $payment->status !== 'PENDING'
+                ) {
+                    throw new PaymentEvidenceLockedException(
+                        $payment->status
+                    );
+                }
+
+                if (
                     $payment
                         ->evidence_file_id
                     !== null
@@ -1126,6 +1157,25 @@ class PaymentService
         return $this->findOrFail(
             $paymentId
         );
+    }
+
+    private function assertReceivableInvariant(
+        int $totalMinor,
+        int $paidMinor,
+        int $outstandingMinor
+    ): void {
+        if (
+            $totalMinor < 0
+            || $paidMinor < 0
+            || $outstandingMinor < 0
+            || $paidMinor > $totalMinor
+            || $outstandingMinor > $totalMinor
+            || $paidMinor + $outstandingMinor !== $totalMinor
+        ) {
+            throw new \LogicException(
+                'Invariant piutang tagihan tidak valid.'
+            );
+        }
     }
 
     private function minorUnits(

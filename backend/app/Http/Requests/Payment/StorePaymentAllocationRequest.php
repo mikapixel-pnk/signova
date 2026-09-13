@@ -38,7 +38,9 @@ class StorePaymentAllocationRequest extends FormRequest
             'amount' => [
                 'required',
                 'numeric',
+                'decimal:0,2',
                 'gt:0',
+                'lte:9999999999999999.99',
             ],
         ];
     }

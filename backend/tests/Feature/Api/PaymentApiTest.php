@@ -187,6 +187,57 @@ class PaymentApiTest extends TestCase
             );
     }
 
+    public function test_manual_payment_rejects_more_than_two_decimal_places(): void
+    {
+        $workspace = $this->workspace(
+            'payment-decimal@example.test',
+            'Payment Decimal'
+        );
+
+        $customer = $this->customer(
+            $workspace,
+            'Decimal Customer'
+        );
+
+        $this->actingAsWorkspace(
+            $workspace
+        );
+
+        $this->postJson(
+            '/api/v1/payments',
+            [
+                'customer_id' =>
+                    $customer->id,
+
+                'amount' =>
+                    '1000.001',
+
+                'currency' =>
+                    'IDR',
+
+                'paid_at' =>
+                    now()->toISOString(),
+
+                'method' =>
+                    'BANK_TRANSFER',
+            ]
+        )
+            ->assertUnprocessable()
+            ->assertJsonPath(
+                'error.code',
+                'VALIDATION_FAILED'
+            )
+            ->assertJsonStructure([
+                'error' => [
+                    'details' => [
+                        'fields' => [
+                            'amount',
+                        ],
+                    ],
+                ],
+            ]);
+    }
+
     public function test_manual_payment_rejects_midtrans_method(): void
     {
         $workspace = $this->workspace(
@@ -854,6 +905,190 @@ class PaymentApiTest extends TestCase
             ->assertJsonPath(
                 'error.code',
                 'FORBIDDEN_CAPABILITY'
+            );
+    }
+
+    public function test_verified_payment_evidence_is_immutable(): void
+    {
+        \Illuminate\Support\Facades\Storage::fake(
+            'local'
+        );
+
+        config()->set(
+            'filesystems.private_disk',
+            'local'
+        );
+
+        $workspace = $this->workspace(
+            'evidence-verified-locked@example.test',
+            'Evidence Verified Locked'
+        );
+
+        $customer = $this->customer(
+            $workspace,
+            'Evidence Verified Customer'
+        );
+
+        $paymentId =
+            $this->createPayment(
+                $workspace,
+                $customer
+            );
+
+        $this->post(
+            '/api/v1/payments/'
+            . $paymentId
+            . '/evidence',
+            [
+                'evidence' =>
+                    \Illuminate\Http\UploadedFile::fake()
+                        ->image(
+                            'proof-before.png'
+                        ),
+            ]
+        )->assertOk();
+
+        $this->postJson(
+            '/api/v1/payments/'
+            . $paymentId
+            . '/actions/verify'
+        )->assertOk();
+
+        $this->post(
+            '/api/v1/payments/'
+            . $paymentId
+            . '/evidence',
+            [
+                'evidence' =>
+                    \Illuminate\Http\UploadedFile::fake()
+                        ->image(
+                            'proof-after.png'
+                        ),
+            ]
+        )
+            ->assertStatus(409)
+            ->assertJsonPath(
+                'error.code',
+                'PAYMENT_EVIDENCE_LOCKED'
+            );
+
+        $this->deleteJson(
+            '/api/v1/payments/'
+            . $paymentId
+            . '/evidence'
+        )
+            ->assertStatus(409)
+            ->assertJsonPath(
+                'error.code',
+                'PAYMENT_EVIDENCE_LOCKED'
+            );
+
+        $this->assertDatabaseHas(
+            'payments',
+            [
+                'id' =>
+                    $paymentId,
+
+                'status' =>
+                    'VERIFIED',
+            ]
+        );
+
+        $this->assertNotNull(
+            DB::table('payments')
+                ->where(
+                    'id',
+                    $paymentId
+                )
+                ->value(
+                    'evidence_file_id'
+                )
+        );
+    }
+
+    public function test_rejected_payment_evidence_is_immutable(): void
+    {
+        $workspace = $this->workspace(
+            'evidence-rejected-locked@example.test',
+            'Evidence Rejected Locked'
+        );
+
+        $customer = $this->customer(
+            $workspace,
+            'Evidence Rejected Customer'
+        );
+
+        $paymentId =
+            $this->createPayment(
+                $workspace,
+                $customer
+            );
+
+        $this->postJson(
+            '/api/v1/payments/'
+            . $paymentId
+            . '/actions/reject',
+            [
+                'reason' =>
+                    'Bukti tidak valid.',
+            ]
+        )->assertOk();
+
+        $this->deleteJson(
+            '/api/v1/payments/'
+            . $paymentId
+            . '/evidence'
+        )
+            ->assertStatus(409)
+            ->assertJsonPath(
+                'error.code',
+                'PAYMENT_EVIDENCE_LOCKED'
+            );
+    }
+
+    public function test_reversed_payment_evidence_is_immutable(): void
+    {
+        $workspace = $this->workspace(
+            'evidence-reversed-locked@example.test',
+            'Evidence Reversed Locked'
+        );
+
+        $customer = $this->customer(
+            $workspace,
+            'Evidence Reversed Customer'
+        );
+
+        $paymentId =
+            $this->createPayment(
+                $workspace,
+                $customer
+            );
+
+        $this->postJson(
+            '/api/v1/payments/'
+            . $paymentId
+            . '/actions/verify'
+        )->assertOk();
+
+        $this->postJson(
+            '/api/v1/payments/'
+            . $paymentId
+            . '/actions/reverse',
+            [
+                'reason' =>
+                    'Dana dikembalikan.',
+            ]
+        )->assertOk();
+
+        $this->deleteJson(
+            '/api/v1/payments/'
+            . $paymentId
+            . '/evidence'
+        )
+            ->assertStatus(409)
+            ->assertJsonPath(
+                'error.code',
+                'PAYMENT_EVIDENCE_LOCKED'
             );
     }
 
@@ -1571,6 +1806,244 @@ class PaymentApiTest extends TestCase
                     'PAYMENT'
                 )
                 ->count()
+        );
+    }
+
+    public function test_allocation_recalculates_stale_invoice_cache_from_ledger(): void
+    {
+        $workspace = $this->workspace(
+            'allocation-stale-cache@example.test',
+            'Allocation Stale Cache'
+        );
+
+        $customer = $this->customer(
+            $workspace,
+            'Stale Cache Customer'
+        );
+
+        $invoiceId =
+            $this->createReceivableInvoice(
+                $workspace,
+                $customer,
+                'INV-STALE-CACHE',
+                '100000.00',
+                'ISSUED'
+            );
+
+        DB::table('invoices')
+            ->where('id', $invoiceId)
+            ->update([
+                'paid_amount' =>
+                    '50000.00',
+
+                'outstanding_amount' =>
+                    '50000.00',
+            ]);
+
+        $paymentId =
+            $this->createPaymentWithAmount(
+                $workspace,
+                $customer,
+                '25000.00'
+            );
+
+        $this->postJson(
+            '/api/v1/payments/'
+            . $paymentId
+            . '/actions/verify'
+        )->assertOk();
+
+        $this->postJson(
+            '/api/v1/payments/'
+            . $paymentId
+            . '/allocations',
+            [
+                'invoice_id' =>
+                    $invoiceId,
+
+                'amount' =>
+                    '25000.00',
+            ]
+        )
+            ->assertCreated()
+            ->assertJsonPath(
+                'data.invoice.paid_amount',
+                '25000.00'
+            )
+            ->assertJsonPath(
+                'data.invoice.outstanding_amount',
+                '75000.00'
+            );
+
+        $this->assertDatabaseHas(
+            'invoices',
+            [
+                'id' =>
+                    $invoiceId,
+
+                'paid_amount' =>
+                    '25000.00',
+
+                'outstanding_amount' =>
+                    '75000.00',
+
+                'status' =>
+                    'PARTIALLY_PAID',
+            ]
+        );
+    }
+
+    public function test_reversal_recalculates_stale_invoice_cache_from_ledger(): void
+    {
+        $workspace = $this->workspace(
+            'reversal-stale-cache@example.test',
+            'Reversal Stale Cache'
+        );
+
+        $customer = $this->customer(
+            $workspace,
+            'Reversal Stale Customer'
+        );
+
+        $invoiceId =
+            $this->createReceivableInvoice(
+                $workspace,
+                $customer,
+                'INV-REV-STALE',
+                '100000.00',
+                'ISSUED'
+            );
+
+        $paymentId =
+            $this->createPaymentWithAmount(
+                $workspace,
+                $customer,
+                '100000.00'
+            );
+
+        $this->postJson(
+            '/api/v1/payments/'
+            . $paymentId
+            . '/actions/verify'
+        )->assertOk();
+
+        $this->postJson(
+            '/api/v1/payments/'
+            . $paymentId
+            . '/allocations',
+            [
+                'invoice_id' =>
+                    $invoiceId,
+
+                'amount' =>
+                    '100000.00',
+            ]
+        )->assertCreated();
+
+        DB::table('invoices')
+            ->where('id', $invoiceId)
+            ->update([
+                'paid_amount' =>
+                    '75000.00',
+
+                'outstanding_amount' =>
+                    '25000.00',
+            ]);
+
+        $this->postJson(
+            '/api/v1/payments/'
+            . $paymentId
+            . '/actions/reverse',
+            [
+                'reason' =>
+                    'Reversal stale cache.',
+            ]
+        )
+            ->assertOk()
+            ->assertJsonPath(
+                'data.invoices.0.paid_amount',
+                '0.00'
+            )
+            ->assertJsonPath(
+                'data.invoices.0.outstanding_amount',
+                '100000.00'
+            )
+            ->assertJsonPath(
+                'data.invoices.0.status',
+                'ISSUED'
+            );
+    }
+
+    public function test_allocation_rejects_more_than_two_decimal_places(): void
+    {
+        $workspace = $this->workspace(
+            'allocation-decimal@example.test',
+            'Allocation Decimal'
+        );
+
+        $customer = $this->customer(
+            $workspace,
+            'Allocation Decimal Customer'
+        );
+
+        $invoiceId =
+            $this->createReceivableInvoice(
+                $workspace,
+                $customer,
+                'INV-ALLOCATION-DECIMAL',
+                '100000.00',
+                'ISSUED'
+            );
+
+        $paymentId =
+            $this->createPaymentWithAmount(
+                $workspace,
+                $customer,
+                '100000.00'
+            );
+
+        $this->postJson(
+            '/api/v1/payments/'
+            . $paymentId
+            . '/actions/verify'
+        )->assertOk();
+
+        $this->postJson(
+            '/api/v1/payments/'
+            . $paymentId
+            . '/allocations',
+            [
+                'invoice_id' =>
+                    $invoiceId,
+
+                'amount' =>
+                    '1000.001',
+            ]
+        )
+            ->assertUnprocessable()
+            ->assertJsonPath(
+                'error.code',
+                'VALIDATION_FAILED'
+            )
+            ->assertJsonStructure([
+                'error' => [
+                    'details' => [
+                        'fields' => [
+                            'amount',
+                        ],
+                    ],
+                ],
+            ]);
+
+        $this->assertDatabaseMissing(
+            'payment_allocations',
+            [
+                'payment_id' =>
+                    $paymentId,
+
+                'invoice_id' =>
+                    $invoiceId,
+            ]
         );
     }
 
