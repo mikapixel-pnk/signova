@@ -196,6 +196,14 @@ Route::prefix('v1')->group(function () {
             'capability:invoice.issue'
         );
 
+
+        Route::post(
+            '/invoices/{invoiceId}/actions/void',
+            [InvoiceController::class, 'void']
+        )->middleware(
+            'capability:invoice.void'
+        );
+
         Route::get(
             '/invoices/{invoiceId}',
             [InvoiceController::class, 'show']

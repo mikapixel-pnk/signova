@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\V1\Invoice;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Invoice\ListInvoicesRequest;
+use App\Http\Requests\Invoice\VoidInvoiceRequest;
 use App\Http\Resources\Invoice\InvoiceResource;
 use App\Services\Invoice\InvoiceService;
 use App\Support\Api\ApiResponse;
@@ -75,6 +76,27 @@ class InvoiceController extends Controller
             ))->resolve($request),
             200,
             'Tagihan berhasil diterbitkan.'
+        );
+    }
+
+    public function void(
+        VoidInvoiceRequest $request,
+        string $invoiceId,
+        InvoiceService $service
+    ): JsonResponse {
+        $invoice =
+            $service->void(
+                $invoiceId,
+                $request->validated('reason')
+            );
+
+        return ApiResponse::success(
+            $request,
+            (new InvoiceResource(
+                $invoice
+            ))->resolve($request),
+            200,
+            'Tagihan berhasil dibatalkan.'
         );
     }
 

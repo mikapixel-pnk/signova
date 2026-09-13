@@ -114,6 +114,21 @@ class InvoiceService
         );
     }
 
+    public function void(
+        string $invoiceId,
+        string $reason
+    ): Invoice {
+        return $this->transition(
+            $invoiceId,
+            'VOID',
+            [
+                'DRAFT',
+                'ISSUED',
+            ],
+            $reason
+        );
+    }
+
     private function transition(
         string $invoiceId,
         string $toState,

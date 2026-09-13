@@ -698,6 +698,280 @@ class InvoiceApiTest extends TestCase
         );
     }
 
+
+    public function test_owner_can_void_draft_invoice_with_reason(): void
+    {
+        $workspace = $this->workspace(
+            'invoice-void-draft@example.test',
+            'Invoice Void Draft'
+        );
+
+        $customerId = $this->insertCustomer(
+            $workspace['tenant_id'],
+            'CUST-VOID-DRAFT',
+            'Pelanggan Void Draft'
+        );
+
+        $invoiceId = $this->insertInvoice(
+            $workspace,
+            $customerId,
+            'INV-VOID-DRAFT',
+            'DRAFT'
+        );
+
+        $this->actingAsWorkspace(
+            $workspace
+        );
+
+        $this->postJson(
+            "/api/v1/invoices/{$invoiceId}/actions/void",
+            [
+                'reason' =>
+                    'Tagihan dibuat keliru.',
+            ]
+        )
+            ->assertOk()
+            ->assertJsonPath(
+                'data.status',
+                'VOID'
+            )
+            ->assertJsonPath(
+                'data.status_label',
+                'Dibatalkan'
+            );
+
+        $this->assertDatabaseHas(
+            'invoice_status_history',
+            [
+                'invoice_id' =>
+                    $invoiceId,
+                'from_state' =>
+                    'DRAFT',
+                'to_state' =>
+                    'VOID',
+                'reason' =>
+                    'Tagihan dibuat keliru.',
+            ]
+        );
+    }
+
+    public function test_owner_can_void_issued_invoice(): void
+    {
+        $workspace = $this->workspace(
+            'invoice-void-issued@example.test',
+            'Invoice Void Issued'
+        );
+
+        $customerId = $this->insertCustomer(
+            $workspace['tenant_id'],
+            'CUST-VOID-ISSUED',
+            'Pelanggan Void Issued'
+        );
+
+        $invoiceId = $this->insertInvoice(
+            $workspace,
+            $customerId,
+            'INV-VOID-ISSUED',
+            'ISSUED'
+        );
+
+        $this->actingAsWorkspace(
+            $workspace
+        );
+
+        $this->postJson(
+            "/api/v1/invoices/{$invoiceId}/actions/void",
+            [
+                'reason' =>
+                    'Transaksi dibatalkan pelanggan.',
+            ]
+        )
+            ->assertOk()
+            ->assertJsonPath(
+                'data.status',
+                'VOID'
+            );
+    }
+
+    public function test_paid_invoice_cannot_be_voided(): void
+    {
+        $workspace = $this->workspace(
+            'invoice-void-paid@example.test',
+            'Invoice Void Paid'
+        );
+
+        $customerId = $this->insertCustomer(
+            $workspace['tenant_id'],
+            'CUST-VOID-PAID',
+            'Pelanggan Void Paid'
+        );
+
+        $invoiceId = $this->insertInvoice(
+            $workspace,
+            $customerId,
+            'INV-VOID-PAID',
+            'PAID'
+        );
+
+        $this->actingAsWorkspace(
+            $workspace
+        );
+
+        $this->postJson(
+            "/api/v1/invoices/{$invoiceId}/actions/void",
+            [
+                'reason' =>
+                    'Tidak boleh langsung void paid.',
+            ]
+        )
+            ->assertStatus(409)
+            ->assertJsonPath(
+                'error.code',
+                'INVALID_TRANSITION'
+            );
+    }
+
+    public function test_void_requires_reason(): void
+    {
+        $workspace = $this->workspace(
+            'invoice-void-reason@example.test',
+            'Invoice Void Reason'
+        );
+
+        $customerId = $this->insertCustomer(
+            $workspace['tenant_id'],
+            'CUST-VOID-REASON',
+            'Pelanggan Void Reason'
+        );
+
+        $invoiceId = $this->insertInvoice(
+            $workspace,
+            $customerId,
+            'INV-VOID-REASON',
+            'DRAFT'
+        );
+
+        $this->actingAsWorkspace(
+            $workspace
+        );
+
+        $this->postJson(
+            "/api/v1/invoices/{$invoiceId}/actions/void",
+            [
+                'reason' => '   ',
+            ]
+        )
+            ->assertUnprocessable()
+            ->assertJsonPath(
+                'error.code',
+                'VALIDATION_FAILED'
+            );
+
+        $this->assertDatabaseHas(
+            'invoices',
+            [
+                'id' => $invoiceId,
+                'status' => 'DRAFT',
+            ]
+        );
+    }
+
+    public function test_foreign_tenant_invoice_cannot_be_voided(): void
+    {
+        $first = $this->workspace(
+            'invoice-void-local@example.test',
+            'Invoice Void Local'
+        );
+
+        $second = $this->workspace(
+            'invoice-void-foreign@example.test',
+            'Invoice Void Foreign'
+        );
+
+        $customerId = $this->insertCustomer(
+            $second['tenant_id'],
+            'CUST-VOID-FOREIGN',
+            'Pelanggan Void Foreign'
+        );
+
+        $invoiceId = $this->insertInvoice(
+            $second,
+            $customerId,
+            'INV-VOID-FOREIGN',
+            'DRAFT'
+        );
+
+        $this->actingAsWorkspace(
+            $first
+        );
+
+        $this->postJson(
+            "/api/v1/invoices/{$invoiceId}/actions/void",
+            [
+                'reason' =>
+                    'Percobaan tenant lain.',
+            ]
+        )
+            ->assertNotFound()
+            ->assertJsonPath(
+                'error.code',
+                'RESOURCE_NOT_FOUND'
+            );
+    }
+
+    public function test_missing_invoice_void_capability_blocks_void(): void
+    {
+        $workspace = $this->workspace(
+            'invoice-void-denied@example.test',
+            'Invoice Void Denied'
+        );
+
+        $customerId = $this->insertCustomer(
+            $workspace['tenant_id'],
+            'CUST-VOID-DENIED',
+            'Pelanggan Void Denied'
+        );
+
+        $invoiceId = $this->insertInvoice(
+            $workspace,
+            $customerId,
+            'INV-VOID-DENIED',
+            'DRAFT'
+        );
+
+        $this->actingAsWorkspace(
+            $workspace
+        );
+
+        $this->denyCapability(
+            $workspace,
+            'invoice.void'
+        );
+
+        $this->postJson(
+            "/api/v1/invoices/{$invoiceId}/actions/void",
+            [
+                'reason' =>
+                    'Harus ditolak capability.',
+            ]
+        )
+            ->assertForbidden()
+            ->assertJsonPath(
+                'error.code',
+                'FORBIDDEN_CAPABILITY'
+            );
+
+        $this->assertDatabaseHas(
+            'invoices',
+            [
+                'id' =>
+                    $invoiceId,
+                'status' =>
+                    'DRAFT',
+            ]
+        );
+    }
+
     private function workspace(
         string $email,
         string $businessName
