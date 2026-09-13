@@ -1313,6 +1313,989 @@ class PaymentApiTest extends TestCase
         );
     }
 
+    public function test_verified_payment_can_partially_pay_issued_invoice(): void
+    {
+        $workspace = $this->workspace(
+            'allocation-partial@example.test',
+            'Allocation Partial'
+        );
+
+        $customer = $this->customer(
+            $workspace,
+            'Allocation Customer'
+        );
+
+        $invoiceId =
+            $this->createReceivableInvoice(
+                $workspace,
+                $customer,
+                'INV-ALLOC-PARTIAL',
+                '1000000.00',
+                'ISSUED'
+            );
+
+        $paymentId =
+            $this->createPaymentWithAmount(
+                $workspace,
+                $customer,
+                '400000.00'
+            );
+
+        $this->postJson(
+            '/api/v1/payments/'
+            . $paymentId
+            . '/actions/verify'
+        )->assertOk();
+
+        $response =
+            $this->postJson(
+                '/api/v1/payments/'
+                . $paymentId
+                . '/allocations',
+                [
+                    'invoice_id' =>
+                        $invoiceId,
+
+                    'amount' =>
+                        '400000.00',
+                ]
+            );
+
+        $response
+            ->assertCreated()
+            ->assertJsonPath(
+                'data.invoice.status',
+                'PARTIALLY_PAID'
+            )
+            ->assertJsonPath(
+                'data.invoice.paid_amount',
+                '400000.00'
+            )
+            ->assertJsonPath(
+                'data.invoice.outstanding_amount',
+                '600000.00'
+            )
+            ->assertJsonPath(
+                'data.payment_allocated_amount',
+                '400000.00'
+            )
+            ->assertJsonPath(
+                'data.payment_unallocated_amount',
+                '0.00'
+            );
+
+        $this->assertDatabaseHas(
+            'payment_allocations',
+            [
+                'tenant_id' =>
+                    $workspace['tenant_id'],
+
+                'payment_id' =>
+                    $paymentId,
+
+                'invoice_id' =>
+                    $invoiceId,
+
+                'allocated_amount' =>
+                    '400000.00',
+            ]
+        );
+
+        $this->assertDatabaseHas(
+            'invoices',
+            [
+                'id' =>
+                    $invoiceId,
+
+                'status' =>
+                    'PARTIALLY_PAID',
+
+                'paid_amount' =>
+                    '400000.00',
+
+                'outstanding_amount' =>
+                    '600000.00',
+            ]
+        );
+
+        $history =
+            DB::table(
+                'invoice_status_history'
+            )
+                ->where(
+                    'tenant_id',
+                    $workspace['tenant_id']
+                )
+                ->where(
+                    'invoice_id',
+                    $invoiceId
+                )
+                ->where(
+                    'source',
+                    'PAYMENT'
+                )
+                ->latest(
+                    'occurred_at'
+                )
+                ->first();
+
+        $this->assertNotNull(
+            $history
+        );
+
+        $this->assertSame(
+            'ISSUED',
+            $history->from_state
+        );
+
+        $this->assertSame(
+            'PARTIALLY_PAID',
+            $history->to_state
+        );
+    }
+
+    public function test_verified_payments_can_complete_invoice_to_paid(): void
+    {
+        $workspace = $this->workspace(
+            'allocation-paid@example.test',
+            'Allocation Paid'
+        );
+
+        $customer = $this->customer(
+            $workspace,
+            'Paid Customer'
+        );
+
+        $invoiceId =
+            $this->createReceivableInvoice(
+                $workspace,
+                $customer,
+                'INV-ALLOC-PAID',
+                '1000000.00',
+                'ISSUED'
+            );
+
+        $firstPayment =
+            $this->createPaymentWithAmount(
+                $workspace,
+                $customer,
+                '400000.00'
+            );
+
+        $this->postJson(
+            '/api/v1/payments/'
+            . $firstPayment
+            . '/actions/verify'
+        )->assertOk();
+
+        $this->postJson(
+            '/api/v1/payments/'
+            . $firstPayment
+            . '/allocations',
+            [
+                'invoice_id' =>
+                    $invoiceId,
+
+                'amount' =>
+                    '400000.00',
+            ]
+        )->assertCreated();
+
+        $secondPayment =
+            $this->createPaymentWithAmount(
+                $workspace,
+                $customer,
+                '600000.00'
+            );
+
+        $this->postJson(
+            '/api/v1/payments/'
+            . $secondPayment
+            . '/actions/verify'
+        )->assertOk();
+
+        $this->postJson(
+            '/api/v1/payments/'
+            . $secondPayment
+            . '/allocations',
+            [
+                'invoice_id' =>
+                    $invoiceId,
+
+                'amount' =>
+                    '600000.00',
+            ]
+        )
+            ->assertCreated()
+            ->assertJsonPath(
+                'data.invoice.status',
+                'PAID'
+            )
+            ->assertJsonPath(
+                'data.invoice.paid_amount',
+                '1000000.00'
+            )
+            ->assertJsonPath(
+                'data.invoice.outstanding_amount',
+                '0.00'
+            );
+
+        $this->assertDatabaseHas(
+            'invoices',
+            [
+                'id' =>
+                    $invoiceId,
+
+                'status' =>
+                    'PAID',
+
+                'paid_amount' =>
+                    '1000000.00',
+
+                'outstanding_amount' =>
+                    '0.00',
+            ]
+        );
+
+        $this->assertSame(
+            2,
+            DB::table(
+                'invoice_status_history'
+            )
+                ->where(
+                    'invoice_id',
+                    $invoiceId
+                )
+                ->where(
+                    'source',
+                    'PAYMENT'
+                )
+                ->count()
+        );
+    }
+
+    public function test_allocation_cannot_exceed_payment_amount(): void
+    {
+        $workspace = $this->workspace(
+            'allocation-payment-limit@example.test',
+            'Allocation Payment Limit'
+        );
+
+        $customer = $this->customer(
+            $workspace,
+            'Payment Limit Customer'
+        );
+
+        $invoiceId =
+            $this->createReceivableInvoice(
+                $workspace,
+                $customer,
+                'INV-PAYMENT-LIMIT',
+                '500000.00',
+                'ISSUED'
+            );
+
+        $paymentId =
+            $this->createPaymentWithAmount(
+                $workspace,
+                $customer,
+                '100000.00'
+            );
+
+        $this->postJson(
+            '/api/v1/payments/'
+            . $paymentId
+            . '/actions/verify'
+        )->assertOk();
+
+        $this->postJson(
+            '/api/v1/payments/'
+            . $paymentId
+            . '/allocations',
+            [
+                'invoice_id' =>
+                    $invoiceId,
+
+                'amount' =>
+                    '150000.00',
+            ]
+        )
+            ->assertStatus(409)
+            ->assertJsonPath(
+                'error.code',
+                'PAYMENT_ALLOCATION_CONFLICT'
+            );
+
+        $this->assertDatabaseMissing(
+            'payment_allocations',
+            [
+                'payment_id' =>
+                    $paymentId,
+
+                'invoice_id' =>
+                    $invoiceId,
+            ]
+        );
+    }
+
+    public function test_allocation_cannot_exceed_invoice_outstanding(): void
+    {
+        $workspace = $this->workspace(
+            'allocation-invoice-limit@example.test',
+            'Allocation Invoice Limit'
+        );
+
+        $customer = $this->customer(
+            $workspace,
+            'Invoice Limit Customer'
+        );
+
+        $invoiceId =
+            $this->createReceivableInvoice(
+                $workspace,
+                $customer,
+                'INV-INVOICE-LIMIT',
+                '100000.00',
+                'ISSUED'
+            );
+
+        $paymentId =
+            $this->createPaymentWithAmount(
+                $workspace,
+                $customer,
+                '200000.00'
+            );
+
+        $this->postJson(
+            '/api/v1/payments/'
+            . $paymentId
+            . '/actions/verify'
+        )->assertOk();
+
+        $this->postJson(
+            '/api/v1/payments/'
+            . $paymentId
+            . '/allocations',
+            [
+                'invoice_id' =>
+                    $invoiceId,
+
+                'amount' =>
+                    '150000.00',
+            ]
+        )
+            ->assertStatus(409)
+            ->assertJsonPath(
+                'error.code',
+                'PAYMENT_ALLOCATION_CONFLICT'
+            );
+    }
+
+    public function test_payment_and_invoice_customer_must_match(): void
+    {
+        $workspace = $this->workspace(
+            'allocation-customer@example.test',
+            'Allocation Customer Match'
+        );
+
+        $paymentCustomer =
+            $this->customer(
+                $workspace,
+                'Payment Customer'
+            );
+
+        $invoiceCustomer =
+            $this->customer(
+                $workspace,
+                'Invoice Customer'
+            );
+
+        $invoiceId =
+            $this->createReceivableInvoice(
+                $workspace,
+                $invoiceCustomer,
+                'INV-CUSTOMER-MISMATCH',
+                '100000.00',
+                'ISSUED'
+            );
+
+        $paymentId =
+            $this->createPaymentWithAmount(
+                $workspace,
+                $paymentCustomer,
+                '100000.00'
+            );
+
+        $this->postJson(
+            '/api/v1/payments/'
+            . $paymentId
+            . '/actions/verify'
+        )->assertOk();
+
+        $this->postJson(
+            '/api/v1/payments/'
+            . $paymentId
+            . '/allocations',
+            [
+                'invoice_id' =>
+                    $invoiceId,
+
+                'amount' =>
+                    '100000.00',
+            ]
+        )
+            ->assertStatus(409)
+            ->assertJsonPath(
+                'error.code',
+                'PAYMENT_ALLOCATION_CONFLICT'
+            );
+    }
+
+    public function test_payment_and_invoice_currency_must_match(): void
+    {
+        $workspace = $this->workspace(
+            'allocation-currency@example.test',
+            'Allocation Currency'
+        );
+
+        $customer = $this->customer(
+            $workspace,
+            'Currency Customer'
+        );
+
+        $invoiceId =
+            $this->createReceivableInvoice(
+                $workspace,
+                $customer,
+                'INV-CURRENCY',
+                '100000.00',
+                'ISSUED',
+                'USD'
+            );
+
+        $paymentId =
+            $this->createPaymentWithAmount(
+                $workspace,
+                $customer,
+                '100000.00'
+            );
+
+        $this->postJson(
+            '/api/v1/payments/'
+            . $paymentId
+            . '/actions/verify'
+        )->assertOk();
+
+        $this->postJson(
+            '/api/v1/payments/'
+            . $paymentId
+            . '/allocations',
+            [
+                'invoice_id' =>
+                    $invoiceId,
+
+                'amount' =>
+                    '100000.00',
+            ]
+        )
+            ->assertStatus(409)
+            ->assertJsonPath(
+                'error.code',
+                'PAYMENT_ALLOCATION_CONFLICT'
+            );
+    }
+
+    public function test_only_verified_payment_can_be_allocated(): void
+    {
+        $workspace = $this->workspace(
+            'allocation-state@example.test',
+            'Allocation State'
+        );
+
+        $customer = $this->customer(
+            $workspace,
+            'State Customer'
+        );
+
+        $invoiceId =
+            $this->createReceivableInvoice(
+                $workspace,
+                $customer,
+                'INV-PAYMENT-STATE',
+                '100000.00',
+                'ISSUED'
+            );
+
+        $pendingPayment =
+            $this->createPaymentWithAmount(
+                $workspace,
+                $customer,
+                '100000.00'
+            );
+
+        $this->postJson(
+            '/api/v1/payments/'
+            . $pendingPayment
+            . '/allocations',
+            [
+                'invoice_id' =>
+                    $invoiceId,
+
+                'amount' =>
+                    '100000.00',
+            ]
+        )
+            ->assertStatus(409)
+            ->assertJsonPath(
+                'error.code',
+                'PAYMENT_ALLOCATION_CONFLICT'
+            );
+
+        $rejectedPayment =
+            $this->createPaymentWithAmount(
+                $workspace,
+                $customer,
+                '100000.00'
+            );
+
+        $this->postJson(
+            '/api/v1/payments/'
+            . $rejectedPayment
+            . '/actions/reject',
+            [
+                'reason' =>
+                    'Tidak valid.',
+            ]
+        )->assertOk();
+
+        $this->postJson(
+            '/api/v1/payments/'
+            . $rejectedPayment
+            . '/allocations',
+            [
+                'invoice_id' =>
+                    $invoiceId,
+
+                'amount' =>
+                    '100000.00',
+            ]
+        )
+            ->assertStatus(409)
+            ->assertJsonPath(
+                'error.code',
+                'PAYMENT_ALLOCATION_CONFLICT'
+            );
+    }
+
+    public function test_draft_and_void_invoice_cannot_receive_allocation(): void
+    {
+        $workspace = $this->workspace(
+            'allocation-invoice-state@example.test',
+            'Allocation Invoice State'
+        );
+
+        $customer = $this->customer(
+            $workspace,
+            'Invoice State Customer'
+        );
+
+        $paymentId =
+            $this->createPaymentWithAmount(
+                $workspace,
+                $customer,
+                '200000.00'
+            );
+
+        $this->postJson(
+            '/api/v1/payments/'
+            . $paymentId
+            . '/actions/verify'
+        )->assertOk();
+
+        $draftId =
+            $this->createReceivableInvoice(
+                $workspace,
+                $customer,
+                'INV-DRAFT-ALLOC',
+                '100000.00',
+                'DRAFT'
+            );
+
+        $voidId =
+            $this->createReceivableInvoice(
+                $workspace,
+                $customer,
+                'INV-VOID-ALLOC',
+                '100000.00',
+                'VOID'
+            );
+
+        foreach (
+            [
+                $draftId,
+                $voidId,
+            ] as $invoiceId
+        ) {
+            $this->postJson(
+                '/api/v1/payments/'
+                . $paymentId
+                . '/allocations',
+                [
+                    'invoice_id' =>
+                        $invoiceId,
+
+                    'amount' =>
+                        '50000.00',
+                ]
+            )
+                ->assertStatus(409)
+                ->assertJsonPath(
+                    'error.code',
+                    'PAYMENT_ALLOCATION_CONFLICT'
+                );
+        }
+    }
+
+    public function test_duplicate_payment_invoice_allocation_is_rejected(): void
+    {
+        $workspace = $this->workspace(
+            'allocation-duplicate@example.test',
+            'Allocation Duplicate'
+        );
+
+        $customer = $this->customer(
+            $workspace,
+            'Duplicate Customer'
+        );
+
+        $invoiceId =
+            $this->createReceivableInvoice(
+                $workspace,
+                $customer,
+                'INV-DUPLICATE',
+                '200000.00',
+                'ISSUED'
+            );
+
+        $paymentId =
+            $this->createPaymentWithAmount(
+                $workspace,
+                $customer,
+                '200000.00'
+            );
+
+        $this->postJson(
+            '/api/v1/payments/'
+            . $paymentId
+            . '/actions/verify'
+        )->assertOk();
+
+        $payload = [
+            'invoice_id' =>
+                $invoiceId,
+
+            'amount' =>
+                '100000.00',
+        ];
+
+        $this->postJson(
+            '/api/v1/payments/'
+            . $paymentId
+            . '/allocations',
+            $payload
+        )->assertCreated();
+
+        $this->postJson(
+            '/api/v1/payments/'
+            . $paymentId
+            . '/allocations',
+            $payload
+        )
+            ->assertStatus(409)
+            ->assertJsonPath(
+                'error.code',
+                'PAYMENT_ALLOCATION_CONFLICT'
+            );
+
+        $this->assertSame(
+            1,
+            DB::table(
+                'payment_allocations'
+            )
+                ->where(
+                    'payment_id',
+                    $paymentId
+                )
+                ->where(
+                    'invoice_id',
+                    $invoiceId
+                )
+                ->count()
+        );
+    }
+
+    public function test_foreign_tenant_invoice_cannot_receive_allocation(): void
+    {
+        $first = $this->workspace(
+            'allocation-local@example.test',
+            'Allocation Local'
+        );
+
+        $second = $this->workspace(
+            'allocation-foreign@example.test',
+            'Allocation Foreign'
+        );
+
+        $localCustomer =
+            $this->customer(
+                $first,
+                'Local Customer'
+            );
+
+        $foreignCustomer =
+            $this->customer(
+                $second,
+                'Foreign Customer'
+            );
+
+        $paymentId =
+            $this->createPaymentWithAmount(
+                $first,
+                $localCustomer,
+                '100000.00'
+            );
+
+        $foreignInvoiceId =
+            $this->createReceivableInvoice(
+                $second,
+                $foreignCustomer,
+                'INV-FOREIGN-ALLOC',
+                '100000.00',
+                'ISSUED'
+            );
+
+        $this->actingAsWorkspace(
+            $first
+        );
+
+        $this->postJson(
+            '/api/v1/payments/'
+            . $paymentId
+            . '/actions/verify'
+        )->assertOk();
+
+        $this->postJson(
+            '/api/v1/payments/'
+            . $paymentId
+            . '/allocations',
+            [
+                'invoice_id' =>
+                    $foreignInvoiceId,
+
+                'amount' =>
+                    '100000.00',
+            ]
+        )->assertNotFound();
+    }
+
+    public function test_allocation_requires_payment_verify_capability(): void
+    {
+        $workspace = $this->workspace(
+            'allocation-capability@example.test',
+            'Allocation Capability'
+        );
+
+        $customer = $this->customer(
+            $workspace,
+            'Capability Customer'
+        );
+
+        $invoiceId =
+            $this->createReceivableInvoice(
+                $workspace,
+                $customer,
+                'INV-ALLOC-CAP',
+                '100000.00',
+                'ISSUED'
+            );
+
+        $paymentId =
+            $this->createPaymentWithAmount(
+                $workspace,
+                $customer,
+                '100000.00'
+            );
+
+        $this->postJson(
+            '/api/v1/payments/'
+            . $paymentId
+            . '/actions/verify'
+        )->assertOk();
+
+        $this->denyCapability(
+            $workspace,
+            'payment.verify'
+        );
+
+        $this->postJson(
+            '/api/v1/payments/'
+            . $paymentId
+            . '/allocations',
+            [
+                'invoice_id' =>
+                    $invoiceId,
+
+                'amount' =>
+                    '100000.00',
+            ]
+        )
+            ->assertForbidden()
+            ->assertJsonPath(
+                'error.code',
+                'FORBIDDEN_CAPABILITY'
+            );
+
+        $this->assertDatabaseMissing(
+            'payment_allocations',
+            [
+                'payment_id' =>
+                    $paymentId,
+
+                'invoice_id' =>
+                    $invoiceId,
+            ]
+        );
+    }
+
+    private function createPaymentWithAmount(
+        array $workspace,
+        Customer $customer,
+        string $amount
+    ): string {
+        $this->actingAsWorkspace(
+            $workspace
+        );
+
+        $response =
+            $this->postJson(
+                '/api/v1/payments',
+                [
+                    'customer_id' =>
+                        $customer->id,
+
+                    'amount' =>
+                        $amount,
+
+                    'paid_at' =>
+                        now()->toISOString(),
+
+                    'method' =>
+                        'BANK_TRANSFER',
+                ]
+            );
+
+        $response->assertCreated();
+
+        return (string) $response->json(
+            'data.id'
+        );
+    }
+
+    private function createReceivableInvoice(
+        array $workspace,
+        Customer $customer,
+        string $number,
+        string $total,
+        string $status = 'ISSUED',
+        string $currency = 'IDR'
+    ): string {
+        $id =
+            (string) \Illuminate\Support\Str::ulid();
+
+        $isReceivable =
+            in_array(
+                $status,
+                [
+                    'ISSUED',
+                    'PARTIALLY_PAID',
+                ],
+                true
+            );
+
+        DB::table('invoices')->insert([
+            'id' =>
+                $id,
+
+            'tenant_id' =>
+                $workspace['tenant_id'],
+
+            'invoice_number' =>
+                $number,
+
+            'customer_id' =>
+                $customer->id,
+
+            'project_id' =>
+                null,
+
+            'source_quotation_id' =>
+                null,
+
+            'source_quotation_version_id' =>
+                null,
+
+            'status' =>
+                $status,
+
+            'issued_at' =>
+                $status === 'DRAFT'
+                    ? null
+                    : now(),
+
+            'due_at' =>
+                null,
+
+            'currency' =>
+                $currency,
+
+            'subtotal' =>
+                $total,
+
+            'discount_total' =>
+                '0.00',
+
+            'tax_total' =>
+                '0.00',
+
+            'total' =>
+                $total,
+
+            'paid_amount' =>
+                $status === 'PAID'
+                    ? $total
+                    : '0.00',
+
+            'outstanding_amount' =>
+                $isReceivable
+                    ? $total
+                    : '0.00',
+
+            'notes' =>
+                null,
+
+            'created_by_user_id' =>
+                $workspace['user_id'],
+
+            'created_at' =>
+                now(),
+
+            'updated_at' =>
+                now(),
+        ]);
+
+        return $id;
+    }
+
     private function createPayment(
         array $workspace,
         Customer $customer

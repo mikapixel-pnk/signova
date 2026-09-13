@@ -243,6 +243,13 @@ Route::prefix('v1')->group(function () {
         );
 
         Route::post(
+            '/payments/{paymentId}/allocations',
+            [PaymentController::class, 'allocate']
+        )->middleware(
+            'capability:payment.verify'
+        );
+
+        Route::post(
             '/payments/{paymentId}/actions/verify',
             [PaymentController::class, 'verify']
         )->middleware(

@@ -5,8 +5,10 @@ namespace App\Http\Controllers\Api\V1\Payment;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Payment\ListPaymentsRequest;
 use App\Http\Requests\Payment\RejectPaymentRequest;
+use App\Http\Requests\Payment\StorePaymentAllocationRequest;
 use App\Http\Requests\Payment\StorePaymentRequest;
 use App\Http\Requests\Payment\UploadPaymentEvidenceRequest;
+use App\Http\Resources\Invoice\InvoiceResource;
 use App\Http\Resources\Payment\PaymentResource;
 use App\Services\File\FileService;
 use App\Services\Payment\PaymentService;
@@ -142,6 +144,62 @@ class PaymentController extends Controller
             ))->resolve($request),
             200,
             'Pembayaran berhasil ditolak.'
+        );
+    }
+
+    public function allocate(
+        StorePaymentAllocationRequest $request,
+        string $paymentId,
+        PaymentService $service
+    ): JsonResponse {
+        $result =
+            $service->allocate(
+                $paymentId,
+                $request->validated()
+            );
+
+        return ApiResponse::success(
+            $request,
+            [
+                'allocation' => [
+                    'id' =>
+                        $result['allocation']->id,
+
+                    'payment_id' =>
+                        $result['allocation']
+                            ->payment_id,
+
+                    'invoice_id' =>
+                        $result['allocation']
+                            ->invoice_id,
+
+                    'allocated_amount' =>
+                        $result['allocation']
+                            ->allocated_amount,
+                ],
+
+                'payment' =>
+                    (new PaymentResource(
+                        $result['payment']
+                    ))->resolve($request),
+
+                'payment_allocated_amount' =>
+                    $result[
+                        'payment_allocated_amount'
+                    ],
+
+                'payment_unallocated_amount' =>
+                    $result[
+                        'payment_unallocated_amount'
+                    ],
+
+                'invoice' =>
+                    (new InvoiceResource(
+                        $result['invoice']
+                    ))->resolve($request),
+            ],
+            201,
+            'Pembayaran berhasil dialokasikan.'
         );
     }
 

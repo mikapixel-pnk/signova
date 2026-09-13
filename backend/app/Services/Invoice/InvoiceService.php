@@ -167,6 +167,19 @@ class InvoiceService
                 );
             }
 
+            if ($toState === 'ISSUED') {
+                $attributes['paid_amount'] =
+                    '0.00';
+
+                $attributes['outstanding_amount'] =
+                    $invoice->total;
+            }
+
+            if ($toState === 'VOID') {
+                $attributes['outstanding_amount'] =
+                    '0.00';
+            }
+
             $invoice->fill(
                 array_merge(
                     $attributes,

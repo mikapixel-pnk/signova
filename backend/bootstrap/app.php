@@ -69,6 +69,24 @@ return Application::configure(basePath: dirname(__DIR__))
 
         $exceptions->render(
             function (
+                \App\Exceptions\Payment\PaymentAllocationConflictException $exception,
+                Request $request
+            ) {
+                if (! $request->is('api/*')) {
+                    return null;
+                }
+
+                return ApiResponse::error(
+                    $request,
+                    'PAYMENT_ALLOCATION_CONFLICT',
+                    $exception->getMessage(),
+                    409
+                );
+            }
+        );
+
+        $exceptions->render(
+            function (
                 \App\Exceptions\Payment\InvalidPaymentTransitionException $exception,
                 Request $request
             ) {

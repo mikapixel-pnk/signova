@@ -30,6 +30,8 @@ class Invoice extends Model
         'discount_total',
         'tax_total',
         'total',
+        'paid_amount',
+        'outstanding_amount',
         'notes',
         'created_by_user_id',
     ];
@@ -41,6 +43,8 @@ class Invoice extends Model
         'discount_total' => 'decimal:2',
         'tax_total' => 'decimal:2',
         'total' => 'decimal:2',
+        'paid_amount' => 'decimal:2',
+        'outstanding_amount' => 'decimal:2',
     ];
 
     public function customer(): BelongsTo

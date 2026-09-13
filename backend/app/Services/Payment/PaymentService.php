@@ -3,7 +3,11 @@
 namespace App\Services\Payment;
 
 use App\Exceptions\Payment\InvalidPaymentTransitionException;
+use App\Exceptions\Payment\PaymentAllocationConflictException;
 use App\Models\FileAsset;
+use App\Models\Invoice;
+use App\Models\InvoiceStatusHistory;
+use App\Models\PaymentAllocation;
 use App\Models\Payment;
 use App\Services\File\FileService;
 use App\Tenancy\TenantContext;
@@ -290,6 +294,378 @@ class PaymentService
         );
     }
 
+    public function allocate(
+        string $paymentId,
+        array $data
+    ): array {
+        return DB::transaction(
+            function () use (
+                $paymentId,
+                $data
+            ): array {
+                /*
+                 * Lock order wajib konsisten:
+                 * 1. payment
+                 * 2. invoice
+                 */
+                $payment =
+                    $this->baseQuery()
+                        ->where(
+                            'id',
+                            $paymentId
+                        )
+                        ->lockForUpdate()
+                        ->firstOrFail();
+
+                if (
+                    $payment->status !== 'VERIFIED'
+                ) {
+                    throw new PaymentAllocationConflictException(
+                        'Hanya pembayaran VERIFIED yang dapat dialokasikan.'
+                    );
+                }
+
+                $invoice =
+                    Invoice::query()
+                        ->where(
+                            'tenant_id',
+                            $this->tenantContext
+                                ->tenantId()
+                        )
+                        ->where(
+                            'id',
+                            $data['invoice_id']
+                        )
+                        ->lockForUpdate()
+                        ->firstOrFail();
+
+                if (
+                    $invoice->customer_id
+                    !== $payment->customer_id
+                ) {
+                    throw new PaymentAllocationConflictException(
+                        'Pelanggan pembayaran dan tagihan harus sama.'
+                    );
+                }
+
+                if (
+                    $invoice->currency
+                    !== $payment->currency
+                ) {
+                    throw new PaymentAllocationConflictException(
+                        'Mata uang pembayaran dan tagihan harus sama.'
+                    );
+                }
+
+                if (
+                    ! in_array(
+                        $invoice->status,
+                        [
+                            'ISSUED',
+                            'PARTIALLY_PAID',
+                        ],
+                        true
+                    )
+                ) {
+                    throw new PaymentAllocationConflictException(
+                        'Tagihan pada status ini tidak dapat menerima alokasi pembayaran.'
+                    );
+                }
+
+                $existingAllocation =
+                    PaymentAllocation::query()
+                        ->where(
+                            'tenant_id',
+                            $this->tenantContext
+                                ->tenantId()
+                        )
+                        ->where(
+                            'payment_id',
+                            $payment->id
+                        )
+                        ->where(
+                            'invoice_id',
+                            $invoice->id
+                        )
+                        ->first();
+
+                if ($existingAllocation !== null) {
+                    throw new PaymentAllocationConflictException(
+                        'Pembayaran ini sudah memiliki alokasi ke tagihan tersebut.'
+                    );
+                }
+
+                $requestedMinor =
+                    $this->minorUnits(
+                        $data['amount']
+                    );
+
+                $paymentAmountMinor =
+                    $this->minorUnits(
+                        $payment->amount
+                    );
+
+                $allocatedPaymentMinor =
+                    $this->minorUnits(
+                        PaymentAllocation::query()
+                            ->where(
+                                'tenant_id',
+                                $this->tenantContext
+                                    ->tenantId()
+                            )
+                            ->where(
+                                'payment_id',
+                                $payment->id
+                            )
+                            ->sum(
+                                'allocated_amount'
+                            )
+                    );
+
+                if (
+                    $allocatedPaymentMinor
+                    + $requestedMinor
+                    > $paymentAmountMinor
+                ) {
+                    throw new PaymentAllocationConflictException(
+                        'Jumlah alokasi melebihi sisa pembayaran.'
+                    );
+                }
+
+                /*
+                 * Ledger adalah source of truth.
+                 * Cache invoice tidak dipakai sebagai dasar kalkulasi.
+                 */
+                $invoicePaidMinor =
+                    $this->minorUnits(
+                        PaymentAllocation::query()
+                            ->join(
+                                'payments',
+                                function ($join): void {
+                                    $join
+                                        ->on(
+                                            'payments.id',
+                                            '=',
+                                            'payment_allocations.payment_id'
+                                        )
+                                        ->on(
+                                            'payments.tenant_id',
+                                            '=',
+                                            'payment_allocations.tenant_id'
+                                        );
+                                }
+                            )
+                            ->where(
+                                'payment_allocations.tenant_id',
+                                $this->tenantContext
+                                    ->tenantId()
+                            )
+                            ->where(
+                                'payment_allocations.invoice_id',
+                                $invoice->id
+                            )
+                            ->where(
+                                'payments.status',
+                                'VERIFIED'
+                            )
+                            ->sum(
+                                'payment_allocations.allocated_amount'
+                            )
+                    );
+
+                $invoiceTotalMinor =
+                    $this->minorUnits(
+                        $invoice->total
+                    );
+
+                if (
+                    $invoicePaidMinor
+                    + $requestedMinor
+                    > $invoiceTotalMinor
+                ) {
+                    throw new PaymentAllocationConflictException(
+                        'Jumlah alokasi melebihi sisa tagihan.'
+                    );
+                }
+
+                $allocation =
+                    PaymentAllocation::query()
+                        ->create([
+                            'tenant_id' =>
+                                $this->tenantContext
+                                    ->tenantId(),
+
+                            'payment_id' =>
+                                $payment->id,
+
+                            'invoice_id' =>
+                                $invoice->id,
+
+                            'allocated_amount' =>
+                                $this->minorToDecimal(
+                                    $requestedMinor
+                                ),
+                        ]);
+
+                /*
+                 * Hitung ulang dari ledger SETELAH insert.
+                 */
+                $newPaidMinor =
+                    $this->minorUnits(
+                        PaymentAllocation::query()
+                            ->join(
+                                'payments',
+                                function ($join): void {
+                                    $join
+                                        ->on(
+                                            'payments.id',
+                                            '=',
+                                            'payment_allocations.payment_id'
+                                        )
+                                        ->on(
+                                            'payments.tenant_id',
+                                            '=',
+                                            'payment_allocations.tenant_id'
+                                        );
+                                }
+                            )
+                            ->where(
+                                'payment_allocations.tenant_id',
+                                $this->tenantContext
+                                    ->tenantId()
+                            )
+                            ->where(
+                                'payment_allocations.invoice_id',
+                                $invoice->id
+                            )
+                            ->where(
+                                'payments.status',
+                                'VERIFIED'
+                            )
+                            ->sum(
+                                'payment_allocations.allocated_amount'
+                            )
+                    );
+
+                $outstandingMinor =
+                    $invoiceTotalMinor
+                    - $newPaidMinor;
+
+                if ($outstandingMinor < 0) {
+                    throw new PaymentAllocationConflictException(
+                        'Perhitungan outstanding tagihan tidak valid.'
+                    );
+                }
+
+                $fromState =
+                    $invoice->status;
+
+                $toState =
+                    $outstandingMinor === 0
+                        ? 'PAID'
+                        : 'PARTIALLY_PAID';
+
+                $invoice->fill([
+                    'paid_amount' =>
+                        $this->minorToDecimal(
+                            $newPaidMinor
+                        ),
+
+                    'outstanding_amount' =>
+                        $this->minorToDecimal(
+                            $outstandingMinor
+                        ),
+
+                    'status' =>
+                        $toState,
+                ]);
+
+                $invoice->save();
+
+                if ($fromState !== $toState) {
+                    InvoiceStatusHistory::query()
+                        ->create([
+                            'id' =>
+                                (string) Str::ulid(),
+
+                            'tenant_id' =>
+                                $this->tenantContext
+                                    ->tenantId(),
+
+                            'invoice_id' =>
+                                $invoice->id,
+
+                            'from_state' =>
+                                $fromState,
+
+                            'to_state' =>
+                                $toState,
+
+                            'actor_user_id' =>
+                                $this->tenantContext
+                                    ->userId(),
+
+                            'reason' =>
+                                null,
+
+                            'source' =>
+                                'PAYMENT',
+
+                            'context' => [
+                                'payment_id' =>
+                                    $payment->id,
+
+                                'allocation_id' =>
+                                    $allocation->id,
+                            ],
+
+                            'occurred_at' =>
+                                now(),
+                        ]);
+                }
+
+                $paymentAllocatedMinor =
+                    $allocatedPaymentMinor
+                    + $requestedMinor;
+
+                $paymentUnallocatedMinor =
+                    $paymentAmountMinor
+                    - $paymentAllocatedMinor;
+
+                $payment->load([
+                    'customer',
+                    'evidenceFile',
+                ]);
+
+                $invoice->load([
+                    'customer',
+                    'statusHistory',
+                ]);
+
+                return [
+                    'allocation' =>
+                        $allocation,
+
+                    'payment' =>
+                        $payment,
+
+                    'invoice' =>
+                        $invoice,
+
+                    'payment_allocated_amount' =>
+                        $this->minorToDecimal(
+                            $paymentAllocatedMinor
+                        ),
+
+                    'payment_unallocated_amount' =>
+                        $this->minorToDecimal(
+                            $paymentUnallocatedMinor
+                        ),
+                ];
+            }
+        );
+    }
+
     public function replaceEvidence(
         string $paymentId,
         UploadedFile $uploadedFile
@@ -474,6 +850,76 @@ class PaymentService
 
         return $this->findOrFail(
             $paymentId
+        );
+    }
+
+    private function minorUnits(
+        mixed $value
+    ): int {
+        if (is_int($value)) {
+            return $value * 100;
+        }
+
+        if (is_float($value)) {
+            $value = number_format(
+                $value,
+                2,
+                '.',
+                ''
+            );
+        }
+
+        $value = trim(
+            (string) $value
+        );
+
+        if (
+            ! preg_match(
+                '/^\d+(?:\.\d{1,2})?$/',
+                $value
+            )
+        ) {
+            throw new \LogicException(
+                'Nilai decimal tidak valid.'
+            );
+        }
+
+        [$whole, $fraction] =
+            array_pad(
+                explode(
+                    '.',
+                    $value,
+                    2
+                ),
+                2,
+                '0'
+            );
+
+        $fraction =
+            str_pad(
+                $fraction,
+                2,
+                '0'
+            );
+
+        return ((int) $whole * 100)
+            + (int) substr(
+                $fraction,
+                0,
+                2
+            );
+    }
+
+    private function minorToDecimal(
+        int $minor
+    ): string {
+        return sprintf(
+            '%d.%02d',
+            intdiv(
+                $minor,
+                100
+            ),
+            $minor % 100
         );
     }
 
