@@ -5,6 +5,7 @@ namespace App\Services\Payment;
 use App\Exceptions\Payment\InvalidPaymentTransitionException;
 use App\Exceptions\Payment\PaymentAllocationConflictException;
 use App\Exceptions\Payment\PaymentEvidenceLockedException;
+use App\Models\CashTransaction;
 use App\Models\FileAsset;
 use App\Models\Invoice;
 use App\Models\InvoiceStatusHistory;
@@ -237,6 +238,52 @@ class PaymentService
 
                 $payment->save();
 
+                if ($payment->cash_account_id === null) {
+                    throw new \LogicException(
+                        'Rekening tujuan pembayaran belum ditentukan.'
+                    );
+                }
+
+                CashTransaction::query()->create([
+                    'tenant_id' =>
+                        $this->tenantContext
+                            ->tenantId(),
+
+                    'cash_account_id' =>
+                        $payment->cash_account_id,
+
+                    'direction' =>
+                        'IN',
+
+                    'amount' =>
+                        $payment->amount,
+
+                    'currency' =>
+                        $payment->currency,
+
+                    'occurred_at' =>
+                        $payment->paid_at,
+
+                    'source_type' =>
+                        'PAYMENT',
+
+                    'source_id' =>
+                        $payment->id,
+
+                    'reference' =>
+                        $payment->reference,
+
+                    'description' =>
+                        'Penerimaan pembayaran pelanggan.',
+
+                    'reversal_of_transaction_id' =>
+                        null,
+
+                    'created_by_user_id' =>
+                        $this->tenantContext
+                            ->userId(),
+                ]);
+
                 return $this->findOrFail(
                     $payment->id
                 );
@@ -313,7 +360,8 @@ class PaymentService
                 /*
                  * Canonical lock order:
                  * 1. payment
-                 * 2. affected invoices sorted by ID
+                 * 2. original payment cash transaction
+                 * 3. affected invoices sorted by ID
                  */
                 $payment =
                     $this->baseQuery()
@@ -330,6 +378,48 @@ class PaymentService
                     throw new InvalidPaymentTransitionException(
                         $payment->status,
                         'REVERSED'
+                    );
+                }
+
+                $originalCashTransaction =
+                    CashTransaction::query()
+                        ->where(
+                            'tenant_id',
+                            $this->tenantContext
+                                ->tenantId()
+                        )
+                        ->where(
+                            'source_type',
+                            'PAYMENT'
+                        )
+                        ->where(
+                            'source_id',
+                            $payment->id
+                        )
+                        ->lockForUpdate()
+                        ->first();
+
+                if ($originalCashTransaction === null) {
+                    throw new \LogicException(
+                        'Penerimaan kas pembayaran tidak ditemukan.'
+                    );
+                }
+
+                if (
+                    $originalCashTransaction
+                        ->cash_account_id
+                    !== $payment->cash_account_id
+                    || $originalCashTransaction
+                        ->currency
+                    !== $payment->currency
+                    || $this->minorUnits(
+                        $originalCashTransaction->amount
+                    ) !== $this->minorUnits(
+                        $payment->amount
+                    )
+                ) {
+                    throw new \LogicException(
+                        'Ledger kas pembayaran tidak konsisten.'
                     );
                 }
 
@@ -402,6 +492,48 @@ class PaymentService
                             'reversed_at' =>
                                 now(),
                         ]);
+
+                CashTransaction::query()->create([
+                    'tenant_id' =>
+                        $this->tenantContext
+                            ->tenantId(),
+
+                    'cash_account_id' =>
+                        $originalCashTransaction
+                            ->cash_account_id,
+
+                    'direction' =>
+                        'OUT',
+
+                    'amount' =>
+                        $payment->amount,
+
+                    'currency' =>
+                        $payment->currency,
+
+                    'occurred_at' =>
+                        $reversal->reversed_at,
+
+                    'source_type' =>
+                        'PAYMENT_REVERSAL',
+
+                    'source_id' =>
+                        $reversal->id,
+
+                    'reference' =>
+                        $payment->reference,
+
+                    'description' =>
+                        'Pembalikan penerimaan pembayaran.',
+
+                    'reversal_of_transaction_id' =>
+                        $originalCashTransaction
+                            ->id,
+
+                    'created_by_user_id' =>
+                        $this->tenantContext
+                            ->userId(),
+                ]);
 
                 /*
                  * Status harus berubah sebelum invoice
@@ -564,6 +696,7 @@ class PaymentService
 
                 $payment->load([
                     'customer',
+                    'cashAccount',
                     'evidenceFile',
                 ]);
 

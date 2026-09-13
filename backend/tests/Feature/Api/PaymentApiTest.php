@@ -1457,6 +1457,50 @@ class PaymentApiTest extends TestCase
         $this->assertNull(
             $payment->rejection_reason
         );
+
+        $this->assertDatabaseHas(
+            'cash_transactions',
+            [
+                'tenant_id' =>
+                    $workspace['tenant_id'],
+
+                'cash_account_id' =>
+                    $payment->cash_account_id,
+
+                'direction' =>
+                    'IN',
+
+                'amount' =>
+                    '100000.00',
+
+                'currency' =>
+                    'IDR',
+
+                'source_type' =>
+                    'PAYMENT',
+
+                'source_id' =>
+                    $paymentId,
+
+                'reversal_of_transaction_id' =>
+                    null,
+            ]
+        );
+
+        $this->assertSame(
+            1,
+            DB::table('cash_transactions')
+                ->where(
+                    'source_type',
+                    'PAYMENT'
+                )
+                ->where(
+                    'source_id',
+                    $paymentId
+                )
+                ->count()
+        );
+
     }
 
     public function test_pending_payment_can_be_rejected_with_reason(): void
@@ -1611,6 +1655,21 @@ class PaymentApiTest extends TestCase
                 'error.code',
                 'INVALID_TRANSITION'
             );
+
+        $this->assertSame(
+            1,
+            DB::table('cash_transactions')
+                ->where(
+                    'source_type',
+                    'PAYMENT'
+                )
+                ->where(
+                    'source_id',
+                    $paymentId
+                )
+                ->count()
+        );
+
     }
 
     public function test_verified_payment_cannot_be_rejected(): void
@@ -1691,6 +1750,21 @@ class PaymentApiTest extends TestCase
                 'error.code',
                 'INVALID_TRANSITION'
             );
+
+        $this->assertSame(
+            0,
+            DB::table('cash_transactions')
+                ->where(
+                    'source_type',
+                    'PAYMENT'
+                )
+                ->where(
+                    'source_id',
+                    $paymentId
+                )
+                ->count()
+        );
+
     }
 
     public function test_rejected_payment_cannot_be_rejected_again(): void
@@ -2998,6 +3072,90 @@ class PaymentApiTest extends TestCase
                     'Pembayaran dibatalkan.',
             ]
         );
+
+        $cashIn =
+            DB::table('cash_transactions')
+                ->where(
+                    'source_type',
+                    'PAYMENT'
+                )
+                ->where(
+                    'source_id',
+                    $paymentId
+                )
+                ->first();
+
+        $this->assertNotNull(
+            $cashIn
+        );
+
+        $reversalId =
+            $response->json(
+                'data.reversal.id'
+            );
+
+        $this->assertDatabaseHas(
+            'cash_transactions',
+            [
+                'tenant_id' =>
+                    $workspace['tenant_id'],
+
+                'cash_account_id' =>
+                    $cashIn->cash_account_id,
+
+                'direction' =>
+                    'OUT',
+
+                'amount' =>
+                    '100000.00',
+
+                'currency' =>
+                    'IDR',
+
+                'source_type' =>
+                    'PAYMENT_REVERSAL',
+
+                'source_id' =>
+                    $reversalId,
+
+                'reversal_of_transaction_id' =>
+                    $cashIn->id,
+            ]
+        );
+
+        $this->assertSame(
+            1,
+            DB::table('cash_transactions')
+                ->where(
+                    'source_type',
+                    'PAYMENT'
+                )
+                ->where(
+                    'source_id',
+                    $paymentId
+                )
+                ->count()
+        );
+
+        $this->assertSame(
+            1,
+            DB::table('cash_transactions')
+                ->where(
+                    'source_type',
+                    'PAYMENT_REVERSAL'
+                )
+                ->where(
+                    'source_id',
+                    $reversalId
+                )
+                ->count()
+        );
+
+        $this->assertDatabaseCount(
+            'cash_transactions',
+            2
+        );
+
     }
 
     public function test_reversal_restores_paid_invoice_to_issued(): void
@@ -3382,6 +3540,31 @@ class PaymentApiTest extends TestCase
                 )
                 ->count()
         );
+
+        $this->assertSame(
+            1,
+            DB::table('cash_transactions')
+                ->where(
+                    'source_type',
+                    'PAYMENT'
+                )
+                ->where(
+                    'source_id',
+                    $paymentId
+                )
+                ->count()
+        );
+
+        $this->assertSame(
+            1,
+            DB::table('cash_transactions')
+                ->where(
+                    'source_type',
+                    'PAYMENT_REVERSAL'
+                )
+                ->count()
+        );
+
     }
 
     public function test_only_verified_payment_can_be_reversed(): void
@@ -3449,6 +3632,20 @@ class PaymentApiTest extends TestCase
                 'error.code',
                 'INVALID_TRANSITION'
             );
+
+        $this->assertSame(
+            0,
+            DB::table('cash_transactions')
+                ->whereIn(
+                    'source_id',
+                    [
+                        $pending,
+                        $rejected,
+                    ]
+                )
+                ->count()
+        );
+
     }
 
     public function test_reversal_requires_reason(): void
