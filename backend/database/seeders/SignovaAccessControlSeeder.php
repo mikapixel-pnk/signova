@@ -15,6 +15,7 @@ class SignovaAccessControlSeeder extends Seeder
             $this->seedCapabilities($featureIds);
             $this->seedMasterRoles();
             $this->seedMasterRoleCapabilities();
+            $this->syncExistingSystemRoleCapabilities();
         });
     }
 
@@ -99,6 +100,7 @@ class SignovaAccessControlSeeder extends Seeder
 
             ['finance', 'finance.receivable.view', 'Melihat Piutang', true],
             ['finance', 'finance.cash_bank.view', 'Melihat Kas & Bank', true],
+            ['finance', 'finance.cash_bank.manage', 'Mengelola Kas & Bank', true],
             ['finance', 'finance.margin.view', 'Melihat Margin', true],
 
             ['project', 'project.view', 'Melihat Proyek', false],
@@ -233,6 +235,7 @@ class SignovaAccessControlSeeder extends Seeder
                 'payment.reverse',
                 'finance.receivable.view',
                 'finance.cash_bank.view',
+                'finance.cash_bank.manage',
                 'finance.margin.view',
                 'project.view',
             ],
@@ -280,6 +283,70 @@ class SignovaAccessControlSeeder extends Seeder
                     'effect' => 'ALLOW',
                     'created_at' => now(),
                     'updated_at' => now(),
+                ]);
+            }
+        }
+    }
+
+
+    private function syncExistingSystemRoleCapabilities(): void
+    {
+        $roles = DB::table('roles')
+            ->where('is_system', true)
+            ->whereNotNull('master_role_id')
+            ->get([
+                'id',
+                'master_role_id',
+            ]);
+
+        foreach ($roles as $role) {
+            $masterCapabilities =
+                DB::table('master_role_capabilities')
+                    ->where(
+                        'master_role_id',
+                        $role->master_role_id
+                    )
+                    ->get([
+                        'capability_id',
+                        'effect',
+                    ]);
+
+            foreach ($masterCapabilities as $capability) {
+                $exists =
+                    DB::table('role_capabilities')
+                        ->where(
+                            'role_id',
+                            $role->id
+                        )
+                        ->where(
+                            'capability_id',
+                            $capability->capability_id
+                        )
+                        ->exists();
+
+                if ($exists) {
+                    /*
+                     * Jangan overwrite ALLOW / DENY existing.
+                     * Tenant-level explicit override harus tetap dihormati.
+                     */
+                    continue;
+                }
+
+                DB::table('role_capabilities')->insert([
+                    'role_id' =>
+                        $role->id,
+
+                    'capability_id' =>
+                        $capability->capability_id,
+
+                    'effect' =>
+                        $capability->effect,
+
+                    'created_at' =>
+                        now(),
+
+                    'updated_at' =>
+                        now(),
                 ]);
             }
         }

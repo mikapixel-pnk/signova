@@ -123,6 +123,42 @@ return Application::configure(basePath: dirname(__DIR__))
 
         $exceptions->render(
             function (
+                \App\Exceptions\Finance\EntityHasActivityException $exception,
+                Request $request
+            ) {
+                if (! $request->is('api/*')) {
+                    return null;
+                }
+
+                return ApiResponse::error(
+                    $request,
+                    'ENTITY_HAS_ACTIVITY',
+                    $exception->getMessage(),
+                    409
+                );
+            }
+        );
+
+        $exceptions->render(
+            function (
+                \App\Exceptions\Finance\CashAccountStateConflictException $exception,
+                Request $request
+            ) {
+                if (! $request->is('api/*')) {
+                    return null;
+                }
+
+                return ApiResponse::error(
+                    $request,
+                    'ENTITY_STATE_CONFLICT',
+                    $exception->getMessage(),
+                    409
+                );
+            }
+        );
+
+        $exceptions->render(
+            function (
                 \App\Exceptions\Invoice\InvalidInvoiceTransitionException $exception,
                 Request $request
             ) {

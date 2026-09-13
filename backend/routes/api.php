@@ -3,6 +3,7 @@
 use App\Http\Controllers\Api\V1\Auth\AuthController;
 use App\Http\Controllers\Api\Public\V1\Quotation\PublicQuotationController;
 use App\Http\Controllers\Api\V1\HealthController;
+use App\Http\Controllers\Api\V1\Finance\CashAccountController;
 use App\Http\Controllers\Api\V1\Invoice\InvoiceController;
 use App\Http\Controllers\Api\V1\Payment\PaymentController;
 use App\Http\Controllers\Api\V1\Settings\DocumentSettingController;
@@ -296,6 +297,69 @@ Route::prefix('v1')->group(function () {
             [PaymentController::class, 'destroyEvidence']
         )->middleware(
             'capability:payment.record'
+        );
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Kas & Bank
+        |--------------------------------------------------------------------------
+        */
+
+        Route::get(
+            '/finance/cash-accounts',
+            [CashAccountController::class, 'index']
+        )->middleware(
+            'capability:finance.cash_bank.view'
+        );
+
+        Route::post(
+            '/finance/cash-accounts',
+            [CashAccountController::class, 'store']
+        )->middleware(
+            'capability:finance.cash_bank.manage'
+        );
+
+        Route::get(
+            '/finance/cash-accounts/{cashAccountId}',
+            [CashAccountController::class, 'show']
+        )->middleware(
+            'capability:finance.cash_bank.view'
+        );
+
+        Route::patch(
+            '/finance/cash-accounts/{cashAccountId}',
+            [CashAccountController::class, 'update']
+        )->middleware(
+            'capability:finance.cash_bank.manage'
+        );
+
+        Route::delete(
+            '/finance/cash-accounts/{cashAccountId}',
+            [CashAccountController::class, 'destroy']
+        )->middleware(
+            'capability:finance.cash_bank.manage'
+        );
+
+        Route::post(
+            '/finance/cash-accounts/{cashAccountId}/actions/activate',
+            [CashAccountController::class, 'activate']
+        )->middleware(
+            'capability:finance.cash_bank.manage'
+        );
+
+        Route::post(
+            '/finance/cash-accounts/{cashAccountId}/actions/deactivate',
+            [CashAccountController::class, 'deactivate']
+        )->middleware(
+            'capability:finance.cash_bank.manage'
+        );
+
+        Route::post(
+            '/finance/cash-accounts/{cashAccountId}/actions/set-default',
+            [CashAccountController::class, 'setDefault']
+        )->middleware(
+            'capability:finance.cash_bank.manage'
         );
 
 
