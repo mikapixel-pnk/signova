@@ -8,6 +8,7 @@ use App\Models\FileAsset;
 use App\Models\Invoice;
 use App\Models\InvoiceStatusHistory;
 use App\Models\PaymentAllocation;
+use App\Models\PaymentReversal;
 use App\Models\Payment;
 use App\Services\File\FileService;
 use App\Tenancy\TenantContext;
@@ -290,6 +291,280 @@ class PaymentService
                 return $this->findOrFail(
                     $payment->id
                 );
+            }
+        );
+    }
+
+    public function reverse(
+        string $paymentId,
+        string $reason
+    ): array {
+        return DB::transaction(
+            function () use (
+                $paymentId,
+                $reason
+            ): array {
+                /*
+                 * Canonical lock order:
+                 * 1. payment
+                 * 2. affected invoices sorted by ID
+                 */
+                $payment =
+                    $this->baseQuery()
+                        ->where(
+                            'id',
+                            $paymentId
+                        )
+                        ->lockForUpdate()
+                        ->firstOrFail();
+
+                if (
+                    $payment->status !== 'VERIFIED'
+                ) {
+                    throw new InvalidPaymentTransitionException(
+                        $payment->status,
+                        'REVERSED'
+                    );
+                }
+
+                $invoiceIds =
+                    PaymentAllocation::query()
+                        ->where(
+                            'tenant_id',
+                            $this->tenantContext
+                                ->tenantId()
+                        )
+                        ->where(
+                            'payment_id',
+                            $payment->id
+                        )
+                        ->orderBy(
+                            'invoice_id'
+                        )
+                        ->pluck(
+                            'invoice_id'
+                        )
+                        ->unique()
+                        ->values();
+
+                $invoices = collect();
+
+                foreach ($invoiceIds as $invoiceId) {
+                    $invoice =
+                        Invoice::query()
+                            ->where(
+                                'tenant_id',
+                                $this->tenantContext
+                                    ->tenantId()
+                            )
+                            ->where(
+                                'id',
+                                $invoiceId
+                            )
+                            ->lockForUpdate()
+                            ->firstOrFail();
+
+                    $invoices->push(
+                        $invoice
+                    );
+                }
+
+                $reversal =
+                    PaymentReversal::query()
+                        ->create([
+                            'tenant_id' =>
+                                $this->tenantContext
+                                    ->tenantId(),
+
+                            'payment_id' =>
+                                $payment->id,
+
+                            /*
+                             * Starter baseline:
+                             * reversal selalu FULL payment.
+                             */
+                            'amount' =>
+                                $payment->amount,
+
+                            'reason' =>
+                                $reason,
+
+                            'reversed_by_user_id' =>
+                                $this->tenantContext
+                                    ->userId(),
+
+                            'reversed_at' =>
+                                now(),
+                        ]);
+
+                /*
+                 * Status harus berubah sebelum invoice
+                 * dihitung ulang, supaya allocation
+                 * payment ini tidak lagi dihitung sebagai
+                 * VERIFIED ledger.
+                 */
+                $payment->status =
+                    'REVERSED';
+
+                $payment->save();
+
+                $affectedInvoices = [];
+
+                foreach ($invoices as $invoice) {
+                    $invoiceTotalMinor =
+                        $this->minorUnits(
+                            $invoice->total
+                        );
+
+                    $paidMinor =
+                        $this->minorUnits(
+                            PaymentAllocation::query()
+                                ->join(
+                                    'payments',
+                                    function ($join): void {
+                                        $join
+                                            ->on(
+                                                'payments.id',
+                                                '=',
+                                                'payment_allocations.payment_id'
+                                            )
+                                            ->on(
+                                                'payments.tenant_id',
+                                                '=',
+                                                'payment_allocations.tenant_id'
+                                            );
+                                    }
+                                )
+                                ->where(
+                                    'payment_allocations.tenant_id',
+                                    $this->tenantContext
+                                        ->tenantId()
+                                )
+                                ->where(
+                                    'payment_allocations.invoice_id',
+                                    $invoice->id
+                                )
+                                ->where(
+                                    'payments.status',
+                                    'VERIFIED'
+                                )
+                                ->sum(
+                                    'payment_allocations.allocated_amount'
+                                )
+                        );
+
+                    if (
+                        $paidMinor < 0
+                        || $paidMinor > $invoiceTotalMinor
+                    ) {
+                        throw new \LogicException(
+                            'Ledger pembayaran tagihan tidak valid.'
+                        );
+                    }
+
+                    $outstandingMinor =
+                        $invoiceTotalMinor
+                        - $paidMinor;
+
+                    $fromState =
+                        $invoice->status;
+
+                    if ($paidMinor === 0) {
+                        $toState =
+                            'ISSUED';
+                    } elseif (
+                        $outstandingMinor === 0
+                    ) {
+                        $toState =
+                            'PAID';
+                    } else {
+                        $toState =
+                            'PARTIALLY_PAID';
+                    }
+
+                    $invoice->fill([
+                        'paid_amount' =>
+                            $this->minorToDecimal(
+                                $paidMinor
+                            ),
+
+                        'outstanding_amount' =>
+                            $this->minorToDecimal(
+                                $outstandingMinor
+                            ),
+
+                        'status' =>
+                            $toState,
+                    ]);
+
+                    $invoice->save();
+
+                    if ($fromState !== $toState) {
+                        InvoiceStatusHistory::query()
+                            ->create([
+                                'id' =>
+                                    (string) Str::ulid(),
+
+                                'tenant_id' =>
+                                    $this->tenantContext
+                                        ->tenantId(),
+
+                                'invoice_id' =>
+                                    $invoice->id,
+
+                                'from_state' =>
+                                    $fromState,
+
+                                'to_state' =>
+                                    $toState,
+
+                                'actor_user_id' =>
+                                    $this->tenantContext
+                                        ->userId(),
+
+                                'reason' =>
+                                    $reason,
+
+                                'source' =>
+                                    'PAYMENT_REVERSAL',
+
+                                'context' => [
+                                    'payment_id' =>
+                                        $payment->id,
+
+                                    'reversal_id' =>
+                                        $reversal->id,
+                                ],
+
+                                'occurred_at' =>
+                                    now(),
+                            ]);
+                    }
+
+                    $invoice->load([
+                        'customer',
+                        'statusHistory',
+                    ]);
+
+                    $affectedInvoices[] =
+                        $invoice;
+                }
+
+                $payment->load([
+                    'customer',
+                    'evidenceFile',
+                ]);
+
+                return [
+                    'reversal' =>
+                        $reversal,
+
+                    'payment' =>
+                        $payment,
+
+                    'invoices' =>
+                        $affectedInvoices,
+                ];
             }
         );
     }

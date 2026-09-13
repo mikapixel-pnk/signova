@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\V1\Payment;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Payment\ListPaymentsRequest;
 use App\Http\Requests\Payment\RejectPaymentRequest;
+use App\Http\Requests\Payment\ReversePaymentRequest;
 use App\Http\Requests\Payment\StorePaymentAllocationRequest;
 use App\Http\Requests\Payment\StorePaymentRequest;
 use App\Http\Requests\Payment\UploadPaymentEvidenceRequest;
@@ -144,6 +145,70 @@ class PaymentController extends Controller
             ))->resolve($request),
             200,
             'Pembayaran berhasil ditolak.'
+        );
+    }
+
+    public function reverse(
+        ReversePaymentRequest $request,
+        string $paymentId,
+        PaymentService $service
+    ): JsonResponse {
+        $result =
+            $service->reverse(
+                $paymentId,
+                $request->validated(
+                    'reason'
+                )
+            );
+
+        $invoices =
+            collect(
+                $result['invoices']
+            )
+                ->map(
+                    fn ($invoice) =>
+                        (new InvoiceResource(
+                            $invoice
+                        ))->resolve($request)
+                )
+                ->values()
+                ->all();
+
+        return ApiResponse::success(
+            $request,
+            [
+                'reversal' => [
+                    'id' =>
+                        $result['reversal']->id,
+
+                    'payment_id' =>
+                        $result['reversal']
+                            ->payment_id,
+
+                    'amount' =>
+                        $result['reversal']
+                            ->amount,
+
+                    'reason' =>
+                        $result['reversal']
+                            ->reason,
+
+                    'reversed_at' =>
+                        $result['reversal']
+                            ->reversed_at
+                            ?->toISOString(),
+                ],
+
+                'payment' =>
+                    (new PaymentResource(
+                        $result['payment']
+                    ))->resolve($request),
+
+                'invoices' =>
+                    $invoices,
+            ],
+            200,
+            'Pembayaran berhasil dibalik.'
         );
     }
 

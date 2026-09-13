@@ -2167,6 +2167,683 @@ class PaymentApiTest extends TestCase
         );
     }
 
+    public function test_verified_unallocated_payment_can_be_reversed(): void
+    {
+        $workspace = $this->workspace(
+            'reverse-unallocated@example.test',
+            'Reverse Unallocated'
+        );
+
+        $customer = $this->customer(
+            $workspace,
+            'Reverse Customer'
+        );
+
+        $paymentId =
+            $this->createPaymentWithAmount(
+                $workspace,
+                $customer,
+                '100000.00'
+            );
+
+        $this->postJson(
+            '/api/v1/payments/'
+            . $paymentId
+            . '/actions/verify'
+        )->assertOk();
+
+        $response =
+            $this->postJson(
+                '/api/v1/payments/'
+                . $paymentId
+                . '/actions/reverse',
+                [
+                    'reason' =>
+                        'Pembayaran dibatalkan.',
+                ]
+            );
+
+        $response
+            ->assertOk()
+            ->assertJsonPath(
+                'data.payment.status',
+                'REVERSED'
+            )
+            ->assertJsonPath(
+                'data.reversal.amount',
+                '100000.00'
+            )
+            ->assertJsonCount(
+                0,
+                'data.invoices'
+            );
+
+        $this->assertDatabaseHas(
+            'payment_reversals',
+            [
+                'tenant_id' =>
+                    $workspace['tenant_id'],
+
+                'payment_id' =>
+                    $paymentId,
+
+                'amount' =>
+                    '100000.00',
+
+                'reason' =>
+                    'Pembayaran dibatalkan.',
+            ]
+        );
+    }
+
+    public function test_reversal_restores_paid_invoice_to_issued(): void
+    {
+        $workspace = $this->workspace(
+            'reverse-paid@example.test',
+            'Reverse Paid'
+        );
+
+        $customer = $this->customer(
+            $workspace,
+            'Paid Reverse Customer'
+        );
+
+        $invoiceId =
+            $this->createReceivableInvoice(
+                $workspace,
+                $customer,
+                'INV-REVERSE-PAID',
+                '100000.00',
+                'ISSUED'
+            );
+
+        $paymentId =
+            $this->createPaymentWithAmount(
+                $workspace,
+                $customer,
+                '100000.00'
+            );
+
+        $this->postJson(
+            '/api/v1/payments/'
+            . $paymentId
+            . '/actions/verify'
+        )->assertOk();
+
+        $this->postJson(
+            '/api/v1/payments/'
+            . $paymentId
+            . '/allocations',
+            [
+                'invoice_id' =>
+                    $invoiceId,
+
+                'amount' =>
+                    '100000.00',
+            ]
+        )
+            ->assertCreated()
+            ->assertJsonPath(
+                'data.invoice.status',
+                'PAID'
+            );
+
+        $this->postJson(
+            '/api/v1/payments/'
+            . $paymentId
+            . '/actions/reverse',
+            [
+                'reason' =>
+                    'Transfer dikembalikan.',
+            ]
+        )
+            ->assertOk()
+            ->assertJsonPath(
+                'data.payment.status',
+                'REVERSED'
+            )
+            ->assertJsonPath(
+                'data.invoices.0.status',
+                'ISSUED'
+            )
+            ->assertJsonPath(
+                'data.invoices.0.paid_amount',
+                '0.00'
+            )
+            ->assertJsonPath(
+                'data.invoices.0.outstanding_amount',
+                '100000.00'
+            );
+
+        $this->assertDatabaseHas(
+            'invoices',
+            [
+                'id' =>
+                    $invoiceId,
+
+                'status' =>
+                    'ISSUED',
+
+                'paid_amount' =>
+                    '0.00',
+
+                'outstanding_amount' =>
+                    '100000.00',
+            ]
+        );
+
+        $this->assertDatabaseHas(
+            'invoice_status_history',
+            [
+                'invoice_id' =>
+                    $invoiceId,
+
+                'from_state' =>
+                    'PAID',
+
+                'to_state' =>
+                    'ISSUED',
+
+                'source' =>
+                    'PAYMENT_REVERSAL',
+
+                'reason' =>
+                    'Transfer dikembalikan.',
+            ]
+        );
+    }
+
+    public function test_reversal_preserves_other_verified_payment_contribution(): void
+    {
+        $workspace = $this->workspace(
+            'reverse-other-payment@example.test',
+            'Reverse Other Payment'
+        );
+
+        $customer = $this->customer(
+            $workspace,
+            'Other Payment Customer'
+        );
+
+        $invoiceId =
+            $this->createReceivableInvoice(
+                $workspace,
+                $customer,
+                'INV-REVERSE-OTHER',
+                '1000000.00',
+                'ISSUED'
+            );
+
+        $first =
+            $this->createPaymentWithAmount(
+                $workspace,
+                $customer,
+                '400000.00'
+            );
+
+        $second =
+            $this->createPaymentWithAmount(
+                $workspace,
+                $customer,
+                '600000.00'
+            );
+
+        foreach (
+            [
+                $first => '400000.00',
+                $second => '600000.00',
+            ] as $paymentId => $amount
+        ) {
+            $this->postJson(
+                '/api/v1/payments/'
+                . $paymentId
+                . '/actions/verify'
+            )->assertOk();
+
+            $this->postJson(
+                '/api/v1/payments/'
+                . $paymentId
+                . '/allocations',
+                [
+                    'invoice_id' =>
+                        $invoiceId,
+
+                    'amount' =>
+                        $amount,
+                ]
+            )->assertCreated();
+        }
+
+        $this->assertDatabaseHas(
+            'invoices',
+            [
+                'id' =>
+                    $invoiceId,
+
+                'status' =>
+                    'PAID',
+
+                'paid_amount' =>
+                    '1000000.00',
+            ]
+        );
+
+        $this->postJson(
+            '/api/v1/payments/'
+            . $second
+            . '/actions/reverse',
+            [
+                'reason' =>
+                    'Pembayaran kedua dibalik.',
+            ]
+        )
+            ->assertOk()
+            ->assertJsonPath(
+                'data.invoices.0.status',
+                'PARTIALLY_PAID'
+            )
+            ->assertJsonPath(
+                'data.invoices.0.paid_amount',
+                '400000.00'
+            )
+            ->assertJsonPath(
+                'data.invoices.0.outstanding_amount',
+                '600000.00'
+            );
+    }
+
+    public function test_split_payment_reversal_recalculates_all_invoices(): void
+    {
+        $workspace = $this->workspace(
+            'reverse-split@example.test',
+            'Reverse Split'
+        );
+
+        $customer = $this->customer(
+            $workspace,
+            'Split Customer'
+        );
+
+        $invoiceA =
+            $this->createReceivableInvoice(
+                $workspace,
+                $customer,
+                'INV-SPLIT-A',
+                '400000.00',
+                'ISSUED'
+            );
+
+        $invoiceB =
+            $this->createReceivableInvoice(
+                $workspace,
+                $customer,
+                'INV-SPLIT-B',
+                '600000.00',
+                'ISSUED'
+            );
+
+        $paymentId =
+            $this->createPaymentWithAmount(
+                $workspace,
+                $customer,
+                '1000000.00'
+            );
+
+        $this->postJson(
+            '/api/v1/payments/'
+            . $paymentId
+            . '/actions/verify'
+        )->assertOk();
+
+        foreach (
+            [
+                $invoiceA => '400000.00',
+                $invoiceB => '600000.00',
+            ] as $invoiceId => $amount
+        ) {
+            $this->postJson(
+                '/api/v1/payments/'
+                . $paymentId
+                . '/allocations',
+                [
+                    'invoice_id' =>
+                        $invoiceId,
+
+                    'amount' =>
+                        $amount,
+                ]
+            )->assertCreated();
+        }
+
+        $response =
+            $this->postJson(
+                '/api/v1/payments/'
+                . $paymentId
+                . '/actions/reverse',
+                [
+                    'reason' =>
+                        'Pembayaran split dibatalkan.',
+                ]
+            );
+
+        $response
+            ->assertOk()
+            ->assertJsonCount(
+                2,
+                'data.invoices'
+            );
+
+        foreach (
+            [
+                $invoiceA => '400000.00',
+                $invoiceB => '600000.00',
+            ] as $invoiceId => $total
+        ) {
+            $this->assertDatabaseHas(
+                'invoices',
+                [
+                    'id' =>
+                        $invoiceId,
+
+                    'status' =>
+                        'ISSUED',
+
+                    'paid_amount' =>
+                        '0.00',
+
+                    'outstanding_amount' =>
+                        $total,
+                ]
+            );
+        }
+    }
+
+    public function test_payment_cannot_be_reversed_twice(): void
+    {
+        $workspace = $this->workspace(
+            'reverse-twice@example.test',
+            'Reverse Twice'
+        );
+
+        $customer = $this->customer(
+            $workspace,
+            'Reverse Twice Customer'
+        );
+
+        $paymentId =
+            $this->createPaymentWithAmount(
+                $workspace,
+                $customer,
+                '100000.00'
+            );
+
+        $this->postJson(
+            '/api/v1/payments/'
+            . $paymentId
+            . '/actions/verify'
+        )->assertOk();
+
+        $payload = [
+            'reason' =>
+                'Pembalikan pertama.',
+        ];
+
+        $this->postJson(
+            '/api/v1/payments/'
+            . $paymentId
+            . '/actions/reverse',
+            $payload
+        )->assertOk();
+
+        $this->postJson(
+            '/api/v1/payments/'
+            . $paymentId
+            . '/actions/reverse',
+            $payload
+        )
+            ->assertStatus(409)
+            ->assertJsonPath(
+                'error.code',
+                'INVALID_TRANSITION'
+            );
+
+        $this->assertSame(
+            1,
+            DB::table(
+                'payment_reversals'
+            )
+                ->where(
+                    'payment_id',
+                    $paymentId
+                )
+                ->count()
+        );
+    }
+
+    public function test_only_verified_payment_can_be_reversed(): void
+    {
+        $workspace = $this->workspace(
+            'reverse-state@example.test',
+            'Reverse State'
+        );
+
+        $customer = $this->customer(
+            $workspace,
+            'Reverse State Customer'
+        );
+
+        $pending =
+            $this->createPaymentWithAmount(
+                $workspace,
+                $customer,
+                '100000.00'
+            );
+
+        $this->postJson(
+            '/api/v1/payments/'
+            . $pending
+            . '/actions/reverse',
+            [
+                'reason' =>
+                    'Tidak boleh.',
+            ]
+        )
+            ->assertStatus(409)
+            ->assertJsonPath(
+                'error.code',
+                'INVALID_TRANSITION'
+            );
+
+        $rejected =
+            $this->createPaymentWithAmount(
+                $workspace,
+                $customer,
+                '100000.00'
+            );
+
+        $this->postJson(
+            '/api/v1/payments/'
+            . $rejected
+            . '/actions/reject',
+            [
+                'reason' =>
+                    'Ditolak.',
+            ]
+        )->assertOk();
+
+        $this->postJson(
+            '/api/v1/payments/'
+            . $rejected
+            . '/actions/reverse',
+            [
+                'reason' =>
+                    'Tidak boleh.',
+            ]
+        )
+            ->assertStatus(409)
+            ->assertJsonPath(
+                'error.code',
+                'INVALID_TRANSITION'
+            );
+    }
+
+    public function test_reversal_requires_reason(): void
+    {
+        $workspace = $this->workspace(
+            'reverse-reason@example.test',
+            'Reverse Reason'
+        );
+
+        $customer = $this->customer(
+            $workspace,
+            'Reverse Reason Customer'
+        );
+
+        $paymentId =
+            $this->createPaymentWithAmount(
+                $workspace,
+                $customer,
+                '100000.00'
+            );
+
+        $this->postJson(
+            '/api/v1/payments/'
+            . $paymentId
+            . '/actions/verify'
+        )->assertOk();
+
+        $this->postJson(
+            '/api/v1/payments/'
+            . $paymentId
+            . '/actions/reverse',
+            [
+                'reason' => '   ',
+            ]
+        )
+            ->assertUnprocessable()
+            ->assertJsonPath(
+                'error.code',
+                'VALIDATION_FAILED'
+            )
+            ->assertJsonStructure([
+                'error' => [
+                    'details' => [
+                        'fields' => [
+                            'reason',
+                        ],
+                    ],
+                ],
+            ]);
+
+        $this->assertDatabaseMissing(
+            'payment_reversals',
+            [
+                'payment_id' =>
+                    $paymentId,
+            ]
+        );
+    }
+
+    public function test_foreign_tenant_cannot_reverse_payment(): void
+    {
+        $first = $this->workspace(
+            'reverse-local@example.test',
+            'Reverse Local'
+        );
+
+        $second = $this->workspace(
+            'reverse-foreign@example.test',
+            'Reverse Foreign'
+        );
+
+        $foreignCustomer =
+            $this->customer(
+                $second,
+                'Foreign Reverse Customer'
+            );
+
+        $paymentId =
+            $this->createPaymentWithAmount(
+                $second,
+                $foreignCustomer,
+                '100000.00'
+            );
+
+        $this->postJson(
+            '/api/v1/payments/'
+            . $paymentId
+            . '/actions/verify'
+        )->assertOk();
+
+        $this->actingAsWorkspace(
+            $first
+        );
+
+        $this->postJson(
+            '/api/v1/payments/'
+            . $paymentId
+            . '/actions/reverse',
+            [
+                'reason' =>
+                    'Tidak boleh.',
+            ]
+        )->assertNotFound();
+    }
+
+    public function test_reversal_requires_payment_reverse_capability(): void
+    {
+        $workspace = $this->workspace(
+            'reverse-capability@example.test',
+            'Reverse Capability'
+        );
+
+        $customer = $this->customer(
+            $workspace,
+            'Reverse Capability Customer'
+        );
+
+        $paymentId =
+            $this->createPaymentWithAmount(
+                $workspace,
+                $customer,
+                '100000.00'
+            );
+
+        $this->postJson(
+            '/api/v1/payments/'
+            . $paymentId
+            . '/actions/verify'
+        )->assertOk();
+
+        $this->denyCapability(
+            $workspace,
+            'payment.reverse'
+        );
+
+        $this->postJson(
+            '/api/v1/payments/'
+            . $paymentId
+            . '/actions/reverse',
+            [
+                'reason' =>
+                    'Tidak punya akses.',
+            ]
+        )
+            ->assertForbidden()
+            ->assertJsonPath(
+                'error.code',
+                'FORBIDDEN_CAPABILITY'
+            );
+
+        $this->assertDatabaseMissing(
+            'payment_reversals',
+            [
+                'payment_id' =>
+                    $paymentId,
+            ]
+        );
+    }
+
     private function createPaymentWithAmount(
         array $workspace,
         Customer $customer,

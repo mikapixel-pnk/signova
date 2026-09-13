@@ -257,6 +257,13 @@ Route::prefix('v1')->group(function () {
         );
 
         Route::post(
+            '/payments/{paymentId}/actions/reverse',
+            [PaymentController::class, 'reverse']
+        )->middleware(
+            'capability:payment.reverse'
+        );
+
+        Route::post(
             '/payments/{paymentId}/actions/reject',
             [PaymentController::class, 'reject']
         )->middleware(
