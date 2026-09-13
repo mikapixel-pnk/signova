@@ -857,6 +857,462 @@ class PaymentApiTest extends TestCase
             );
     }
 
+    public function test_pending_payment_can_be_verified(): void
+    {
+        $workspace = $this->workspace(
+            'payment-verify@example.test',
+            'Payment Verify'
+        );
+
+        $customer = $this->customer(
+            $workspace,
+            'Verify Customer'
+        );
+
+        $paymentId =
+            $this->createPayment(
+                $workspace,
+                $customer
+            );
+
+        $this->postJson(
+            '/api/v1/payments/'
+            . $paymentId
+            . '/actions/verify'
+        )
+            ->assertOk()
+            ->assertJsonPath(
+                'data.status',
+                'VERIFIED'
+            )
+            ->assertJsonPath(
+                'data.rejected_at',
+                null
+            )
+            ->assertJsonPath(
+                'data.rejection_reason',
+                null
+            );
+
+        $payment =
+            DB::table('payments')
+                ->where(
+                    'id',
+                    $paymentId
+                )
+                ->first();
+
+        $this->assertNotNull(
+            $payment
+        );
+
+        $this->assertSame(
+            'VERIFIED',
+            $payment->status
+        );
+
+        $this->assertSame(
+            $workspace['user_id'],
+            $payment->verified_by_user_id
+        );
+
+        $this->assertNotNull(
+            $payment->verified_at
+        );
+
+        $this->assertNull(
+            $payment->rejected_by_user_id
+        );
+
+        $this->assertNull(
+            $payment->rejected_at
+        );
+
+        $this->assertNull(
+            $payment->rejection_reason
+        );
+    }
+
+    public function test_pending_payment_can_be_rejected_with_reason(): void
+    {
+        $workspace = $this->workspace(
+            'payment-reject@example.test',
+            'Payment Reject'
+        );
+
+        $customer = $this->customer(
+            $workspace,
+            'Reject Customer'
+        );
+
+        $paymentId =
+            $this->createPayment(
+                $workspace,
+                $customer
+            );
+
+        $this->postJson(
+            '/api/v1/payments/'
+            . $paymentId
+            . '/actions/reject',
+            [
+                'reason' =>
+                    'Bukti transfer tidak valid.',
+            ]
+        )
+            ->assertOk()
+            ->assertJsonPath(
+                'data.status',
+                'REJECTED'
+            )
+            ->assertJsonPath(
+                'data.rejection_reason',
+                'Bukti transfer tidak valid.'
+            )
+            ->assertJsonPath(
+                'data.verified_at',
+                null
+            );
+
+        $payment =
+            DB::table('payments')
+                ->where(
+                    'id',
+                    $paymentId
+                )
+                ->first();
+
+        $this->assertSame(
+            'REJECTED',
+            $payment->status
+        );
+
+        $this->assertSame(
+            $workspace['user_id'],
+            $payment->rejected_by_user_id
+        );
+
+        $this->assertNotNull(
+            $payment->rejected_at
+        );
+
+        $this->assertSame(
+            'Bukti transfer tidak valid.',
+            $payment->rejection_reason
+        );
+
+        $this->assertNull(
+            $payment->verified_by_user_id
+        );
+
+        $this->assertNull(
+            $payment->verified_at
+        );
+    }
+
+    public function test_reject_requires_reason(): void
+    {
+        $workspace = $this->workspace(
+            'payment-reject-reason@example.test',
+            'Payment Reject Reason'
+        );
+
+        $customer = $this->customer(
+            $workspace,
+            'Reason Customer'
+        );
+
+        $paymentId =
+            $this->createPayment(
+                $workspace,
+                $customer
+            );
+
+        $this->postJson(
+            '/api/v1/payments/'
+            . $paymentId
+            . '/actions/reject',
+            [
+                'reason' => '   ',
+            ]
+        )
+            ->assertUnprocessable()
+            ->assertJsonPath(
+                'error.code',
+                'VALIDATION_FAILED'
+            );
+
+        $this->assertDatabaseHas(
+            'payments',
+            [
+                'id' => $paymentId,
+                'status' => 'PENDING',
+            ]
+        );
+    }
+
+    public function test_verified_payment_cannot_be_verified_again(): void
+    {
+        $workspace = $this->workspace(
+            'payment-double-verify@example.test',
+            'Payment Double Verify'
+        );
+
+        $customer = $this->customer(
+            $workspace,
+            'Double Verify Customer'
+        );
+
+        $paymentId =
+            $this->createPayment(
+                $workspace,
+                $customer
+            );
+
+        $this->postJson(
+            '/api/v1/payments/'
+            . $paymentId
+            . '/actions/verify'
+        )->assertOk();
+
+        $this->postJson(
+            '/api/v1/payments/'
+            . $paymentId
+            . '/actions/verify'
+        )
+            ->assertStatus(409)
+            ->assertJsonPath(
+                'error.code',
+                'INVALID_TRANSITION'
+            );
+    }
+
+    public function test_verified_payment_cannot_be_rejected(): void
+    {
+        $workspace = $this->workspace(
+            'payment-verify-reject@example.test',
+            'Payment Verify Reject'
+        );
+
+        $customer = $this->customer(
+            $workspace,
+            'Verify Reject Customer'
+        );
+
+        $paymentId =
+            $this->createPayment(
+                $workspace,
+                $customer
+            );
+
+        $this->postJson(
+            '/api/v1/payments/'
+            . $paymentId
+            . '/actions/verify'
+        )->assertOk();
+
+        $this->postJson(
+            '/api/v1/payments/'
+            . $paymentId
+            . '/actions/reject',
+            [
+                'reason' =>
+                    'Tidak boleh.',
+            ]
+        )
+            ->assertStatus(409)
+            ->assertJsonPath(
+                'error.code',
+                'INVALID_TRANSITION'
+            );
+    }
+
+    public function test_rejected_payment_cannot_be_verified(): void
+    {
+        $workspace = $this->workspace(
+            'payment-reject-verify@example.test',
+            'Payment Reject Verify'
+        );
+
+        $customer = $this->customer(
+            $workspace,
+            'Reject Verify Customer'
+        );
+
+        $paymentId =
+            $this->createPayment(
+                $workspace,
+                $customer
+            );
+
+        $this->postJson(
+            '/api/v1/payments/'
+            . $paymentId
+            . '/actions/reject',
+            [
+                'reason' =>
+                    'Ditolak.',
+            ]
+        )->assertOk();
+
+        $this->postJson(
+            '/api/v1/payments/'
+            . $paymentId
+            . '/actions/verify'
+        )
+            ->assertStatus(409)
+            ->assertJsonPath(
+                'error.code',
+                'INVALID_TRANSITION'
+            );
+    }
+
+    public function test_rejected_payment_cannot_be_rejected_again(): void
+    {
+        $workspace = $this->workspace(
+            'payment-double-reject@example.test',
+            'Payment Double Reject'
+        );
+
+        $customer = $this->customer(
+            $workspace,
+            'Double Reject Customer'
+        );
+
+        $paymentId =
+            $this->createPayment(
+                $workspace,
+                $customer
+            );
+
+        $this->postJson(
+            '/api/v1/payments/'
+            . $paymentId
+            . '/actions/reject',
+            [
+                'reason' =>
+                    'Pertama.',
+            ]
+        )->assertOk();
+
+        $this->postJson(
+            '/api/v1/payments/'
+            . $paymentId
+            . '/actions/reject',
+            [
+                'reason' =>
+                    'Kedua.',
+            ]
+        )
+            ->assertStatus(409)
+            ->assertJsonPath(
+                'error.code',
+                'INVALID_TRANSITION'
+            );
+    }
+
+    public function test_foreign_tenant_cannot_verify_or_reject_payment(): void
+    {
+        $first = $this->workspace(
+            'payment-action-first@example.test',
+            'Payment Action First'
+        );
+
+        $second = $this->workspace(
+            'payment-action-second@example.test',
+            'Payment Action Second'
+        );
+
+        $customer = $this->customer(
+            $second,
+            'Action Customer'
+        );
+
+        $paymentId =
+            $this->createPayment(
+                $second,
+                $customer
+            );
+
+        $this->actingAsWorkspace(
+            $first
+        );
+
+        $this->postJson(
+            '/api/v1/payments/'
+            . $paymentId
+            . '/actions/verify'
+        )->assertNotFound();
+
+        $this->postJson(
+            '/api/v1/payments/'
+            . $paymentId
+            . '/actions/reject',
+            [
+                'reason' =>
+                    'Foreign reject.',
+            ]
+        )->assertNotFound();
+    }
+
+    public function test_verify_capability_is_enforced(): void
+    {
+        $workspace = $this->workspace(
+            'payment-verify-capability@example.test',
+            'Payment Verify Capability'
+        );
+
+        $customer = $this->customer(
+            $workspace,
+            'Verify Capability Customer'
+        );
+
+        $paymentId =
+            $this->createPayment(
+                $workspace,
+                $customer
+            );
+
+        $this->denyCapability(
+            $workspace,
+            'payment.verify'
+        );
+
+        $this->postJson(
+            '/api/v1/payments/'
+            . $paymentId
+            . '/actions/verify'
+        )
+            ->assertForbidden()
+            ->assertJsonPath(
+                'error.code',
+                'FORBIDDEN_CAPABILITY'
+            );
+
+        $this->postJson(
+            '/api/v1/payments/'
+            . $paymentId
+            . '/actions/reject',
+            [
+                'reason' =>
+                    'Tidak punya akses.',
+            ]
+        )
+            ->assertForbidden()
+            ->assertJsonPath(
+                'error.code',
+                'FORBIDDEN_CAPABILITY'
+            );
+
+        $this->assertDatabaseHas(
+            'payments',
+            [
+                'id' => $paymentId,
+                'status' => 'PENDING',
+            ]
+        );
+    }
+
     private function createPayment(
         array $workspace,
         Customer $customer

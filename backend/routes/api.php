@@ -242,6 +242,20 @@ Route::prefix('v1')->group(function () {
             'capability:payment.record'
         );
 
+        Route::post(
+            '/payments/{paymentId}/actions/verify',
+            [PaymentController::class, 'verify']
+        )->middleware(
+            'capability:payment.verify'
+        );
+
+        Route::post(
+            '/payments/{paymentId}/actions/reject',
+            [PaymentController::class, 'reject']
+        )->middleware(
+            'capability:payment.verify'
+        );
+
         Route::get(
             '/payments/{paymentId}',
             [PaymentController::class, 'show']

@@ -2,6 +2,7 @@
 
 namespace App\Services\Payment;
 
+use App\Exceptions\Payment\InvalidPaymentTransitionException;
 use App\Models\FileAsset;
 use App\Models\Payment;
 use App\Services\File\FileService;
@@ -174,6 +175,118 @@ class PaymentService
 
         return $this->findOrFail(
             $payment->id
+        );
+    }
+
+    public function verify(
+        string $paymentId
+    ): Payment {
+        return DB::transaction(
+            function () use (
+                $paymentId
+            ): Payment {
+                $payment =
+                    $this->baseQuery()
+                        ->where(
+                            'id',
+                            $paymentId
+                        )
+                        ->lockForUpdate()
+                        ->firstOrFail();
+
+                if (
+                    $payment->status !== 'PENDING'
+                ) {
+                    throw new InvalidPaymentTransitionException(
+                        $payment->status,
+                        'VERIFIED'
+                    );
+                }
+
+                $payment->fill([
+                    'status' =>
+                        'VERIFIED',
+
+                    'verified_by_user_id' =>
+                        $this->tenantContext
+                            ->userId(),
+
+                    'verified_at' =>
+                        now(),
+
+                    'rejected_by_user_id' =>
+                        null,
+
+                    'rejected_at' =>
+                        null,
+
+                    'rejection_reason' =>
+                        null,
+                ]);
+
+                $payment->save();
+
+                return $this->findOrFail(
+                    $payment->id
+                );
+            }
+        );
+    }
+
+    public function reject(
+        string $paymentId,
+        string $reason
+    ): Payment {
+        return DB::transaction(
+            function () use (
+                $paymentId,
+                $reason
+            ): Payment {
+                $payment =
+                    $this->baseQuery()
+                        ->where(
+                            'id',
+                            $paymentId
+                        )
+                        ->lockForUpdate()
+                        ->firstOrFail();
+
+                if (
+                    $payment->status !== 'PENDING'
+                ) {
+                    throw new InvalidPaymentTransitionException(
+                        $payment->status,
+                        'REJECTED'
+                    );
+                }
+
+                $payment->fill([
+                    'status' =>
+                        'REJECTED',
+
+                    'rejected_by_user_id' =>
+                        $this->tenantContext
+                            ->userId(),
+
+                    'rejected_at' =>
+                        now(),
+
+                    'rejection_reason' =>
+                        $reason,
+
+                    'verified_by_user_id' =>
+                        null,
+
+                    'verified_at' =>
+                        null,
+                ]);
+
+                $payment->save();
+
+                return $this->findOrFail(
+                    $payment->id
+                );
+            }
         );
     }
 

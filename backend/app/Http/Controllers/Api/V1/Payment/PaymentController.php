@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\V1\Payment;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Payment\ListPaymentsRequest;
+use App\Http\Requests\Payment\RejectPaymentRequest;
 use App\Http\Requests\Payment\StorePaymentRequest;
 use App\Http\Requests\Payment\UploadPaymentEvidenceRequest;
 use App\Http\Resources\Payment\PaymentResource;
@@ -98,6 +99,49 @@ class PaymentController extends Controller
             (new PaymentResource(
                 $payment
             ))->resolve($request)
+        );
+    }
+
+    public function verify(
+        Request $request,
+        string $paymentId,
+        PaymentService $service
+    ): JsonResponse {
+        $payment =
+            $service->verify(
+                $paymentId
+            );
+
+        return ApiResponse::success(
+            $request,
+            (new PaymentResource(
+                $payment
+            ))->resolve($request),
+            200,
+            'Pembayaran berhasil diverifikasi.'
+        );
+    }
+
+    public function reject(
+        RejectPaymentRequest $request,
+        string $paymentId,
+        PaymentService $service
+    ): JsonResponse {
+        $payment =
+            $service->reject(
+                $paymentId,
+                $request->validated(
+                    'reason'
+                )
+            );
+
+        return ApiResponse::success(
+            $request,
+            (new PaymentResource(
+                $payment
+            ))->resolve($request),
+            200,
+            'Pembayaran berhasil ditolak.'
         );
     }
 
