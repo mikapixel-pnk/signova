@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class TenantDocumentSetting extends Model
 {
@@ -23,5 +24,14 @@ class TenantDocumentSetting extends Model
         'invoice_footnote',
         'signature_name',
         'signature_title',
+        'signature_image_file_id',
     ];
+
+    public function signatureImage(): BelongsTo
+    {
+        return $this->belongsTo(
+            FileAsset::class,
+            'signature_image_file_id'
+        );
+    }
 }
