@@ -4,6 +4,7 @@ use App\Http\Controllers\Api\V1\Auth\AuthController;
 use App\Http\Controllers\Api\Public\V1\Quotation\PublicQuotationController;
 use App\Http\Controllers\Api\V1\HealthController;
 use App\Http\Controllers\Api\V1\Invoice\InvoiceController;
+use App\Http\Controllers\Api\V1\Payment\PaymentController;
 use App\Http\Controllers\Api\V1\Settings\DocumentSettingController;
 use App\Http\Controllers\Api\V1\Settings\PaymentSettingController;
 use App\Http\Controllers\Api\V1\Quotation\QuotationController;
@@ -218,6 +219,55 @@ Route::prefix('v1')->group(function () {
             [InvoiceController::class, 'show']
         )->middleware(
             'capability:invoice.view'
+        );
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Pembayaran
+        |--------------------------------------------------------------------------
+        */
+
+        Route::get(
+            '/payments',
+            [PaymentController::class, 'index']
+        )->middleware(
+            'capability:payment.view'
+        );
+
+        Route::post(
+            '/payments',
+            [PaymentController::class, 'store']
+        )->middleware(
+            'capability:payment.record'
+        );
+
+        Route::get(
+            '/payments/{paymentId}',
+            [PaymentController::class, 'show']
+        )->middleware(
+            'capability:payment.view'
+        );
+
+        Route::post(
+            '/payments/{paymentId}/evidence',
+            [PaymentController::class, 'uploadEvidence']
+        )->middleware(
+            'capability:payment.record'
+        );
+
+        Route::get(
+            '/payments/{paymentId}/evidence',
+            [PaymentController::class, 'evidence']
+        )->middleware(
+            'capability:payment.view'
+        );
+
+        Route::delete(
+            '/payments/{paymentId}/evidence',
+            [PaymentController::class, 'destroyEvidence']
+        )->middleware(
+            'capability:payment.record'
         );
 
 

@@ -17,35 +17,56 @@ class FileService
         'image/webp' => 'webp',
     ];
 
+    private const PAYMENT_PROOF_MIME_MAP = [
+        'image/png' => 'png',
+        'image/jpeg' => 'jpg',
+        'image/webp' => 'webp',
+        'application/pdf' => 'pdf',
+    ];
+
     public function __construct(
         private readonly TenantContext $tenantContext
     ) {
     }
 
+    public function storePaymentProof(
+        UploadedFile $uploadedFile
+    ): FileAsset {
+        return $this->storePrivateFile(
+            $uploadedFile,
+            'PAYMENT_PROOF',
+            'payment-proofs',
+            self::PAYMENT_PROOF_MIME_MAP
+        );
+    }
+
     public function storePaymentQr(
         UploadedFile $uploadedFile
     ): FileAsset {
-        return $this->storePrivateImage(
+        return $this->storePrivateFile(
             $uploadedFile,
             'PAYMENT_QR',
-            'payment-qr'
+            'payment-qr',
+            self::SIGNATURE_MIME_MAP
         );
     }
 
     public function storeSignature(
         UploadedFile $uploadedFile
     ): FileAsset {
-        return $this->storePrivateImage(
+        return $this->storePrivateFile(
             $uploadedFile,
             'DOCUMENT_SIGNATURE',
-            'document-signatures'
+            'document-signatures',
+            self::SIGNATURE_MIME_MAP
         );
     }
 
-    private function storePrivateImage(
+    private function storePrivateFile(
         UploadedFile $uploadedFile,
         string $purpose,
-        string $folder
+        string $folder,
+        array $mimeMap
     ): FileAsset {
         $tenantId =
             $this->tenantContext->tenantId();
@@ -60,7 +81,7 @@ class FileService
             ! is_string($mimeType)
             || ! array_key_exists(
                 $mimeType,
-                self::SIGNATURE_MIME_MAP
+                $mimeMap
             )
         ) {
             throw new RuntimeException(
@@ -69,7 +90,7 @@ class FileService
         }
 
         $extension =
-            self::SIGNATURE_MIME_MAP[
+            $mimeMap[
                 $mimeType
             ];
 
