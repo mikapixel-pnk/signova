@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
 
     <title>
-        Tagihan {{ $invoice->invoice_number }}
+        Tagihan {{ $document['number'] }}
     </title>
 
     <style>
@@ -189,7 +189,7 @@
             </div>
 
             <div class="document-number">
-                {{ $invoice->invoice_number }}
+                {{ $document['number'] }}
             </div>
         </td>
     </tr>
@@ -201,7 +201,7 @@
 
 <div>
     <strong>
-        {{ $invoice->customer->name }}
+        {{ $customer['name'] }}
     </strong>
 </div>
 
@@ -213,9 +213,7 @@
 
         <td>
             :
-            {{ \App\Support\Localization\CanonicalLabel::status(
-                $invoice->status
-            ) }}
+            {{ $document['status_label'] }}
         </td>
     </tr>
 
@@ -226,9 +224,7 @@
 
         <td>
             :
-            {{ $invoice->issued_at
-                ? $invoice->issued_at->format('d-m-Y')
-                : '-' }}
+            {{ $document['issued_at'] }}
         </td>
     </tr>
 
@@ -239,9 +235,7 @@
 
         <td>
             :
-            {{ $invoice->due_at
-                ? $invoice->due_at->format('d-m-Y')
-                : '-' }}
+            {{ $document['due_at'] }}
         </td>
     </tr>
 </table>
@@ -259,62 +253,38 @@
     </thead>
 
     <tbody>
-        @foreach ($invoice->items as $index => $item)
+        @foreach ($items as $item)
             <tr>
                 <td class="text-center">
-                    {{ $index + 1 }}
+                    {{ $item['number'] }}
                 </td>
 
                 <td>
                     <strong>
-                        {{ $item->name }}
+                        {{ $item['name'] }}
                     </strong>
 
-                    @if ($item->description)
+                    @if ($item['description'])
                         <div class="muted">
-                            {{ $item->description }}
+                            {{ $item['description'] }}
                         </div>
                     @endif
                 </td>
 
                 <td class="text-right">
-                    {{ rtrim(
-                        rtrim(
-                            number_format(
-                                (float) $item->quantity,
-                                4,
-                                ',',
-                                '.'
-                            ),
-                            '0'
-                        ),
-                        ','
-                    ) }}
+                    {{ $item['quantity'] }}
                 </td>
 
                 <td>
-                    {{ $item->unit_symbol
-                        ?: $item->unit_name
-                        ?: $item->unit_code
-                        ?: '-' }}
+                    {{ $item['unit'] }}
                 </td>
 
                 <td class="text-right">
-                    {{ number_format(
-                        (float) $item->unit_price,
-                        2,
-                        ',',
-                        '.'
-                    ) }}
+                    {{ $item['unit_price'] }}
                 </td>
 
                 <td class="text-right">
-                    {{ number_format(
-                        (float) $item->amount,
-                        2,
-                        ',',
-                        '.'
-                    ) }}
+                    {{ $item['amount'] }}
                 </td>
             </tr>
         @endforeach
@@ -327,12 +297,7 @@
             <td>Subtotal</td>
 
             <td class="text-right">
-                {{ number_format(
-                    (float) $invoice->subtotal,
-                    2,
-                    ',',
-                    '.'
-                ) }}
+                {{ $summary['subtotal'] }}
             </td>
         </tr>
 
@@ -340,12 +305,7 @@
             <td>Diskon</td>
 
             <td class="text-right">
-                {{ number_format(
-                    (float) $invoice->discount_total,
-                    2,
-                    ',',
-                    '.'
-                ) }}
+                {{ $summary['discount_total'] }}
             </td>
         </tr>
 
@@ -353,12 +313,7 @@
             <td>Pajak</td>
 
             <td class="text-right">
-                {{ number_format(
-                    (float) $invoice->tax_total,
-                    2,
-                    ',',
-                    '.'
-                ) }}
+                {{ $summary['tax_total'] }}
             </td>
         </tr>
 
@@ -366,24 +321,19 @@
             <td>Total</td>
 
             <td class="text-right">
-                {{ $invoice->currency }}
-                {{ number_format(
-                    (float) $invoice->total,
-                    2,
-                    ',',
-                    '.'
-                ) }}
+                {{ $document['currency'] }}
+                {{ $summary['total'] }}
             </td>
         </tr>
     </table>
 </div>
 
-@if ($invoice->notes)
+@if ($document['notes'])
     <div class="notes">
         <strong>Catatan</strong>
 
         <div>
-            {!! nl2br(e($invoice->notes)) !!}
+            {!! nl2br(e($document['notes'])) !!}
         </div>
     </div>
 @endif

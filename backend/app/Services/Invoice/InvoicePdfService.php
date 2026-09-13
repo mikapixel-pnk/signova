@@ -2,18 +2,15 @@
 
 namespace App\Services\Invoice;
 
-use App\Models\FileAsset;
-use App\Models\TenantDocumentSetting;
-use App\Tenancy\TenantContext;
-use Barryvdh\DomPDF\Facade\Pdf;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Storage;
+use App\Services\Invoice\Document\InvoiceDocumentViewModelBuilder;
+use App\Services\Invoice\Document\InvoicePdfRenderer;
 
 class InvoicePdfService
 {
     public function __construct(
-        private readonly TenantContext $tenantContext,
-        private readonly InvoiceService $invoiceService
+        private readonly InvoiceService $invoiceService,
+        private readonly InvoiceDocumentViewModelBuilder $viewModelBuilder,
+        private readonly InvoicePdfRenderer $renderer
     ) {
     }
 
@@ -29,147 +26,29 @@ class InvoicePdfService
         string $invoiceId
     ): array {
         $invoice =
-            $this->invoiceService->findOrFail(
-                $invoiceId
-            );
+            $this->invoiceService
+                ->findOrFail(
+                    $invoiceId
+                );
 
-        $tenantId =
-            $this->tenantContext->tenantId();
-
-        $tenant = DB::table('tenants')
-            ->where(
-                'id',
-                $tenantId
-            )
-            ->firstOrFail();
-
-        $settings =
-            TenantDocumentSetting::query()
-                ->where(
-                    'tenant_id',
-                    $tenantId
-                )
-                ->first();
-
-        $branding = [
-            'business_name' =>
-                $settings?->business_name
-                ?: $tenant->name,
-
-            'address' =>
-                $settings?->address,
-
-            'phone' =>
-                $settings?->phone,
-
-            'email' =>
-                $settings?->email,
-
-            'tax_id' =>
-                $settings?->tax_id,
-
-            'invoice_footnote' =>
-                $settings?->invoice_footnote,
-
-            'signature_name' =>
-                $settings?->signature_name,
-
-            'signature_title' =>
-                $settings?->signature_title,
-
-            'signature_image_data_uri' =>
-                $this->signatureDataUri(
-                    $tenantId,
-                    $settings?->signature_image_file_id
-                ),
-        ];
-
-        $content = Pdf::loadView(
-            'pdf.invoice',
-            [
-                'invoice' =>
-                    $invoice,
-
-                'branding' =>
-                    $branding,
-            ]
-        )
-            ->setPaper(
-                'a4',
-                'portrait'
-            )
-            ->output();
+        $viewModel =
+            $this->viewModelBuilder
+                ->build(
+                    $invoice
+                );
 
         return [
             'content' =>
-                $content,
+                $this->renderer->render(
+                    'pdf.invoices.classic',
+                    $viewModel
+                ),
 
             'filename' =>
                 $this->filename(
                     $invoice->invoice_number
                 ),
         ];
-    }
-
-    private function signatureDataUri(
-        string $tenantId,
-        ?string $fileId
-    ): ?string {
-        if ($fileId === null) {
-            return null;
-        }
-
-        $file = FileAsset::query()
-            ->where(
-                'tenant_id',
-                $tenantId
-            )
-            ->where(
-                'id',
-                $fileId
-            )
-            ->where(
-                'purpose',
-                'DOCUMENT_SIGNATURE'
-            )
-            ->whereIn(
-                'mime_type',
-                [
-                    'image/png',
-                    'image/jpeg',
-                    'image/webp',
-                ]
-            )
-            ->first();
-
-        if ($file === null) {
-            return null;
-        }
-
-        $disk = Storage::disk(
-            $file->storage_disk
-        );
-
-        if (! $disk->exists(
-            $file->object_key
-        )) {
-            return null;
-        }
-
-        $contents = $disk->get(
-            $file->object_key
-        );
-
-        if ($contents === '') {
-            return null;
-        }
-
-        return 'data:'
-            . $file->mime_type
-            . ';base64,'
-            . base64_encode(
-                $contents
-            );
     }
 
     public function filename(
