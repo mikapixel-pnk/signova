@@ -5,6 +5,7 @@ namespace App\Services\Invoice;
 use App\Models\Invoice;
 use App\Models\InvoiceItem;
 use App\Models\InvoiceStatusHistory;
+use App\Services\Document\DocumentNumberService;
 use App\Services\Quotation\QuotationService;
 use App\Tenancy\TenantContext;
 use Illuminate\Support\Facades\DB;
@@ -16,12 +17,12 @@ class QuotationToInvoiceService
     public function __construct(
         private readonly TenantContext $tenantContext,
         private readonly QuotationService $quotationService,
+        private readonly DocumentNumberService $documentNumberService,
     ) {
     }
 
     public function convert(
         string $quotationId,
-        string $invoiceNumber,
         ?string $dueAt = null
     ): Invoice {
         $quotation =
@@ -71,7 +72,6 @@ class QuotationToInvoiceService
                 $quotation,
                 $version,
                 $tenantId,
-                $invoiceNumber,
                 $dueAt
             ): Invoice {
                 $lockedQuotation = DB::table(
@@ -133,6 +133,10 @@ class QuotationToInvoiceService
                         'statusHistory',
                     ]);
                 }
+
+                $invoiceNumber =
+                    $this->documentNumberService
+                        ->nextInvoiceNumber();
 
                 $invoiceId =
                     (string) Str::ulid();

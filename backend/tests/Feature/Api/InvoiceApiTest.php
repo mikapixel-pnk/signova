@@ -1237,6 +1237,890 @@ class InvoiceApiTest extends TestCase
         );
     }
 
+    public function test_owner_can_create_manual_draft_invoice(): void
+    {
+        $workspace =
+            $this->workspace(
+                'invoice-create@example.test',
+                'Invoice Create'
+            );
+
+        $customerId =
+            $this->insertCustomer(
+                $workspace['tenant_id'],
+                'CUST-CREATE',
+                'Pelanggan Create'
+            );
+
+        $this->actingAsWorkspace(
+            $workspace
+        );
+
+        $response =
+            $this->postJson(
+                '/api/v1/invoices',
+                [
+                    'customer_id' =>
+                        $customerId,
+
+                    'due_at' =>
+                        '2026-10-15T12:00:00+07:00',
+
+                    'notes' =>
+                        '  Invoice manual  ',
+
+                    'items' => [
+                        [
+                            'item_type' =>
+                                'SERVICE',
+
+                            'code' =>
+                                'SRV-MANUAL',
+
+                            'name' =>
+                                'Pembuatan Neon Box',
+
+                            'quantity' =>
+                                2,
+
+                            'pricing_method' =>
+                                'MANUAL',
+
+                            'unit_price' =>
+                                150000,
+
+                            'discount_amount' =>
+                                10000,
+
+                            'tax_rate' =>
+                                11,
+                        ],
+                    ],
+                ]
+            );
+
+        $response
+            ->assertCreated()
+            ->assertJsonPath(
+                'success',
+                true
+            )
+            ->assertJsonPath(
+                'data.status',
+                'DRAFT'
+            )
+            ->assertJsonPath(
+                'data.status_label',
+                'Draf'
+            )
+            ->assertJsonPath(
+                'data.customer_id',
+                $customerId
+            )
+            ->assertJsonPath(
+                'data.currency',
+                'IDR'
+            )
+            ->assertJsonPath(
+                'data.subtotal',
+                '300000.00'
+            )
+            ->assertJsonPath(
+                'data.discount_total',
+                '10000.00'
+            )
+            ->assertJsonPath(
+                'data.tax_total',
+                '31900.00'
+            )
+            ->assertJsonPath(
+                'data.total',
+                '321900.00'
+            )
+            ->assertJsonPath(
+                'data.paid_amount',
+                '0.00'
+            )
+            ->assertJsonPath(
+                'data.outstanding_amount',
+                '0.00'
+            )
+            ->assertJsonPath(
+                'data.notes',
+                'Invoice manual'
+            );
+
+        $invoiceId =
+            $response->json(
+                'data.id'
+            );
+
+        $invoiceNumber =
+            $response->json(
+                'data.invoice_number'
+            );
+
+        $this->assertMatchesRegularExpression(
+            '/^INV-\d{6}-0001$/',
+            $invoiceNumber
+        );
+
+        $this->assertDatabaseHas(
+            'invoices',
+            [
+                'id' =>
+                    $invoiceId,
+
+                'tenant_id' =>
+                    $workspace[
+                        'tenant_id'
+                    ],
+
+                'customer_id' =>
+                    $customerId,
+
+                'invoice_number' =>
+                    $invoiceNumber,
+
+                'status' =>
+                    'DRAFT',
+
+                'subtotal' =>
+                    '300000.00',
+
+                'discount_total' =>
+                    '10000.00',
+
+                'tax_total' =>
+                    '31900.00',
+
+                'total' =>
+                    '321900.00',
+
+                'paid_amount' =>
+                    '0.00',
+
+                'outstanding_amount' =>
+                    '0.00',
+            ]
+        );
+
+        $this->assertDatabaseHas(
+            'invoice_items',
+            [
+                'invoice_id' =>
+                    $invoiceId,
+
+                'tenant_id' =>
+                    $workspace[
+                        'tenant_id'
+                    ],
+
+                'catalog_item_id' =>
+                    null,
+
+                'name' =>
+                    'Pembuatan Neon Box',
+
+                'quantity' =>
+                    '2.0000',
+
+                'unit_price' =>
+                    '150000.00',
+
+                'discount_amount' =>
+                    '10000.00',
+
+                'tax_amount' =>
+                    '31900.00',
+
+                'amount' =>
+                    '321900.00',
+            ]
+        );
+
+        $history =
+            DB::table(
+                'invoice_status_history'
+            )
+                ->where(
+                    'invoice_id',
+                    $invoiceId
+                )
+                ->first();
+
+        $this->assertNotNull(
+            $history
+        );
+
+        $this->assertNull(
+            $history->from_state
+        );
+
+        $this->assertSame(
+            'DRAFT',
+            $history->to_state
+        );
+
+        $this->assertSame(
+            'USER',
+            $history->source
+        );
+
+        $context =
+            json_decode(
+                $history->context,
+                true
+            );
+
+        $this->assertSame(
+            'MANUAL',
+            $context[
+                'creation_type'
+            ]
+        );
+    }
+
+    public function test_manual_invoice_number_is_generated_sequentially(): void
+    {
+        $workspace =
+            $this->workspace(
+                'invoice-sequence@example.test',
+                'Invoice Sequence'
+            );
+
+        $customerId =
+            $this->insertCustomer(
+                $workspace['tenant_id'],
+                'CUST-SEQUENCE',
+                'Pelanggan Sequence'
+            );
+
+        $this->actingAsWorkspace(
+            $workspace
+        );
+
+        $payload = [
+            'customer_id' =>
+                $customerId,
+
+            'items' => [
+                [
+                    'name' =>
+                        'Jasa',
+
+                    'quantity' =>
+                        1,
+
+                    'pricing_method' =>
+                        'MANUAL',
+
+                    'unit_price' =>
+                        100000,
+                ],
+            ],
+        ];
+
+        $first =
+            $this->postJson(
+                '/api/v1/invoices',
+                $payload
+            );
+
+        $second =
+            $this->postJson(
+                '/api/v1/invoices',
+                $payload
+            );
+
+        $first->assertCreated();
+        $second->assertCreated();
+
+        $this->assertMatchesRegularExpression(
+            '/^INV-\d{6}-0001$/',
+            $first->json(
+                'data.invoice_number'
+            )
+        );
+
+        $this->assertMatchesRegularExpression(
+            '/^INV-\d{6}-0002$/',
+            $second->json(
+                'data.invoice_number'
+            )
+        );
+    }
+
+    public function test_manual_invoice_rejects_foreign_tenant_customer(): void
+    {
+        $local =
+            $this->workspace(
+                'invoice-local@example.test',
+                'Invoice Local'
+            );
+
+        $foreign =
+            $this->workspace(
+                'invoice-foreign@example.test',
+                'Invoice Foreign'
+            );
+
+        $foreignCustomerId =
+            $this->insertCustomer(
+                $foreign['tenant_id'],
+                'CUST-FOREIGN-CREATE',
+                'Foreign Customer'
+            );
+
+        $this->actingAsWorkspace(
+            $local
+        );
+
+        $this->postJson(
+            '/api/v1/invoices',
+            [
+                'customer_id' =>
+                    $foreignCustomerId,
+
+                'items' => [
+                    [
+                        'name' => 'Jasa',
+                        'quantity' => 1,
+                        'pricing_method' =>
+                            'MANUAL',
+                        'unit_price' =>
+                            100000,
+                    ],
+                ],
+            ]
+        )
+            ->assertUnprocessable()
+            ->assertJsonPath(
+                'error.code',
+                'VALIDATION_FAILED'
+            );
+
+        $this->assertDatabaseCount(
+            'invoices',
+            0
+        );
+
+        $this->assertDatabaseCount(
+            'tenant_sequences',
+            0
+        );
+    }
+
+    public function test_manual_invoice_rejects_backend_owned_fields(): void
+    {
+        $workspace =
+            $this->workspace(
+                'invoice-owned@example.test',
+                'Invoice Backend Owned'
+            );
+
+        $customerId =
+            $this->insertCustomer(
+                $workspace['tenant_id'],
+                'CUST-OWNED',
+                'Pelanggan Owned'
+            );
+
+        $this->actingAsWorkspace(
+            $workspace
+        );
+
+        $response =
+            $this->postJson(
+                '/api/v1/invoices',
+                [
+                    'customer_id' =>
+                        $customerId,
+
+                    'invoice_number' =>
+                        'HACK-001',
+
+                    'status' =>
+                        'PAID',
+
+                    'total' =>
+                        1,
+
+                    'paid_amount' =>
+                        1,
+
+                    'outstanding_amount' =>
+                        0,
+
+                    'items' => [
+                        [
+                            'name' => 'Jasa',
+                            'quantity' => 1,
+                            'pricing_method' =>
+                                'MANUAL',
+                            'unit_price' =>
+                                100000,
+
+                            'amount' =>
+                                1,
+
+                            'tax_amount' =>
+                                1,
+                        ],
+                    ],
+                ]
+            );
+
+        $response
+            ->assertUnprocessable()
+            ->assertJsonPath(
+                'error.code',
+                'VALIDATION_FAILED'
+            );
+
+        $fields =
+            $response->json(
+                'error.details.fields'
+            );
+
+        foreach (
+            [
+                'invoice_number',
+                'status',
+                'total',
+                'paid_amount',
+                'outstanding_amount',
+                'items.0.amount',
+                'items.0.tax_amount',
+            ] as $field
+        ) {
+            $this->assertArrayHasKey(
+                $field,
+                $fields
+            );
+
+            $this->assertNotEmpty(
+                $fields[$field]
+            );
+        }
+
+        $this->assertDatabaseCount(
+            'invoices',
+            0
+        );
+
+        $this->assertDatabaseCount(
+            'tenant_sequences',
+            0
+        );
+    }
+
+    public function test_missing_invoice_create_capability_blocks_manual_invoice(): void
+    {
+        $workspace =
+            $this->workspace(
+                'invoice-create-denied@example.test',
+                'Invoice Create Denied'
+            );
+
+        $customerId =
+            $this->insertCustomer(
+                $workspace['tenant_id'],
+                'CUST-CREATE-DENIED',
+                'Denied Customer'
+            );
+
+        $this->actingAsWorkspace(
+            $workspace
+        );
+
+        $this->denyCapability(
+            $workspace,
+            'invoice.create'
+        );
+
+        $this->postJson(
+            '/api/v1/invoices',
+            [
+                'customer_id' =>
+                    $customerId,
+
+                'items' => [
+                    [
+                        'name' => 'Jasa',
+                        'quantity' => 1,
+                        'pricing_method' =>
+                            'MANUAL',
+                        'unit_price' =>
+                            100000,
+                    ],
+                ],
+            ]
+        )
+            ->assertForbidden()
+            ->assertJsonPath(
+                'error.code',
+                'FORBIDDEN_CAPABILITY'
+            );
+
+        $this->assertDatabaseCount(
+            'invoices',
+            0
+        );
+
+        $this->assertDatabaseCount(
+            'tenant_sequences',
+            0
+        );
+    }
+
+
+    public function test_manual_invoice_snapshots_catalog_item_and_unit(): void
+    {
+        $workspace =
+            $this->workspace(
+                'invoice-catalog@example.test',
+                'Invoice Catalog Snapshot'
+            );
+
+        $customerId =
+            $this->insertCustomer(
+                $workspace['tenant_id'],
+                'CUST-CATALOG-SNAPSHOT',
+                'Pelanggan Catalog Snapshot'
+            );
+
+        $unit =
+            DB::table('units')
+                ->where(
+                    'tenant_id',
+                    $workspace['tenant_id']
+                )
+                ->where(
+                    'status',
+                    'ACTIVE'
+                )
+                ->orderBy('name')
+                ->first();
+
+        $this->assertNotNull(
+            $unit
+        );
+
+        $catalogId =
+            (string) Str::ulid();
+
+        DB::table(
+            'catalog_items'
+        )->insert([
+            'id' =>
+                $catalogId,
+
+            'tenant_id' =>
+                $workspace['tenant_id'],
+
+            'category_id' =>
+                null,
+
+            'unit_id' =>
+                $unit->id,
+
+            'type' =>
+                'SERVICE',
+
+            'code' =>
+                'SRV-CATALOG-SNAPSHOT',
+
+            'name' =>
+                'Jasa Neon Box Catalog',
+
+            'description' =>
+                'Deskripsi snapshot awal',
+
+            'pricing_method' =>
+                'STANDARD',
+
+            'base_price' =>
+                '250000.00',
+
+            'currency' =>
+                'IDR',
+
+            'pricing_config' =>
+                null,
+
+            'status' =>
+                'ACTIVE',
+
+            'created_at' =>
+                now(),
+
+            'updated_at' =>
+                now(),
+        ]);
+
+        $this->actingAsWorkspace(
+            $workspace
+        );
+
+        $response =
+            $this->postJson(
+                '/api/v1/invoices',
+                [
+                    'customer_id' =>
+                        $customerId,
+
+                    'items' => [
+                        [
+                            'catalog_item_id' =>
+                                $catalogId,
+
+                            'quantity' =>
+                                2,
+                        ],
+                    ],
+                ]
+            );
+
+        $response
+            ->assertCreated()
+            ->assertJsonPath(
+                'data.status',
+                'DRAFT'
+            )
+            ->assertJsonPath(
+                'data.subtotal',
+                '500000.00'
+            )
+            ->assertJsonPath(
+                'data.total',
+                '500000.00'
+            );
+
+        $invoiceId =
+            $response->json(
+                'data.id'
+            );
+
+        $this->assertDatabaseHas(
+            'invoice_items',
+            [
+                'tenant_id' =>
+                    $workspace['tenant_id'],
+
+                'invoice_id' =>
+                    $invoiceId,
+
+                'catalog_item_id' =>
+                    $catalogId,
+
+                'item_type' =>
+                    'SERVICE',
+
+                'code' =>
+                    'SRV-CATALOG-SNAPSHOT',
+
+                'name' =>
+                    'Jasa Neon Box Catalog',
+
+                'description' =>
+                    'Deskripsi snapshot awal',
+
+                'quantity' =>
+                    '2.0000',
+
+                'unit_code' =>
+                    $unit->code,
+
+                'unit_name' =>
+                    $unit->name,
+
+                'unit_symbol' =>
+                    $unit->symbol,
+
+                'unit_price' =>
+                    '250000.00',
+
+                'amount' =>
+                    '500000.00',
+            ]
+        );
+
+        /*
+         * Mutasi catalog setelah invoice dibuat
+         * tidak boleh mengubah snapshot invoice.
+         */
+        DB::table(
+            'catalog_items'
+        )
+            ->where(
+                'id',
+                $catalogId
+            )
+            ->update([
+                'name' =>
+                    'Nama Catalog Berubah',
+
+                'description' =>
+                    'Deskripsi berubah',
+
+                'base_price' =>
+                    '999999.00',
+
+                'updated_at' =>
+                    now(),
+            ]);
+
+        $this->assertDatabaseHas(
+            'invoice_items',
+            [
+                'invoice_id' =>
+                    $invoiceId,
+
+                'catalog_item_id' =>
+                    $catalogId,
+
+                'name' =>
+                    'Jasa Neon Box Catalog',
+
+                'description' =>
+                    'Deskripsi snapshot awal',
+
+                'unit_price' =>
+                    '250000.00',
+
+                'amount' =>
+                    '500000.00',
+            ]
+        );
+    }
+
+    public function test_manual_invoice_failure_rolls_back_sequence_and_invoice(): void
+    {
+        $workspace =
+            $this->workspace(
+                'invoice-rollback@example.test',
+                'Invoice Rollback'
+            );
+
+        $customerId =
+            $this->insertCustomer(
+                $workspace['tenant_id'],
+                'CUST-ROLLBACK',
+                'Pelanggan Rollback'
+            );
+
+        $invalidUserId =
+            (string) Str::ulid();
+
+        app(
+            TenantContext::class
+        )->set(
+            $workspace['tenant_id'],
+            $invalidUserId
+        );
+
+        $payloadItems = [
+            [
+                'name' =>
+                    'Jasa Rollback',
+
+                'quantity' =>
+                    1,
+
+                'pricing_method' =>
+                    'MANUAL',
+
+                'unit_price' =>
+                    175000,
+            ],
+        ];
+
+        try {
+            app(
+                \App\Services\Invoice\InvoiceService::class
+            )->createDraft(
+                $customerId,
+                $payloadItems
+            );
+
+            $this->fail(
+                'Invoice creation should have failed.'
+            );
+        } catch (
+            \Illuminate\Database\QueryException $exception
+        ) {
+            $this->assertNotSame(
+                '',
+                $exception->getMessage()
+            );
+        }
+
+        $this->assertDatabaseCount(
+            'invoices',
+            0
+        );
+
+        $this->assertDatabaseCount(
+            'invoice_items',
+            0
+        );
+
+        $this->assertDatabaseCount(
+            'invoice_status_history',
+            0
+        );
+
+        $this->assertDatabaseCount(
+            'tenant_sequences',
+            0
+        );
+
+        /*
+         * Setelah actor diperbaiki, nomor pertama
+         * harus tetap 0001.
+         */
+        app(
+            TenantContext::class
+        )->set(
+            $workspace['tenant_id'],
+            $workspace['user_id']
+        );
+
+        $invoice =
+            app(
+                \App\Services\Invoice\InvoiceService::class
+            )->createDraft(
+                $customerId,
+                $payloadItems
+            );
+
+        $this->assertMatchesRegularExpression(
+            '/^INV-\d{6}-0001$/',
+            $invoice->invoice_number
+        );
+
+        $this->assertSame(
+            'DRAFT',
+            $invoice->status
+        );
+
+        $this->assertDatabaseHas(
+            'tenant_sequences',
+            [
+                'tenant_id' =>
+                    $workspace['tenant_id'],
+
+                'document_type' =>
+                    'INVOICE',
+
+                'next_number' =>
+                    2,
+            ]
+        );
+    }
+
+
     private function workspace(
         string $email,
         string $businessName

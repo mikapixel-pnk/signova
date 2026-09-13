@@ -197,6 +197,13 @@ Route::prefix('v1')->group(function () {
         );
 
         Route::post(
+            '/invoices',
+            [InvoiceController::class, 'store']
+        )->middleware(
+            'capability:invoice.create'
+        );
+
+        Route::post(
             '/invoices/{invoiceId}/actions/issue',
             [InvoiceController::class, 'issue']
         )->middleware(

@@ -11,27 +11,11 @@ class CreateInvoiceFromQuotationRequest extends FormRequest
         return true;
     }
 
-    protected function prepareForValidation(): void
-    {
-        if (
-            $this->exists('invoice_number')
-            && is_string($this->invoice_number)
-        ) {
-            $this->merge([
-                'invoice_number' =>
-                    trim($this->invoice_number),
-            ]);
-        }
-    }
-
     public function rules(): array
     {
         return [
             'invoice_number' => [
-                'required',
-                'string',
-                'min:1',
-                'max:100',
+                'prohibited',
             ],
 
             'due_at' => [

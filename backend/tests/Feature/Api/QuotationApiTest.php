@@ -1715,8 +1715,6 @@ class QuotationApiTest extends TestCase
         $response = $this->postJson(
             "/api/v1/quotations/{$quotationId}/actions/create-invoice",
             [
-                'invoice_number' =>
-                    'INV-FROM-Q-001',
                 'due_at' =>
                     now()
                         ->addDays(14)
@@ -1731,10 +1729,6 @@ class QuotationApiTest extends TestCase
                 true
             )
             ->assertJsonPath(
-                'data.invoice_number',
-                'INV-FROM-Q-001'
-            )
-            ->assertJsonPath(
                 'data.source_quotation_id',
                 $quotationId
             )
@@ -1742,6 +1736,13 @@ class QuotationApiTest extends TestCase
                 'data.status',
                 'DRAFT'
             );
+
+        $this->assertMatchesRegularExpression(
+            '/^INV-\d{6}-0001$/',
+            $response->json(
+                'data.invoice_number'
+            )
+        );
 
         $this->assertDatabaseHas(
             'invoices',
@@ -1751,7 +1752,9 @@ class QuotationApiTest extends TestCase
                 'source_quotation_id' =>
                     $quotationId,
                 'invoice_number' =>
-                    'INV-FROM-Q-001',
+                    $response->json(
+                        'data.invoice_number'
+                    ),
                 'status' =>
                     'DRAFT',
             ]
@@ -1784,10 +1787,7 @@ class QuotationApiTest extends TestCase
 
         $first = $this->postJson(
             "/api/v1/quotations/{$quotationId}/actions/create-invoice",
-            [
-                'invoice_number' =>
-                    'INV-RETRY-API-001',
-            ]
+            []
         );
 
         $first->assertCreated();
@@ -1797,10 +1797,7 @@ class QuotationApiTest extends TestCase
 
         $second = $this->postJson(
             "/api/v1/quotations/{$quotationId}/actions/create-invoice",
-            [
-                'invoice_number' =>
-                    'INV-RETRY-API-OTHER',
-            ]
+            []
         );
 
         $second
@@ -1811,8 +1808,17 @@ class QuotationApiTest extends TestCase
             )
             ->assertJsonPath(
                 'data.invoice_number',
-                'INV-RETRY-API-001'
+                $first->json(
+                    'data.invoice_number'
+                )
             );
+
+        $this->assertMatchesRegularExpression(
+            '/^INV-\d{6}-0001$/',
+            $first->json(
+                'data.invoice_number'
+            )
+        );
 
         $this->assertDatabaseCount(
             'invoices',
@@ -1846,10 +1852,7 @@ class QuotationApiTest extends TestCase
 
         $this->postJson(
             "/api/v1/quotations/{$quotationId}/actions/create-invoice",
-            [
-                'invoice_number' =>
-                    'INV-NOT-APPROVED',
-            ]
+            []
         )
             ->assertStatus(409)
             ->assertJsonPath(
@@ -1903,10 +1906,7 @@ class QuotationApiTest extends TestCase
 
         $this->postJson(
             "/api/v1/quotations/{$foreignQuotationId}/actions/create-invoice",
-            [
-                'invoice_number' =>
-                    'INV-FOREIGN',
-            ]
+            []
         )
             ->assertNotFound()
             ->assertJsonPath(
@@ -1946,10 +1946,7 @@ class QuotationApiTest extends TestCase
 
         $this->postJson(
             "/api/v1/quotations/{$quotationId}/actions/create-invoice",
-            [
-                'invoice_number' =>
-                    'INV-DENIED',
-            ]
+            []
         )
             ->assertForbidden()
             ->assertJsonPath(
@@ -1985,8 +1982,10 @@ class QuotationApiTest extends TestCase
         $this->postJson(
             "/api/v1/quotations/{$quotationId}/actions/create-invoice",
             [
-                'invoice_number' => '   ',
-                'due_at' => 'not-a-date',
+                'invoice_number' =>
+                    'CLIENT-MUST-NOT-SET',
+                'due_at' =>
+                    'not-a-date',
             ]
         )
             ->assertUnprocessable()

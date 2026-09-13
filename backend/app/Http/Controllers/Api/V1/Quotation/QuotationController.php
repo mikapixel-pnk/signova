@@ -120,7 +120,6 @@ class QuotationController extends Controller
 
         $invoice = $service->convert(
             $quotationId,
-            $data['invoice_number'],
             $data['due_at'] ?? null
         );
 

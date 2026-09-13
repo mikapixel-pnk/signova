@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\V1\Invoice;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Invoice\ListInvoicesRequest;
+use App\Http\Requests\Invoice\StoreInvoiceRequest;
 use App\Http\Requests\Invoice\VoidInvoiceRequest;
 use App\Http\Resources\Invoice\InvoiceResource;
 use App\Services\Invoice\InvoicePdfService;
@@ -58,6 +59,33 @@ class InvoiceController extends Controller
                 'last_page' =>
                     $paginator->lastPage(),
             ]
+        );
+    }
+
+    public function store(
+        StoreInvoiceRequest $request,
+        InvoiceService $service
+    ): JsonResponse {
+        $data =
+            $request->validated();
+
+        $invoice =
+            $service->createDraft(
+                $data['customer_id'],
+                $data['items'],
+                $data['due_at']
+                    ?? null,
+                $data['notes']
+                    ?? null
+            );
+
+        return ApiResponse::success(
+            $request,
+            (new InvoiceResource(
+                $invoice
+            ))->resolve($request),
+            201,
+            'Tagihan berhasil dibuat.'
         );
     }
 

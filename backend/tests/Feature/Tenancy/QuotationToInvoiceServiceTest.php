@@ -61,7 +61,6 @@ class QuotationToInvoiceServiceTest extends TestCase
             QuotationToInvoiceService::class
         )->convert(
             $quotation->id,
-            'INV-CONVERT-001',
             now()->addDays(14)->toISOString()
         );
 
@@ -73,6 +72,11 @@ class QuotationToInvoiceServiceTest extends TestCase
                 $quotation->current_version_id
             )
             ->first();
+
+        $this->assertMatchesRegularExpression(
+            '/^INV-\d{6}-0001$/',
+            $invoice->invoice_number
+        );
 
         $this->assertSame(
             'DRAFT',
@@ -185,8 +189,7 @@ class QuotationToInvoiceServiceTest extends TestCase
             app(
                 QuotationToInvoiceService::class
             )->convert(
-                $quotation->id,
-                'INV-NOT-APPROVED'
+                $quotation->id
             );
 
             $this->fail(
@@ -244,13 +247,11 @@ class QuotationToInvoiceServiceTest extends TestCase
         );
 
         $first = $service->convert(
-            $quotation->id,
-            'INV-RETRY-001'
+            $quotation->id
         );
 
         $second = $service->convert(
-            $quotation->id,
-            'INV-RETRY-OTHER'
+            $quotation->id
         );
 
         $this->assertSame(
@@ -259,7 +260,12 @@ class QuotationToInvoiceServiceTest extends TestCase
         );
 
         $this->assertSame(
-            'INV-RETRY-001',
+            $first->invoice_number,
+            $second->invoice_number
+        );
+
+        $this->assertMatchesRegularExpression(
+            '/^INV-\d{6}-0001$/',
             $second->invoice_number
         );
 
@@ -324,10 +330,305 @@ class QuotationToInvoiceServiceTest extends TestCase
         app(
             QuotationToInvoiceService::class
         )->convert(
-            $quotation->id,
-            'INV-FOREIGN'
+            $quotation->id
         );
     }
+
+    public function test_manual_and_quotation_invoice_share_same_sequence(): void
+    {
+        $workspace = $this->workspace(
+            'invoice-shared-sequence@example.test',
+            'Invoice Shared Sequence'
+        );
+
+        $this->setTenantContext(
+            $workspace
+        );
+
+        $customerId =
+            $this->insertCustomer(
+                $workspace['tenant_id'],
+                'CUST-SHARED-SEQUENCE',
+                'Pelanggan Shared Sequence'
+            );
+
+        $manual =
+            app(
+                \App\Services\Invoice\InvoiceService::class
+            )->createDraft(
+                $customerId,
+                [
+                    [
+                        'name' =>
+                            'Jasa Manual',
+
+                        'quantity' =>
+                            1,
+
+                        'pricing_method' =>
+                            'MANUAL',
+
+                        'unit_price' =>
+                            100000,
+                    ],
+                ]
+            );
+
+        $quotation =
+            $this->createQuotation(
+                $customerId,
+                'Q-SHARED-SEQUENCE'
+            );
+
+        DB::table('quotations')
+            ->where(
+                'id',
+                $quotation->id
+            )
+            ->update([
+                'status' =>
+                    'APPROVED',
+
+                'updated_at' =>
+                    now(),
+            ]);
+
+        $converted =
+            app(
+                QuotationToInvoiceService::class
+            )->convert(
+                $quotation->id
+            );
+
+        $this->assertMatchesRegularExpression(
+            '/^INV-\d{6}-0001$/',
+            $manual->invoice_number
+        );
+
+        $this->assertMatchesRegularExpression(
+            '/^INV-\d{6}-0002$/',
+            $converted->invoice_number
+        );
+
+        $this->assertDatabaseHas(
+            'tenant_sequences',
+            [
+                'tenant_id' =>
+                    $workspace['tenant_id'],
+
+                'document_type' =>
+                    'INVOICE',
+
+                'next_number' =>
+                    3,
+            ]
+        );
+    }
+
+    public function test_conversion_retry_does_not_consume_another_invoice_number(): void
+    {
+        $workspace = $this->workspace(
+            'invoice-retry-sequence@example.test',
+            'Invoice Retry Sequence'
+        );
+
+        $this->setTenantContext(
+            $workspace
+        );
+
+        $customerId =
+            $this->insertCustomer(
+                $workspace['tenant_id'],
+                'CUST-RETRY-SEQUENCE',
+                'Pelanggan Retry Sequence'
+            );
+
+        $quotation =
+            $this->createQuotation(
+                $customerId,
+                'Q-RETRY-SEQUENCE'
+            );
+
+        DB::table('quotations')
+            ->where(
+                'id',
+                $quotation->id
+            )
+            ->update([
+                'status' =>
+                    'APPROVED',
+
+                'updated_at' =>
+                    now(),
+            ]);
+
+        $service =
+            app(
+                QuotationToInvoiceService::class
+            );
+
+        $first =
+            $service->convert(
+                $quotation->id
+            );
+
+        $second =
+            $service->convert(
+                $quotation->id
+            );
+
+        $this->assertSame(
+            $first->id,
+            $second->id
+        );
+
+        $this->assertSame(
+            $first->invoice_number,
+            $second->invoice_number
+        );
+
+        $this->assertMatchesRegularExpression(
+            '/^INV-\d{6}-0001$/',
+            $first->invoice_number
+        );
+
+        $this->assertDatabaseHas(
+            'tenant_sequences',
+            [
+                'tenant_id' =>
+                    $workspace['tenant_id'],
+
+                'document_type' =>
+                    'INVOICE',
+
+                'next_number' =>
+                    2,
+            ]
+        );
+
+        $this->assertDatabaseCount(
+            'invoices',
+            1
+        );
+    }
+
+    public function test_conversion_failure_after_number_reservation_rolls_back_sequence(): void
+    {
+        $workspace = $this->workspace(
+            'invoice-convert-rollback@example.test',
+            'Invoice Convert Rollback'
+        );
+
+        $this->setTenantContext(
+            $workspace
+        );
+
+        $customerId =
+            $this->insertCustomer(
+                $workspace['tenant_id'],
+                'CUST-CONVERT-ROLLBACK',
+                'Pelanggan Convert Rollback'
+            );
+
+        $quotation =
+            $this->createQuotation(
+                $customerId,
+                'Q-CONVERT-ROLLBACK'
+            );
+
+        DB::table('quotations')
+            ->where(
+                'id',
+                $quotation->id
+            )
+            ->update([
+                'status' =>
+                    'APPROVED',
+
+                'updated_at' =>
+                    now(),
+            ]);
+
+        /*
+         * Tenant valid, actor invalid.
+         *
+         * Conversion dapat mencapai reservasi nomor,
+         * lalu INSERT invoice gagal pada FK actor.
+         */
+        app(
+            TenantContext::class
+        )->set(
+            $workspace['tenant_id'],
+            (string) Str::ulid()
+        );
+
+        try {
+            app(
+                QuotationToInvoiceService::class
+            )->convert(
+                $quotation->id
+            );
+
+            $this->fail(
+                'Quotation conversion should have failed.'
+            );
+        } catch (
+            \Illuminate\Database\QueryException $exception
+        ) {
+            $this->assertNotSame(
+                '',
+                $exception->getMessage()
+            );
+        }
+
+        $this->assertDatabaseMissing(
+            'invoices',
+            [
+                'source_quotation_id' =>
+                    $quotation->id,
+            ]
+        );
+
+        $this->assertDatabaseCount(
+            'tenant_sequences',
+            0
+        );
+
+        /*
+         * Restore actor valid.
+         * Nomor pertama harus tetap 0001.
+         */
+        $this->setTenantContext(
+            $workspace
+        );
+
+        $invoice =
+            app(
+                QuotationToInvoiceService::class
+            )->convert(
+                $quotation->id
+            );
+
+        $this->assertMatchesRegularExpression(
+            '/^INV-\d{6}-0001$/',
+            $invoice->invoice_number
+        );
+
+        $this->assertDatabaseHas(
+            'tenant_sequences',
+            [
+                'tenant_id' =>
+                    $workspace['tenant_id'],
+
+                'document_type' =>
+                    'INVOICE',
+
+                'next_number' =>
+                    2,
+            ]
+        );
+    }
+
 
     private function workspace(
         string $email,
