@@ -2,10 +2,12 @@
 
 namespace App\Services\Invoice;
 
+use App\Models\FileAsset;
 use App\Models\TenantDocumentSetting;
 use App\Tenancy\TenantContext;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 
 class InvoicePdfService
 {
@@ -74,6 +76,12 @@ class InvoicePdfService
 
             'signature_title' =>
                 $settings?->signature_title,
+
+            'signature_image_data_uri' =>
+                $this->signatureDataUri(
+                    $tenantId,
+                    $settings?->signature_image_file_id
+                ),
         ];
 
         $content = Pdf::loadView(
@@ -101,6 +109,67 @@ class InvoicePdfService
                     $invoice->invoice_number
                 ),
         ];
+    }
+
+    private function signatureDataUri(
+        string $tenantId,
+        ?string $fileId
+    ): ?string {
+        if ($fileId === null) {
+            return null;
+        }
+
+        $file = FileAsset::query()
+            ->where(
+                'tenant_id',
+                $tenantId
+            )
+            ->where(
+                'id',
+                $fileId
+            )
+            ->where(
+                'purpose',
+                'DOCUMENT_SIGNATURE'
+            )
+            ->whereIn(
+                'mime_type',
+                [
+                    'image/png',
+                    'image/jpeg',
+                    'image/webp',
+                ]
+            )
+            ->first();
+
+        if ($file === null) {
+            return null;
+        }
+
+        $disk = Storage::disk(
+            $file->storage_disk
+        );
+
+        if (! $disk->exists(
+            $file->object_key
+        )) {
+            return null;
+        }
+
+        $contents = $disk->get(
+            $file->object_key
+        );
+
+        if ($contents === '') {
+            return null;
+        }
+
+        return 'data:'
+            . $file->mime_type
+            . ';base64,'
+            . base64_encode(
+                $contents
+            );
     }
 
     public function filename(

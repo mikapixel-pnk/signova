@@ -121,6 +121,13 @@
             height: 58px;
         }
 
+        .signature-image {
+            display: block;
+            max-width: 150px;
+            max-height: 58px;
+            margin: 0 auto;
+        }
+
         .signature-name {
             font-weight: bold;
             text-decoration: underline;
@@ -384,6 +391,7 @@
 @if (
     $branding['signature_name']
     || $branding['signature_title']
+    || $branding['signature_image_data_uri']
 )
     <div class="signature-wrap">
         <div class="signature-box">
@@ -392,6 +400,13 @@
             </div>
 
             <div class="signature-space">
+                @if ($branding['signature_image_data_uri'])
+                    <img
+                        src="{{ $branding['signature_image_data_uri'] }}"
+                        class="signature-image"
+                        alt="Tanda tangan"
+                    >
+                @endif
             </div>
 
             @if ($branding['signature_name'])

@@ -7,7 +7,9 @@ use App\Models\User;
 use App\Tenancy\TenantContext;
 use Database\Seeders\SignovaAccessControlSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Tests\TestCase;
 
@@ -1145,6 +1147,94 @@ class InvoiceApiTest extends TestCase
                 'error.code',
                 'FORBIDDEN_CAPABILITY'
             );
+    }
+
+
+    public function test_invoice_pdf_supports_uploaded_signature_image(): void
+    {
+        Storage::fake('local');
+
+        config()->set(
+            'filesystems.private_disk',
+            'local'
+        );
+
+        $workspace = $this->workspace(
+            'invoice-signature@example.test',
+            'Invoice Signature'
+        );
+
+        $customerId = $this->insertCustomer(
+            $workspace['tenant_id'],
+            'CUST-INV-SIGN',
+            'Pelanggan Signature'
+        );
+
+        $invoiceId = $this->insertInvoice(
+            $workspace,
+            $customerId,
+            'INV-SIGN-001',
+            'ISSUED'
+        );
+
+        $this->insertInvoiceItem(
+            $workspace['tenant_id'],
+            $invoiceId,
+            'Jasa Signage',
+            '250000.00'
+        );
+
+        $this->actingAsWorkspace(
+            $workspace
+        );
+
+        $this->post(
+            '/api/v1/settings/document/signature',
+            [
+                'signature' =>
+                    UploadedFile::fake()->image(
+                        'signature.png',
+                        600,
+                        200
+                    ),
+            ]
+        )->assertOk();
+
+        $file = DB::table('files')
+            ->where(
+                'tenant_id',
+                $workspace['tenant_id']
+            )
+            ->where(
+                'purpose',
+                'DOCUMENT_SIGNATURE'
+            )
+            ->first();
+
+        $this->assertNotNull(
+            $file
+        );
+
+        Storage::disk('local')
+            ->assertExists(
+                $file->object_key
+            );
+
+        $response = $this->get(
+            "/api/v1/invoices/{$invoiceId}/pdf"
+        );
+
+        $response
+            ->assertOk()
+            ->assertHeader(
+                'Content-Type',
+                'application/pdf'
+            );
+
+        $this->assertStringStartsWith(
+            '%PDF',
+            $response->getContent()
+        );
     }
 
     private function workspace(

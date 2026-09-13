@@ -15,6 +15,11 @@ return [
 
     'default' => env('FILESYSTEM_DISK', 'local'),
 
+    'private_disk' => env(
+        'SIGNOVA_PRIVATE_FILE_DISK',
+        env('FILESYSTEM_DISK', 'local')
+    ),
+
     /*
     |--------------------------------------------------------------------------
     | Filesystem Disks

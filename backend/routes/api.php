@@ -4,6 +4,7 @@ use App\Http\Controllers\Api\V1\Auth\AuthController;
 use App\Http\Controllers\Api\Public\V1\Quotation\PublicQuotationController;
 use App\Http\Controllers\Api\V1\HealthController;
 use App\Http\Controllers\Api\V1\Invoice\InvoiceController;
+use App\Http\Controllers\Api\V1\Settings\DocumentSettingController;
 use App\Http\Controllers\Api\V1\Quotation\QuotationController;
 use App\Http\Controllers\Api\V1\Customer\CustomerController;
 use App\Http\Controllers\Api\V1\Catalog\CatalogCategoryController;
@@ -216,6 +217,48 @@ Route::prefix('v1')->group(function () {
             [InvoiceController::class, 'show']
         )->middleware(
             'capability:invoice.view'
+        );
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Pengaturan Dokumen & Branding
+        |--------------------------------------------------------------------------
+        */
+
+        Route::get(
+            '/settings/document',
+            [DocumentSettingController::class, 'show']
+        )->middleware(
+            'capability:settings.view'
+        );
+
+        Route::patch(
+            '/settings/document',
+            [DocumentSettingController::class, 'update']
+        )->middleware(
+            'capability:settings.manage'
+        );
+
+        Route::post(
+            '/settings/document/signature',
+            [DocumentSettingController::class, 'uploadSignature']
+        )->middleware(
+            'capability:settings.manage'
+        );
+
+        Route::get(
+            '/settings/document/signature',
+            [DocumentSettingController::class, 'signature']
+        )->middleware(
+            'capability:settings.view'
+        );
+
+        Route::delete(
+            '/settings/document/signature',
+            [DocumentSettingController::class, 'destroySignature']
+        )->middleware(
+            'capability:settings.manage'
         );
 
 
