@@ -205,6 +205,13 @@ Route::prefix('v1')->group(function () {
         );
 
         Route::get(
+            '/invoices/{invoiceId}/pdf',
+            [InvoiceController::class, 'pdf']
+        )->middleware(
+            'capability:invoice.view'
+        );
+
+        Route::get(
             '/invoices/{invoiceId}',
             [InvoiceController::class, 'show']
         )->middleware(

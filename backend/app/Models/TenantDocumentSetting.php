@@ -20,5 +20,8 @@ class TenantDocumentSetting extends Model
         'email',
         'tax_id',
         'quotation_footer',
+        'invoice_footnote',
+        'signature_name',
+        'signature_title',
     ];
 }

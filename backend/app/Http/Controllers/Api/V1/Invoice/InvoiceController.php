@@ -6,10 +6,12 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Invoice\ListInvoicesRequest;
 use App\Http\Requests\Invoice\VoidInvoiceRequest;
 use App\Http\Resources\Invoice\InvoiceResource;
+use App\Services\Invoice\InvoicePdfService;
 use App\Services\Invoice\InvoiceService;
 use App\Support\Api\ApiResponse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Symfony\Component\HttpFoundation\Response;
 
 class InvoiceController extends Controller
 {
@@ -97,6 +99,36 @@ class InvoiceController extends Controller
             ))->resolve($request),
             200,
             'Tagihan berhasil dibatalkan.'
+        );
+    }
+
+    public function pdf(
+        string $invoiceId,
+        InvoicePdfService $service
+    ): Response {
+        $document =
+            $service->document(
+                $invoiceId
+            );
+
+        return response(
+            $document['content'],
+            200,
+            [
+                'Content-Type' =>
+                    'application/pdf',
+
+                'Content-Disposition' =>
+                    'attachment; filename="'
+                    . $document['filename']
+                    . '"',
+
+                'X-Content-Type-Options' =>
+                    'nosniff',
+
+                'Cache-Control' =>
+                    'private, no-store',
+            ]
         );
     }
 

@@ -972,6 +972,181 @@ class InvoiceApiTest extends TestCase
         );
     }
 
+
+    public function test_owner_can_download_branded_invoice_pdf(): void
+    {
+        $workspace = $this->workspace(
+            'invoice-pdf@example.test',
+            'Invoice PDF'
+        );
+
+        $customerId = $this->insertCustomer(
+            $workspace['tenant_id'],
+            'CUST-INV-PDF',
+            'Pelanggan Invoice PDF'
+        );
+
+        $invoiceId = $this->insertInvoice(
+            $workspace,
+            $customerId,
+            'INV-PDF-001',
+            'ISSUED'
+        );
+
+        $this->insertInvoiceItem(
+            $workspace['tenant_id'],
+            $invoiceId,
+            'Jasa Pembuatan Signage',
+            '350000.00'
+        );
+
+        DB::table(
+            'tenant_document_settings'
+        )->insert([
+            'tenant_id' =>
+                $workspace['tenant_id'],
+
+            'business_name' =>
+                'Signova Test Business',
+
+            'address' =>
+                'Jl. Pengujian No. 1',
+
+            'phone' =>
+                '081234567890',
+
+            'email' =>
+                'billing@example.test',
+
+            'tax_id' =>
+                'TEST-TAX-ID',
+
+            'quotation_footer' =>
+                null,
+
+            'invoice_footnote' =>
+                'Pembayaran dianggap sah setelah dana diterima.',
+
+            'signature_name' =>
+                'Budi Santoso',
+
+            'signature_title' =>
+                'Finance Manager',
+
+            'created_at' =>
+                now(),
+
+            'updated_at' =>
+                now(),
+        ]);
+
+        $this->actingAsWorkspace(
+            $workspace
+        );
+
+        $response = $this->get(
+            "/api/v1/invoices/{$invoiceId}/pdf"
+        );
+
+        $response
+            ->assertOk()
+            ->assertHeader(
+                'Content-Type',
+                'application/pdf'
+            )
+            ->assertHeader(
+                'Content-Disposition',
+                'attachment; filename="Tagihan-INV-PDF-001.pdf"'
+            )
+            ->assertHeader(
+                'X-Content-Type-Options',
+                'nosniff'
+            );
+
+        $this->assertStringStartsWith(
+            '%PDF',
+            $response->getContent()
+        );
+    }
+
+    public function test_foreign_tenant_invoice_pdf_returns_not_found(): void
+    {
+        $first = $this->workspace(
+            'invoice-pdf-local@example.test',
+            'Invoice PDF Local'
+        );
+
+        $second = $this->workspace(
+            'invoice-pdf-foreign@example.test',
+            'Invoice PDF Foreign'
+        );
+
+        $customerId = $this->insertCustomer(
+            $second['tenant_id'],
+            'CUST-PDF-FOREIGN',
+            'Pelanggan PDF Foreign'
+        );
+
+        $invoiceId = $this->insertInvoice(
+            $second,
+            $customerId,
+            'INV-PDF-FOREIGN',
+            'ISSUED'
+        );
+
+        $this->actingAsWorkspace(
+            $first
+        );
+
+        $this->getJson(
+            "/api/v1/invoices/{$invoiceId}/pdf"
+        )
+            ->assertNotFound()
+            ->assertJsonPath(
+                'error.code',
+                'RESOURCE_NOT_FOUND'
+            );
+    }
+
+    public function test_missing_invoice_view_capability_blocks_pdf(): void
+    {
+        $workspace = $this->workspace(
+            'invoice-pdf-denied@example.test',
+            'Invoice PDF Denied'
+        );
+
+        $customerId = $this->insertCustomer(
+            $workspace['tenant_id'],
+            'CUST-PDF-DENIED',
+            'Pelanggan PDF Denied'
+        );
+
+        $invoiceId = $this->insertInvoice(
+            $workspace,
+            $customerId,
+            'INV-PDF-DENIED',
+            'ISSUED'
+        );
+
+        $this->actingAsWorkspace(
+            $workspace
+        );
+
+        $this->denyCapability(
+            $workspace,
+            'invoice.view'
+        );
+
+        $this->getJson(
+            "/api/v1/invoices/{$invoiceId}/pdf"
+        )
+            ->assertForbidden()
+            ->assertJsonPath(
+                'error.code',
+                'FORBIDDEN_CAPABILITY'
+            );
+    }
+
     private function workspace(
         string $email,
         string $businessName
