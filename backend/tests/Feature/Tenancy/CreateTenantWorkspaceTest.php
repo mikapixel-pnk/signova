@@ -62,10 +62,26 @@ class CreateTenantWorkspaceTest extends TestCase
             'role_id' => $result['owner_role_id'],
         ]);
 
+        $ownerMasterRoleId =
+            DB::table('master_roles')
+                ->where('code', 'OWNER')
+                ->value('id');
+
+        $expectedCapabilityCount =
+            DB::table('master_role_capabilities')
+                ->where(
+                    'master_role_id',
+                    $ownerMasterRoleId
+                )
+                ->count();
+
         $this->assertSame(
-            30,
+            $expectedCapabilityCount,
             DB::table('role_capabilities')
-                ->where('role_id', $result['owner_role_id'])
+                ->where(
+                    'role_id',
+                    $result['owner_role_id']
+                )
                 ->count()
         );
     }
