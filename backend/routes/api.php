@@ -4,6 +4,7 @@ use App\Http\Controllers\Api\V1\Auth\AuthController;
 use App\Http\Controllers\Api\Public\V1\Quotation\PublicQuotationController;
 use App\Http\Controllers\Api\V1\HealthController;
 use App\Http\Controllers\Api\V1\Finance\CashAccountController;
+use App\Http\Controllers\Api\V1\Finance\ExpenseController;
 use App\Http\Controllers\Api\V1\Finance\IncomeController;
 use App\Http\Controllers\Api\V1\Invoice\InvoiceController;
 use App\Http\Controllers\Api\V1\Payment\PaymentController;
@@ -417,6 +418,62 @@ Route::prefix('v1')->group(function () {
             [IncomeController::class, 'void']
         )->middleware(
             'capability:finance.income.manage'
+        );
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Pengeluaran
+        |--------------------------------------------------------------------------
+        */
+
+        Route::get(
+            '/finance/expenses',
+            [ExpenseController::class, 'index']
+        )->middleware(
+            'capability:finance.expense.view'
+        );
+
+        Route::post(
+            '/finance/expenses',
+            [ExpenseController::class, 'store']
+        )->middleware(
+            'capability:finance.expense.manage'
+        );
+
+        Route::get(
+            '/finance/expenses/{expenseId}',
+            [ExpenseController::class, 'show']
+        )->middleware(
+            'capability:finance.expense.view'
+        );
+
+        Route::patch(
+            '/finance/expenses/{expenseId}',
+            [ExpenseController::class, 'update']
+        )->middleware(
+            'capability:finance.expense.manage'
+        );
+
+        Route::delete(
+            '/finance/expenses/{expenseId}',
+            [ExpenseController::class, 'destroy']
+        )->middleware(
+            'capability:finance.expense.manage'
+        );
+
+        Route::post(
+            '/finance/expenses/{expenseId}/actions/post',
+            [ExpenseController::class, 'post']
+        )->middleware(
+            'capability:finance.expense.manage'
+        );
+
+        Route::post(
+            '/finance/expenses/{expenseId}/actions/void',
+            [ExpenseController::class, 'void']
+        )->middleware(
+            'capability:finance.expense.manage'
         );
 
 
