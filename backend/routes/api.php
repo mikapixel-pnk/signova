@@ -5,6 +5,7 @@ use App\Http\Controllers\Api\Public\V1\Quotation\PublicQuotationController;
 use App\Http\Controllers\Api\V1\HealthController;
 use App\Http\Controllers\Api\V1\Finance\CashAccountController;
 use App\Http\Controllers\Api\V1\Finance\ExpenseController;
+use App\Http\Controllers\Api\V1\Finance\FinanceSummaryController;
 use App\Http\Controllers\Api\V1\Finance\IncomeController;
 use App\Http\Controllers\Api\V1\Invoice\InvoiceController;
 use App\Http\Controllers\Api\V1\Payment\PaymentController;
@@ -299,6 +300,20 @@ Route::prefix('v1')->group(function () {
             [PaymentController::class, 'destroyEvidence']
         )->middleware(
             'capability:payment.record'
+        );
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Ringkasan Keuangan
+        |--------------------------------------------------------------------------
+        */
+
+        Route::get(
+            '/finance/summary',
+            FinanceSummaryController::class
+        )->middleware(
+            'capability:finance.summary.view'
         );
 
 

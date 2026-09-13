@@ -99,6 +99,7 @@ class SignovaAccessControlSeeder extends Seeder
             ['payment', 'payment.reverse', 'Membalik Pembayaran', true],
 
             ['finance', 'finance.receivable.view', 'Melihat Piutang', true],
+            ['finance', 'finance.summary.view', 'Melihat Ringkasan Keuangan', true],
             ['finance', 'finance.cash_bank.view', 'Melihat Kas & Bank', true],
             ['finance', 'finance.cash_bank.manage', 'Mengelola Kas & Bank', true],
             ['finance', 'finance.income.view', 'Melihat Pemasukan', true],
@@ -238,6 +239,7 @@ class SignovaAccessControlSeeder extends Seeder
                 'payment.verify',
                 'payment.reverse',
                 'finance.receivable.view',
+                'finance.summary.view',
                 'finance.cash_bank.view',
                 'finance.cash_bank.manage',
                 'finance.income.view',
