@@ -2,23 +2,12 @@
 
 import {
   Bell,
-  BookOpenText,
-  Building2,
   ChevronDown,
-  CircleDollarSign,
   FileText,
-  HandCoins,
   Home,
   LogOut,
-  Package,
-  ReceiptText,
   Settings,
-  ShieldCheck,
-  Store,
-  UserRound,
-  Users,
   WalletCards,
-  Wrench,
 } from "lucide-react";
 
 import Link from "next/link";
@@ -61,6 +50,14 @@ import {
   logout,
 } from "@/lib/auth/logout";
 
+import {
+  getNavigationModel,
+} from "@/lib/module/navigation";
+
+import {
+  modulePlanLabel,
+} from "@/lib/module/registry";
+
 import styles from "./tenant-shell.module.css";
 
 type Tone =
@@ -69,7 +66,8 @@ type Tone =
   | "teal"
   | "green"
   | "violet"
-  | "rose";
+  | "rose"
+  | "amber";
 
 type NavigationItem = {
   label: string;
@@ -94,6 +92,7 @@ type NavigationGroup = {
     strokeWidth?: number;
   }>;
   tone: Tone;
+  defaultOpen?: boolean;
   items: NavigationItem[];
 };
 
@@ -101,188 +100,45 @@ type TenantShellProps = {
   children: React.ReactNode;
 };
 
-const navigationGroups: NavigationGroup[] = [
-  {
-    id: "master-data",
-    label: "Master Data",
-    icon: Package,
-    tone: "violet",
-    items: [
-      {
-        label: "Pelanggan",
-        href: "/app/pelanggan",
-        tone: "violet",
-        icon: Users,
-      },
-      {
-        label: "Barang & Jasa",
-        href: "/app/barang-jasa",
-        tone: "cyan",
-        icon: Package,
-      },
-      {
-        label: "Kategori",
-        href: "/app/barang-jasa?bagian=kategori",
-        tone: "blue",
-        icon: Store,
-      },
-      {
-        label: "Satuan",
-        href: "/app/barang-jasa?bagian=satuan",
-        tone: "teal",
-        icon: Wrench,
-      },
-    ],
-  },
-  {
-    id: "penjualan",
-    label: "Penjualan",
-    icon: ReceiptText,
-    tone: "blue",
-    items: [
-      {
-        label: "Penawaran",
-        href: "/app/penawaran",
-        tone: "violet",
-        icon: BookOpenText,
-      },
-      {
-        label: "Tagihan",
-        href: "/app/tagihan",
-        tone: "blue",
-        icon: FileText,
-      },
-      {
-        label: "Pembayaran",
-        href: "/app/pembayaran",
-        tone: "teal",
-        icon: ReceiptText,
-      },
-    ],
-  },
-  {
-    id: "keuangan",
-    label: "Keuangan",
-    icon: WalletCards,
-    tone: "green",
-    items: [
-      {
-        label: "Ringkasan",
-        href: "/app/keuangan",
-        tone: "teal",
-        icon: WalletCards,
-      },
-      {
-        label: "Kas & Bank",
-        href: "/app/keuangan/kas-bank",
-        tone: "green",
-        icon: Building2,
-      },
-      {
-        label: "Pemasukan",
-        href: "/app/keuangan/pemasukan",
-        tone: "cyan",
-        icon: HandCoins,
-      },
-      {
-        label: "Pengeluaran",
-        href: "/app/keuangan/pengeluaran",
-        tone: "rose",
-        icon: CircleDollarSign,
-      },
-      {
-        label: "Piutang",
-        href: "/app/keuangan/piutang",
-        tone: "blue",
-        icon: ReceiptText,
-      },
-    ],
-  },
-  {
-    id: "pengaturan",
-    label: "Pengaturan",
-    icon: Settings,
-    tone: "violet",
-    items: [
-      {
-        label: "Pengaturan Bisnis",
-        href: "/app/pengaturan?bagian=bisnis",
-        tone: "cyan",
-        icon: Building2,
-      },
-      {
-        label: "Profil Saya",
-        href: "/app/pengaturan?bagian=profil",
-        tone: "violet",
-        icon: UserRound,
-      },
-      {
-        label: "Pengaturan Keuangan",
-        href: "/app/pengaturan?bagian=keuangan",
-        tone: "green",
-        icon: WalletCards,
-      },
-      {
-        label: "Tim & Hak Akses",
-        href: "/app/pengaturan?bagian=tim",
-        tone: "blue",
-        icon: ShieldCheck,
-      },
-      {
-        label: "Paket & Langganan",
-        href: "/app/pengaturan?bagian=paket",
-        tone: "violet",
-        icon: Package,
-      },
-      {
-        label: "Integrasi",
-        href: "/app/pengaturan?bagian=integrasi",
-        tone: "teal",
-        icon: Wrench,
-      },
-    ],
-  },
-  {
-    id: "fitur-lanjutan",
-    label: "Fitur Lanjutan",
-    icon: Wrench,
-    tone: "rose",
-    items: [
-      {
-        label: "Proyek & Survei",
-        href:
-          "/app/upgrade?fitur=proyek&paket=business",
-        tone: "violet",
-        icon: Building2,
-        badge: "Business",
-      },
-      {
-        label: "Produksi & QC",
-        href:
-          "/app/upgrade?fitur=produksi&paket=business",
-        tone: "blue",
-        icon: Wrench,
-        badge: "Business",
-      },
-      {
-        label: "Saluran Penjualan",
-        href:
-          "/app/upgrade?fitur=saluran-penjualan&paket=business",
-        tone: "cyan",
-        icon: Store,
-        badge: "Business",
-      },
-      {
-        label: "Pembelian & Gudang",
-        href:
-          "/app/upgrade?fitur=operasional&paket=pro",
-        tone: "green",
-        icon: Package,
-        badge: "Pro",
-      },
-    ],
-  },
-];
+const navigationGroups:
+  NavigationGroup[] =
+  getNavigationModel(
+    "desktop",
+  ).map(
+    (group) => ({
+      id: group.key,
+      label: group.label,
+      icon: group.icon,
+      tone: group.tone,
+
+      defaultOpen:
+        group.defaultOpen,
+
+      items:
+        group.modules.map(
+          (moduleDef) => ({
+            label:
+              moduleDef.shortLabel ??
+              moduleDef.label,
+
+            href:
+              moduleDef.href,
+
+            tone:
+              moduleDef.tone,
+
+            icon:
+              moduleDef.icon,
+
+            badge:
+              modulePlanLabel(
+                moduleDef.plan,
+              ) ??
+              undefined,
+          }),
+        ),
+    }),
+  );
 
 function cleanHref(
   href: string,
@@ -392,8 +248,8 @@ function AccordionGroup({
     setOpen,
   ] = useState(
     initiallyOpen ||
-      group.id === "master-data" ||
-      group.id === "penjualan",
+      group.defaultOpen ===
+        true,
   );
 
   const Icon =

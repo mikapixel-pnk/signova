@@ -1,28 +1,9 @@
 "use client";
 
 import {
-  Banknote,
-  BookOpenText,
-  Boxes,
-  Building2,
-  CircleDollarSign,
-  CreditCard,
-  Database,
-  FileText,
-  HandCoins,
   LogOut,
-  Package,
-  ReceiptText,
-  Ruler,
   Settings,
-  ShieldCheck,
   Sparkles,
-  Store,
-  Tags,
-  UserRound,
-  Users,
-  WalletCards,
-  Wrench,
 } from "lucide-react";
 
 import Link from "next/link";
@@ -43,236 +24,51 @@ import {
   ThemeSelector,
 } from "@/components/theme/theme-selector";
 
+import type {
+  ModuleDefinition,
+} from "@/config/module-types";
+
 import {
   logout,
 } from "@/lib/auth/logout";
 
+import {
+  getNavigationModel,
+} from "@/lib/module/navigation";
+
+import {
+  modulePlanLabel,
+} from "@/lib/module/registry";
+
 import styles from "./page.module.css";
 
-type Tone =
-  | "blue"
-  | "cyan"
-  | "teal"
-  | "green"
-  | "violet"
-  | "rose"
-  | "amber";
-
-type MenuItem = {
-  label: string;
-  href: string;
-  tone: Tone;
-  badge?: "Business" | "Pro";
-  icon: React.ComponentType<{
-    size?: number;
-    strokeWidth?: number;
-  }>;
-};
-
-type MenuSection = {
-  id: string;
-  title: string;
-  description: string;
-  tone: Tone;
-  icon: React.ComponentType<{
-    size?: number;
-    strokeWidth?: number;
-  }>;
-  items: MenuItem[];
-};
-
-const sections: MenuSection[] = [
-  {
-    id: "master-data",
-    title: "Master Data",
-    description:
-      "Kelola data utama yang dipakai berulang dalam transaksi.",
-    tone: "blue",
-    icon: Database,
-    items: [
-      {
-        label: "Pelanggan",
-        href: "/app/pelanggan",
-        tone: "violet",
-        icon: Users,
-      },
-      {
-        label: "Barang & Jasa",
-        href: "/app/barang-jasa",
-        tone: "blue",
-        icon: Package,
-      },
-      {
-        label: "Satuan",
-        href:
-          "/app/barang-jasa?bagian=satuan",
-        tone: "teal",
-        icon: Ruler,
-      },
-      {
-        label: "Kategori",
-        href:
-          "/app/barang-jasa?bagian=kategori",
-        tone: "amber",
-        icon: Tags,
-      },
-    ],
-  },
-  {
-    id: "penjualan",
-    title: "Penjualan",
-    description:
-      "Kelola proses dari penawaran sampai pembayaran pelanggan.",
-    tone: "teal",
-    icon: Store,
-    items: [
-      {
-        label: "Penawaran",
-        href: "/app/penawaran",
-        tone: "teal",
-        icon: BookOpenText,
-      },
-      {
-        label: "Tagihan",
-        href: "/app/tagihan",
-        tone: "blue",
-        icon: FileText,
-      },
-      {
-        label: "Pembayaran",
-        href: "/app/pembayaran",
-        tone: "rose",
-        icon: CreditCard,
-      },
-    ],
-  },
-  {
-    id: "keuangan",
-    title: "Keuangan",
-    description:
-      "Pantau arus uang dan kondisi keuangan usaha Anda.",
-    tone: "cyan",
-    icon: WalletCards,
-    items: [
-      {
-        label: "Ringkasan",
-        href: "/app/keuangan",
-        tone: "violet",
-        icon: WalletCards,
-      },
-      {
-        label: "Kas & Bank",
-        href: "/app/keuangan/kas-bank",
-        tone: "green",
-        icon: Building2,
-      },
-      {
-        label: "Pemasukan",
-        href: "/app/keuangan/pemasukan",
-        tone: "teal",
-        icon: HandCoins,
-      },
-      {
-        label: "Pengeluaran",
-        href: "/app/keuangan/pengeluaran",
-        tone: "rose",
-        icon: CircleDollarSign,
-      },
-      {
-        label: "Piutang",
-        href: "/app/keuangan/piutang",
-        tone: "blue",
-        icon: ReceiptText,
-      },
-    ],
-  },
-  {
-    id: "pengaturan",
-    title: "Pengaturan",
-    description:
-      "Sesuaikan SIGNOVA dengan kebutuhan usaha dan tim.",
-    tone: "violet",
-    icon: Settings,
-    items: [
-      {
-        label: "Pengaturan Bisnis",
-        href:
-          "/app/pengaturan?bagian=bisnis",
-        tone: "blue",
-        icon: Store,
-      },
-      {
-        label: "Profil Saya",
-        href:
-          "/app/pengaturan?bagian=profil",
-        tone: "violet",
-        icon: UserRound,
-      },
-      {
-        label: "Pengaturan Keuangan",
-        href:
-          "/app/pengaturan?bagian=keuangan",
-        tone: "green",
-        icon: Banknote,
-      },
-      {
-        label: "Tim & Hak Akses",
-        href:
-          "/app/pengaturan?bagian=tim",
-        tone: "cyan",
-        icon: ShieldCheck,
-      },
-    ],
-  },
-];
-
-const advancedItems: MenuItem[] = [
-  {
-    label: "Proyek & Survei",
-    href:
-      "/app/pengaturan?bagian=paket&fitur=proyek",
-    tone: "violet",
-    badge: "Business",
-    icon: Building2,
-  },
-  {
-    label: "Produksi & QC",
-    href:
-      "/app/pengaturan?bagian=paket&fitur=produksi",
-    tone: "blue",
-    badge: "Business",
-    icon: Wrench,
-  },
-  {
-    label: "Saluran Penjualan",
-    href:
-      "/app/pengaturan?bagian=paket&fitur=saluran-penjualan",
-    tone: "cyan",
-    badge: "Business",
-    icon: Boxes,
-  },
-  {
-    label: "Pembelian & Gudang",
-    href:
-      "/app/pengaturan?bagian=paket&fitur=operasional",
-    tone: "green",
-    badge: "Pro",
-    icon: Package,
-  },
-];
+const navigation =
+  getNavigationModel(
+    "mobile",
+  );
 
 function MenuTile({
-  item,
+  moduleDef,
 }: {
-  item: MenuItem;
+  moduleDef:
+    ModuleDefinition;
 }) {
   const Icon =
-    item.icon;
+    moduleDef.icon;
+
+  const badge =
+    modulePlanLabel(
+      moduleDef.plan,
+    );
 
   return (
     <Link
-      href={item.href}
-      data-tone={item.tone}
+      href={
+        moduleDef.href
+      }
+      data-tone={
+        moduleDef.tone
+      }
       className={
         styles.menuTile
       }
@@ -293,16 +89,17 @@ function MenuTile({
           styles.tileLabel
         }
       >
-        {item.label}
+        {moduleDef.shortLabel ??
+          moduleDef.label}
       </span>
 
-      {item.badge ? (
+      {badge ? (
         <span
           className={
             styles.planBadge
           }
         >
-          {item.badge}
+          {badge}
         </span>
       ) : null}
     </Link>
@@ -333,6 +130,20 @@ export default function MoreMenuPage() {
       );
     }
   }
+
+  const normalGroups =
+    navigation.filter(
+      (group) =>
+        group.key !==
+        "fitur-lanjutan",
+    );
+
+  const advancedGroup =
+    navigation.find(
+      (group) =>
+        group.key ===
+        "fitur-lanjutan",
+    );
 
   return (
     <TenantShell>
@@ -388,13 +199,14 @@ export default function MoreMenuPage() {
             />
 
             <strong>
-              Kelola bisnis lebih mudah
-              dengan SIGNOVA
+              Kelola bisnis lebih
+              mudah dengan SIGNOVA
             </strong>
 
             <p>
-              Pilih menu sesuai pekerjaan
-              yang ingin Anda selesaikan.
+              Pilih menu sesuai
+              pekerjaan yang ingin
+              Anda selesaikan.
             </p>
           </aside>
         </header>
@@ -404,21 +216,21 @@ export default function MoreMenuPage() {
             styles.sections
           }
         >
-          {sections.map(
-            (section) => {
-              const SectionIcon =
-                section.icon;
+          {normalGroups.map(
+            (group) => {
+              const GroupIcon =
+                group.icon;
 
               return (
                 <section
                   key={
-                    section.id
+                    group.key
                   }
                   className={
                     styles.menuSection
                   }
                   data-tone={
-                    section.tone
+                    group.tone
                   }
                 >
                   <header
@@ -431,9 +243,11 @@ export default function MoreMenuPage() {
                         styles.sectionIcon
                       }
                     >
-                      <SectionIcon
+                      <GroupIcon
                         size={20}
-                        strokeWidth={1.9}
+                        strokeWidth={
+                          1.9
+                        }
                       />
                     </span>
 
@@ -443,12 +257,12 @@ export default function MoreMenuPage() {
                       }
                     >
                       <h2>
-                        {section.title}
+                        {group.label}
                       </h2>
 
                       <p>
                         {
-                          section.description
+                          group.description
                         }
                       </p>
                     </div>
@@ -459,7 +273,7 @@ export default function MoreMenuPage() {
                       }
                     >
                       {
-                        section.items
+                        group.modules
                           .length
                       }{" "}
                       menu
@@ -471,14 +285,16 @@ export default function MoreMenuPage() {
                       styles.tileGrid
                     }
                   >
-                    {section.items.map(
-                      (item) => (
+                    {group.modules.map(
+                      (
+                        moduleDef,
+                      ) => (
                         <MenuTile
                           key={
-                            `${section.id}-${item.label}`
+                            moduleDef.key
                           }
-                          item={
-                            item
+                          moduleDef={
+                            moduleDef
                           }
                         />
                       ),
@@ -490,61 +306,81 @@ export default function MoreMenuPage() {
           )}
         </div>
 
-        <section
-          className={
-            styles.advancedSection
-          }
-        >
-          <header
+        {advancedGroup ? (
+          <section
             className={
-              styles.sectionHeader
+              styles.advancedSection
             }
           >
-            <span
+            <header
               className={
-                styles.advancedIcon
+                styles.sectionHeader
               }
             >
-              <Sparkles
-                size={20}
-                strokeWidth={1.9}
-              />
-            </span>
+              <span
+                className={
+                  styles.advancedIcon
+                }
+              >
+                <Sparkles
+                  size={20}
+                  strokeWidth={1.9}
+                />
+              </span>
+
+              <div
+                className={
+                  styles.sectionCopy
+                }
+              >
+                <h2>
+                  {
+                    advancedGroup.label
+                  }
+                </h2>
+
+                <p>
+                  {
+                    advancedGroup.description
+                  }
+                </p>
+              </div>
+
+              <span
+                className={
+                  styles.menuCount
+                }
+              >
+                {
+                  advancedGroup.modules
+                    .length
+                }{" "}
+                menu
+              </span>
+            </header>
 
             <div
               className={
-                styles.sectionCopy
+                styles.tileGrid
               }
             >
-              <h2>
-                Fitur Lanjutan
-              </h2>
-
-              <p>
-                Kembangkan SIGNOVA saat
-                kebutuhan usaha Anda
-                bertambah.
-              </p>
+              {advancedGroup.modules.map(
+                (
+                  moduleDef,
+                ) => (
+                  <MenuTile
+                    key={
+                      moduleDef.key
+                    }
+                    moduleDef={
+                      moduleDef
+                    }
+                  />
+                ),
+              )}
             </div>
-          </header>
-
-          <div
-            className={
-              styles.tileGrid
-            }
-          >
-            {advancedItems.map(
-              (item) => (
-                <MenuTile
-                  key={
-                    item.label
-                  }
-                  item={item}
-                />
-              ),
-            )}
-          </div>
-        </section>
+          </section>
+        ) : null}
 
         <section
           className={
@@ -581,8 +417,8 @@ export default function MoreMenuPage() {
                   styles.sectionNote
                 }
               >
-                Pilih tema SIGNOVA di
-                perangkat ini.
+                Pilih tema SIGNOVA
+                di perangkat ini.
               </p>
             </div>
           </div>

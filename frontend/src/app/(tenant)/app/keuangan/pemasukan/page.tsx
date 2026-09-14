@@ -1,12 +1,16 @@
-import { ModulePlaceholder } from "@/components/layout/module-placeholder";
-import { TenantShell } from "@/components/layout/tenant-shell";
+import {
+  TenantShell,
+} from "@/components/layout/tenant-shell";
+
+import {
+  ModulePage,
+} from "@/components/module/module-page";
 
 export default function Page() {
   return (
     <TenantShell>
-      <ModulePlaceholder
-        title="Pemasukan"
-        description="Catat dan pantau pemasukan usaha."
+      <ModulePage
+        moduleKey="income"
       />
     </TenantShell>
   );
