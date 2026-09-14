@@ -1,0 +1,108 @@
+.control {
+  display: none;
+
+  align-items: center;
+
+  border:
+    1px solid
+    var(--color-border);
+
+  border-radius: 14px;
+
+  background:
+    color-mix(
+      in srgb,
+      var(--color-card) 90%,
+      transparent
+    );
+
+  padding: 3px;
+
+  box-shadow:
+    0 6px 18px
+    color-mix(
+      in srgb,
+      #101828 5%,
+      transparent
+    );
+}
+
+.option,
+.optionActive {
+  display: inline-flex;
+
+  min-height: 32px;
+
+  align-items: center;
+  justify-content: center;
+
+  gap: 5px;
+
+  border: 0;
+  border-radius: 10px;
+
+  background:
+    transparent;
+
+  padding:
+    0
+    9px;
+
+  color:
+    var(--color-muted-foreground);
+
+  font: inherit;
+  font-size: 10px;
+  font-weight: 650;
+
+  cursor: pointer;
+
+  transition:
+    background 160ms ease,
+    color 160ms ease,
+    box-shadow 160ms ease;
+}
+
+.optionActive {
+  background:
+    linear-gradient(
+      135deg,
+      color-mix(
+        in srgb,
+        var(--sv-blue) 18%,
+        var(--color-card)
+      ),
+      color-mix(
+        in srgb,
+        var(--sv-violet) 12%,
+        var(--color-card)
+      )
+    );
+
+  color:
+    var(--color-foreground);
+
+  box-shadow:
+    0 5px 14px
+    color-mix(
+      in srgb,
+      var(--sv-blue) 14%,
+      transparent
+    );
+}
+
+@media (min-width: 1000px) {
+  .control {
+    display: flex;
+  }
+}
+
+@media (
+  prefers-reduced-motion:
+  reduce
+) {
+  .option,
+  .optionActive {
+    transition: none;
+  }
+}

@@ -1,17 +1,28 @@
 "use client";
 
 import {
+  Banknote,
   BookOpenText,
+  Boxes,
   Building2,
   CircleDollarSign,
+  CreditCard,
+  Database,
   FileText,
   HandCoins,
   LogOut,
   Package,
   ReceiptText,
+  Ruler,
   Settings,
+  ShieldCheck,
+  Sparkles,
+  Store,
+  Tags,
+  UserRound,
   Users,
   WalletCards,
+  Wrench,
 } from "lucide-react";
 
 import Link from "next/link";
@@ -38,68 +49,265 @@ import {
 
 import styles from "./page.module.css";
 
-const menuItems = [
+type Tone =
+  | "blue"
+  | "cyan"
+  | "teal"
+  | "green"
+  | "violet"
+  | "rose"
+  | "amber";
+
+type MenuItem = {
+  label: string;
+  href: string;
+  tone: Tone;
+  badge?: "Business" | "Pro";
+  icon: React.ComponentType<{
+    size?: number;
+    strokeWidth?: number;
+  }>;
+};
+
+type MenuSection = {
+  id: string;
+  title: string;
+  description: string;
+  tone: Tone;
+  icon: React.ComponentType<{
+    size?: number;
+    strokeWidth?: number;
+  }>;
+  items: MenuItem[];
+};
+
+const sections: MenuSection[] = [
   {
-    label: "Pelanggan",
-    href: "/app/pelanggan",
-    icon: Users,
-    tone: "violet",
-  },
-  {
-    label: "Barang & Jasa",
-    href: "/app/barang-jasa",
-    icon: Package,
-    tone: "cyan",
-  },
-  {
-    label: "Penawaran",
-    href: "/app/penawaran",
-    icon: BookOpenText,
-    tone: "violet",
-  },
-  {
-    label: "Pembayaran",
-    href: "/app/pembayaran",
-    icon: ReceiptText,
+    id: "master-data",
+    title: "Master Data",
+    description:
+      "Kelola data utama yang dipakai berulang dalam transaksi.",
     tone: "blue",
+    icon: Database,
+    items: [
+      {
+        label: "Pelanggan",
+        href: "/app/pelanggan",
+        tone: "violet",
+        icon: Users,
+      },
+      {
+        label: "Barang & Jasa",
+        href: "/app/barang-jasa",
+        tone: "blue",
+        icon: Package,
+      },
+      {
+        label: "Satuan",
+        href:
+          "/app/barang-jasa?bagian=satuan",
+        tone: "teal",
+        icon: Ruler,
+      },
+      {
+        label: "Kategori",
+        href:
+          "/app/barang-jasa?bagian=kategori",
+        tone: "amber",
+        icon: Tags,
+      },
+    ],
   },
   {
-    label: "Ringkasan Keuangan",
-    href: "/app/keuangan",
-    icon: WalletCards,
+    id: "penjualan",
+    title: "Penjualan",
+    description:
+      "Kelola proses dari penawaran sampai pembayaran pelanggan.",
     tone: "teal",
+    icon: Store,
+    items: [
+      {
+        label: "Penawaran",
+        href: "/app/penawaran",
+        tone: "teal",
+        icon: BookOpenText,
+      },
+      {
+        label: "Tagihan",
+        href: "/app/tagihan",
+        tone: "blue",
+        icon: FileText,
+      },
+      {
+        label: "Pembayaran",
+        href: "/app/pembayaran",
+        tone: "rose",
+        icon: CreditCard,
+      },
+    ],
   },
   {
-    label: "Kas & Bank",
-    href: "/app/keuangan/kas-bank",
-    icon: Building2,
-    tone: "green",
-  },
-  {
-    label: "Pemasukan",
-    href: "/app/keuangan/pemasukan",
-    icon: HandCoins,
+    id: "keuangan",
+    title: "Keuangan",
+    description:
+      "Pantau arus uang dan kondisi keuangan usaha Anda.",
     tone: "cyan",
+    icon: WalletCards,
+    items: [
+      {
+        label: "Ringkasan",
+        href: "/app/keuangan",
+        tone: "violet",
+        icon: WalletCards,
+      },
+      {
+        label: "Kas & Bank",
+        href: "/app/keuangan/kas-bank",
+        tone: "green",
+        icon: Building2,
+      },
+      {
+        label: "Pemasukan",
+        href: "/app/keuangan/pemasukan",
+        tone: "teal",
+        icon: HandCoins,
+      },
+      {
+        label: "Pengeluaran",
+        href: "/app/keuangan/pengeluaran",
+        tone: "rose",
+        icon: CircleDollarSign,
+      },
+      {
+        label: "Piutang",
+        href: "/app/keuangan/piutang",
+        tone: "blue",
+        icon: ReceiptText,
+      },
+    ],
   },
   {
-    label: "Pengeluaran",
-    href: "/app/keuangan/pengeluaran",
-    icon: CircleDollarSign,
-    tone: "rose",
-  },
-  {
-    label: "Piutang",
-    href: "/app/keuangan/piutang",
-    icon: FileText,
-    tone: "blue",
-  },
-  {
-    label: "Pengaturan",
-    href: "/app/pengaturan",
-    icon: Settings,
+    id: "pengaturan",
+    title: "Pengaturan",
+    description:
+      "Sesuaikan SIGNOVA dengan kebutuhan usaha dan tim.",
     tone: "violet",
+    icon: Settings,
+    items: [
+      {
+        label: "Pengaturan Bisnis",
+        href:
+          "/app/pengaturan?bagian=bisnis",
+        tone: "blue",
+        icon: Store,
+      },
+      {
+        label: "Profil Saya",
+        href:
+          "/app/pengaturan?bagian=profil",
+        tone: "violet",
+        icon: UserRound,
+      },
+      {
+        label: "Pengaturan Keuangan",
+        href:
+          "/app/pengaturan?bagian=keuangan",
+        tone: "green",
+        icon: Banknote,
+      },
+      {
+        label: "Tim & Hak Akses",
+        href:
+          "/app/pengaturan?bagian=tim",
+        tone: "cyan",
+        icon: ShieldCheck,
+      },
+    ],
   },
-] as const;
+];
+
+const advancedItems: MenuItem[] = [
+  {
+    label: "Proyek & Survei",
+    href:
+      "/app/pengaturan?bagian=paket&fitur=proyek",
+    tone: "violet",
+    badge: "Business",
+    icon: Building2,
+  },
+  {
+    label: "Produksi & QC",
+    href:
+      "/app/pengaturan?bagian=paket&fitur=produksi",
+    tone: "blue",
+    badge: "Business",
+    icon: Wrench,
+  },
+  {
+    label: "Saluran Penjualan",
+    href:
+      "/app/pengaturan?bagian=paket&fitur=saluran-penjualan",
+    tone: "cyan",
+    badge: "Business",
+    icon: Boxes,
+  },
+  {
+    label: "Pembelian & Gudang",
+    href:
+      "/app/pengaturan?bagian=paket&fitur=operasional",
+    tone: "green",
+    badge: "Pro",
+    icon: Package,
+  },
+];
+
+function MenuTile({
+  item,
+}: {
+  item: MenuItem;
+}) {
+  const Icon =
+    item.icon;
+
+  return (
+    <Link
+      href={item.href}
+      data-tone={item.tone}
+      className={
+        styles.menuTile
+      }
+    >
+      <span
+        className={
+          styles.tileIcon
+        }
+      >
+        <Icon
+          size={22}
+          strokeWidth={1.9}
+        />
+      </span>
+
+      <span
+        className={
+          styles.tileLabel
+        }
+      >
+        {item.label}
+      </span>
+
+      {item.badge ? (
+        <span
+          className={
+            styles.planBadge
+          }
+        >
+          {item.badge}
+        </span>
+      ) : null}
+    </Link>
+  );
+}
 
 export default function MoreMenuPage() {
   const router =
@@ -133,72 +341,150 @@ export default function MoreMenuPage() {
           styles.page
         }
       >
-        <header>
-          <p
+        <header
+          className={
+            styles.hero
+          }
+        >
+          <div
             className={
-              styles.eyebrow
+              styles.heroCopy
             }
           >
-            SIGNOVA
-          </p>
+            <p
+              className={
+                styles.eyebrow
+              }
+            >
+              SIGNOVA
+            </p>
 
-          <h1
-            className={
-              styles.title
-            }
-          >
-            Menu Lainnya
-          </h1>
+            <h1
+              className={
+                styles.title
+              }
+            >
+              Menu Lainnya
+            </h1>
 
-          <p
+            <p
+              className={
+                styles.description
+              }
+            >
+              Semua kebutuhan usaha
+              dalam satu tempat.
+            </p>
+          </div>
+
+          <aside
             className={
-              styles.description
+              styles.heroInsight
             }
           >
-            Semua fitur Starter dalam satu tempat.
-          </p>
+            <Sparkles
+              size={20}
+              strokeWidth={1.8}
+            />
+
+            <strong>
+              Kelola bisnis lebih mudah
+              dengan SIGNOVA
+            </strong>
+
+            <p>
+              Pilih menu sesuai pekerjaan
+              yang ingin Anda selesaikan.
+            </p>
+          </aside>
         </header>
 
         <div
           className={
-            styles.menuGrid
+            styles.sections
           }
         >
-          {menuItems.map(
-            (item) => {
-              const Icon =
-                item.icon;
+          {sections.map(
+            (section) => {
+              const SectionIcon =
+                section.icon;
 
               return (
-                <Link
+                <section
                   key={
-                    item.href
-                  }
-                  href={
-                    item.href
-                  }
-                  data-tone={
-                    item.tone
+                    section.id
                   }
                   className={
-                    styles.menuCard
+                    styles.menuSection
+                  }
+                  data-tone={
+                    section.tone
                   }
                 >
-                  <span
+                  <header
                     className={
-                      styles.iconBox
+                      styles.sectionHeader
                     }
                   >
-                    <Icon
-                      size={21}
-                      strokeWidth={1.9}
-                    />
-                  </span>
+                    <span
+                      className={
+                        styles.sectionIcon
+                      }
+                    >
+                      <SectionIcon
+                        size={20}
+                        strokeWidth={1.9}
+                      />
+                    </span>
 
-                  <strong>
-                    {item.label}
-                  </strong>
-                </Link>
+                    <div
+                      className={
+                        styles.sectionCopy
+                      }
+                    >
+                      <h2>
+                        {section.title}
+                      </h2>
+
+                      <p>
+                        {
+                          section.description
+                        }
+                      </p>
+                    </div>
+
+                    <span
+                      className={
+                        styles.menuCount
+                      }
+                    >
+                      {
+                        section.items
+                          .length
+                      }{" "}
+                      menu
+                    </span>
+                  </header>
+
+                  <div
+                    className={
+                      styles.tileGrid
+                    }
+                  >
+                    {section.items.map(
+                      (item) => (
+                        <MenuTile
+                          key={
+                            `${section.id}-${item.label}`
+                          }
+                          item={
+                            item
+                          }
+                        />
+                      ),
+                    )}
+                  </div>
+                </section>
               );
             },
           )}
@@ -206,25 +492,99 @@ export default function MoreMenuPage() {
 
         <section
           className={
+            styles.advancedSection
+          }
+        >
+          <header
+            className={
+              styles.sectionHeader
+            }
+          >
+            <span
+              className={
+                styles.advancedIcon
+              }
+            >
+              <Sparkles
+                size={20}
+                strokeWidth={1.9}
+              />
+            </span>
+
+            <div
+              className={
+                styles.sectionCopy
+              }
+            >
+              <h2>
+                Fitur Lanjutan
+              </h2>
+
+              <p>
+                Kembangkan SIGNOVA saat
+                kebutuhan usaha Anda
+                bertambah.
+              </p>
+            </div>
+          </header>
+
+          <div
+            className={
+              styles.tileGrid
+            }
+          >
+            {advancedItems.map(
+              (item) => (
+                <MenuTile
+                  key={
+                    item.label
+                  }
+                  item={item}
+                />
+              ),
+            )}
+          </div>
+        </section>
+
+        <section
+          className={
             styles.themeSection
           }
         >
-          <div>
-            <h2
+          <div
+            className={
+              styles.themeHeading
+            }
+          >
+            <span
               className={
-                styles.sectionTitle
+                styles.themeIcon
               }
             >
-              Tampilan
-            </h2>
+              <Settings
+                size={20}
+                strokeWidth={1.9}
+              />
+            </span>
 
-            <p
-              className={
-                styles.sectionNote
-              }
-            >
-              Pilih tema SIGNOVA di perangkat ini.
-            </p>
+            <div>
+              <h2
+                className={
+                  styles.sectionTitle
+                }
+              >
+                Tampilan
+              </h2>
+
+              <p
+                className={
+                  styles.sectionNote
+                }
+              >
+                Pilih tema SIGNOVA di
+                perangkat ini.
+              </p>
+            </div>
           </div>
 
           <ThemeSelector />
@@ -243,7 +603,9 @@ export default function MoreMenuPage() {
             loggingOut
           }
         >
-          <LogOut size={19} />
+          <LogOut
+            size={19}
+          />
 
           {loggingOut
             ? "Sedang keluar..."
