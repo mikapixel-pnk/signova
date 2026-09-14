@@ -1,4 +1,4 @@
-const VERSION = "signova-shell-v4";
+const VERSION = "signova-shell-v5";
 
 const SHELL_CACHE =
   `${VERSION}-shell`;
@@ -8,19 +8,19 @@ const RUNTIME_CACHE =
 
 const APP_ROUTES = [
   "/app",
-  "/app/customers",
-  "/app/catalog",
-  "/app/invoices",
-  "/app/finance",
-  "/app/payments",
-  "/app/quotations",
-  "/app/settings",
+  "/app/pelanggan",
+  "/app/barang-jasa",
+  "/app/tagihan",
+  "/app/keuangan",
+  "/app/pembayaran",
+  "/app/penawaran",
+  "/app/pengaturan",
   "/app/menu",
-  "/app/actions",
-  "/app/finance/cash-bank",
-  "/app/finance/incomes",
-  "/app/finance/expenses",
-  "/app/finance/receivables",
+  "/app/aksi",
+  "/app/keuangan/kas-bank",
+  "/app/keuangan/pemasukan",
+  "/app/keuangan/pengeluaran",
+  "/app/keuangan/piutang",
 ];
 
 function isApiRequest(url) {

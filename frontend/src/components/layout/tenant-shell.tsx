@@ -56,27 +56,27 @@ type NavigationItem = {
 const salesNavigation: NavigationItem[] = [
   {
     label: "Pelanggan",
-    href: "/app/customers",
+    href: "/app/pelanggan",
     icon: Users,
   },
   {
     label: "Barang & Jasa",
-    href: "/app/catalog",
+    href: "/app/barang-jasa",
     icon: Package,
   },
   {
     label: "Penawaran",
-    href: "/app/quotations",
+    href: "/app/penawaran",
     icon: BookOpenText,
   },
   {
     label: "Tagihan",
-    href: "/app/invoices",
+    href: "/app/tagihan",
     icon: FileText,
   },
   {
     label: "Pembayaran",
-    href: "/app/payments",
+    href: "/app/pembayaran",
     icon: ReceiptText,
   },
 ];
@@ -84,27 +84,27 @@ const salesNavigation: NavigationItem[] = [
 const financeNavigation: NavigationItem[] = [
   {
     label: "Ringkasan",
-    href: "/app/finance",
+    href: "/app/keuangan",
     icon: WalletCards,
   },
   {
     label: "Kas & Bank",
-    href: "/app/finance/cash-bank",
+    href: "/app/keuangan/kas-bank",
     icon: Building2,
   },
   {
     label: "Pemasukan",
-    href: "/app/finance/incomes",
+    href: "/app/keuangan/pemasukan",
     icon: HandCoins,
   },
   {
     label: "Pengeluaran",
-    href: "/app/finance/expenses",
+    href: "/app/keuangan/pengeluaran",
     icon: CircleDollarSign,
   },
   {
     label: "Piutang",
-    href: "/app/finance/receivables",
+    href: "/app/keuangan/piutang",
     icon: ReceiptText,
   },
 ];
@@ -236,7 +236,7 @@ export function TenantShell({
               pathname={pathname}
               item={{
                 label: "Pengaturan",
-                href: "/app/settings",
+                href: "/app/pengaturan",
                 icon: Settings,
               }}
             />
@@ -337,11 +337,11 @@ export function TenantShell({
           </Link>
 
           <Link
-            href="/app/invoices"
+            href="/app/tagihan"
             className={
               isActiveRoute(
                 pathname,
-                "/app/invoices",
+                "/app/tagihan",
               )
                 ? styles.bottomLinkActive
                 : styles.bottomLink
@@ -355,7 +355,7 @@ export function TenantShell({
           </Link>
 
           <Link
-            href="/app/actions"
+            href="/app/aksi"
             className={styles.bottomPrimary}
             aria-label="Tambah"
           >
@@ -363,11 +363,11 @@ export function TenantShell({
           </Link>
 
           <Link
-            href="/app/finance"
+            href="/app/keuangan"
             className={
               isActiveRoute(
                 pathname,
-                "/app/finance",
+                "/app/keuangan",
               )
                 ? styles.bottomLinkActive
                 : styles.bottomLink

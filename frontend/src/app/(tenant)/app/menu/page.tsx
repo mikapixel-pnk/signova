@@ -32,52 +32,52 @@ import {
 const menuItems = [
   {
     label: "Pelanggan",
-    href: "/app/customers",
+    href: "/app/pelanggan",
     icon: Users,
   },
   {
     label: "Barang & Jasa",
-    href: "/app/catalog",
+    href: "/app/barang-jasa",
     icon: Package,
   },
   {
     label: "Penawaran",
-    href: "/app/quotations",
+    href: "/app/penawaran",
     icon: BookOpenText,
   },
   {
     label: "Pembayaran",
-    href: "/app/payments",
+    href: "/app/pembayaran",
     icon: ReceiptText,
   },
   {
     label: "Ringkasan Keuangan",
-    href: "/app/finance",
+    href: "/app/keuangan",
     icon: WalletCards,
   },
   {
     label: "Kas & Bank",
-    href: "/app/finance/cash-bank",
+    href: "/app/keuangan/kas-bank",
     icon: Building2,
   },
   {
     label: "Pemasukan",
-    href: "/app/finance/incomes",
+    href: "/app/keuangan/pemasukan",
     icon: HandCoins,
   },
   {
     label: "Pengeluaran",
-    href: "/app/finance/expenses",
+    href: "/app/keuangan/pengeluaran",
     icon: CircleDollarSign,
   },
   {
     label: "Piutang",
-    href: "/app/finance/receivables",
+    href: "/app/keuangan/piutang",
     icon: FileText,
   },
   {
     label: "Pengaturan",
-    href: "/app/settings",
+    href: "/app/pengaturan",
     icon: Settings,
   },
 ];
