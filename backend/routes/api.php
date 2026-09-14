@@ -61,6 +61,11 @@ Route::prefix('v1')->group(function () {
         Route::post('/login', [AuthController::class, 'login']);
 
         Route::middleware('auth:sanctum')->group(function () {
+            Route::get(
+                '/context',
+                [AuthController::class, 'context']
+            );
+
             Route::post(
                 '/logout',
                 [AuthController::class, 'logout']

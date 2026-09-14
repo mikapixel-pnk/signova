@@ -7,6 +7,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\LoginRequest;
 use App\Http\Requests\Auth\RegisterRequest;
 use App\Models\User;
+use App\Services\Auth\AuthAccessContextService;
 use App\Tenancy\TenantContext;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -44,8 +45,10 @@ class AuthController extends Controller
         ], 201);
     }
 
-    public function login(LoginRequest $request): JsonResponse
-    {
+    public function login(
+        LoginRequest $request,
+        AuthAccessContextService $accessContext
+    ): JsonResponse {
         $credentials = $request->validated();
 
         $user = User::query()
@@ -71,31 +74,12 @@ class AuthController extends Controller
             ]);
         }
 
-        $memberships = DB::table('tenant_users as tu')
-            ->join(
-                'tenants as t',
-                't.id',
-                '=',
-                'tu.tenant_id'
-            )
-            ->where('tu.user_id', $user->id)
-            ->where('tu.status', 'ACTIVE')
-            ->where('t.lifecycle_status', 'ACTIVE')
-            ->orderBy('tu.joined_at')
-            ->select([
-                't.id',
-                't.name',
-                't.slug',
-                't.lifecycle_status',
-                't.timezone',
-                't.locale',
-            ])
-            ->get();
+        $context = $accessContext->build($user);
 
-        if ($memberships->isEmpty()) {
+        if (! $context['has_access']) {
             throw ValidationException::withMessages([
                 'email' => [
-                    'Akun tidak memiliki workspace aktif.',
+                    'Akun tidak memiliki akses aktif.',
                 ],
             ]);
         }
@@ -104,33 +88,43 @@ class AuthController extends Controller
             $credentials['device_name'] ?? 'signova-api'
         )->plainTextToken;
 
-        $tenant = null;
-
-        if ($memberships->count() === 1) {
-            $tenant = $this->tenantPayload(
-                $memberships->first()->id
-            );
-        }
-
         return response()->json([
             'message' => 'Login berhasil.',
             'data' => [
                 'user' => $this->userPayload($user),
-                'tenant' => $tenant,
-                'tenants' => $memberships
-                    ->map(fn ($item) => [
-                        'id' => $item->id,
-                        'name' => $item->name,
-                        'slug' => $item->slug,
-                        'lifecycle_status' =>
-                            $item->lifecycle_status,
-                        'timezone' => $item->timezone,
-                        'locale' => $item->locale,
-                    ])
-                    ->values()
-                    ->all(),
+
+                /*
+                 * Legacy tenant fields are retained temporarily
+                 * for backward compatibility with existing clients.
+                 */
+                'tenant' =>
+                    $context['default_context']
+                    && $context['default_context']['type']
+                        === 'TENANT'
+                        ? $this->tenantPayload(
+                            $context['default_context']['tenant_id']
+                        )
+                        : null,
+
+                'tenants' =>
+                    $context['access']['tenants'],
+
                 'requires_tenant_selection' =>
-                    $memberships->count() > 1,
+                    count(
+                        $context['access']['tenants']
+                    ) > 1,
+
+                'access' =>
+                    $context['access'],
+
+                'default_context' =>
+                    $context['default_context'],
+
+                'requires_context_selection' =>
+                    $context[
+                        'requires_context_selection'
+                    ],
+
                 'token' => $token,
                 'token_type' => 'Bearer',
             ],
@@ -151,6 +145,24 @@ class AuthController extends Controller
                     $tenantContext->tenantId()
                 ),
             ],
+        ]);
+    }
+
+    public function context(
+        Request $request,
+        AuthAccessContextService $accessContext
+    ): JsonResponse {
+        /** @var User $user */
+        $user = $request->user();
+
+        return response()->json([
+            'data' => array_merge(
+                [
+                    'user' =>
+                        $this->userPayload($user),
+                ],
+                $accessContext->build($user)
+            ),
         ]);
     }
 

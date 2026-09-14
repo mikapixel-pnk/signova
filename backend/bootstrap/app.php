@@ -5,6 +5,7 @@ use App\Exceptions\Quotation\QuotationNotEditableException;
 use App\Exceptions\Quotation\QuotationPricingValidationException;
 use App\Http\Middleware\ResolveTenantContext;
 use App\Http\Middleware\RequireCapability;
+use App\Http\Middleware\RequirePlatformCapability;
 use App\Http\Middleware\AssignRequestId;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
@@ -36,6 +37,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'tenant.context' => ResolveTenantContext::class,
             'capability' => RequireCapability::class,
+            'platform.capability' => RequirePlatformCapability::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
