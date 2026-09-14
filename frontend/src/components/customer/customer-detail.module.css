@@ -1,0 +1,268 @@
+.page {
+  display: grid;
+  gap: 16px;
+}
+
+.topBar {
+  display: flex;
+
+  align-items: center;
+  justify-content: space-between;
+
+  gap: 12px;
+}
+
+.backLink,
+.editButton {
+  display: inline-flex;
+
+  align-items: center;
+  justify-content: center;
+
+  gap: 7px;
+
+  min-height: 40px;
+
+  border-radius: 12px;
+
+  font-size: 11px;
+  font-weight: 700;
+
+  text-decoration: none;
+}
+
+.backLink {
+  color:
+    var(--foreground-muted);
+}
+
+.editButton {
+  border:
+    1px solid
+    color-mix(
+      in srgb,
+      var(--sv-violet) 25%,
+      var(--border)
+    );
+
+  background:
+    color-mix(
+      in srgb,
+      var(--sv-violet) 8%,
+      var(--surface)
+    );
+
+  padding:
+    0
+    13px;
+
+  color:
+    var(--sv-violet);
+}
+
+.grid {
+  display: grid;
+  gap: 12px;
+}
+
+.card {
+  min-width: 0;
+
+  border:
+    1px solid
+    var(--border);
+
+  border-radius: 18px;
+
+  background:
+    var(--surface);
+
+  padding: 15px;
+}
+
+.cardHeader {
+  display: flex;
+
+  align-items: flex-start;
+  gap: 10px;
+
+  margin-bottom: 16px;
+
+  color:
+    var(--sv-violet);
+}
+
+.cardHeader h2 {
+  margin: 0;
+
+  color:
+    var(--foreground);
+
+  font-size: 14px;
+}
+
+.cardHeader p {
+  margin:
+    3px
+    0
+    0;
+
+  color:
+    var(--foreground-muted);
+
+  font-size: 9px;
+  line-height: 1.45;
+}
+
+.detailList {
+  display: grid;
+
+  margin: 0;
+}
+
+.detailList > div {
+  display: grid;
+
+  grid-template-columns:
+    minmax(110px, 0.45fr)
+    minmax(0, 1fr);
+
+  gap: 12px;
+
+  border-top:
+    1px solid
+    var(--border);
+
+  padding:
+    11px
+    0;
+}
+
+.detailList > div:first-child {
+  border-top: 0;
+}
+
+.detailList dt {
+  color:
+    var(--foreground-muted);
+
+  font-size: 10px;
+  font-weight: 650;
+}
+
+.detailList dd {
+  display: flex;
+
+  min-width: 0;
+
+  align-items: center;
+  gap: 6px;
+
+  margin: 0;
+
+  overflow-wrap: anywhere;
+
+  color:
+    var(--foreground);
+
+  font-size: 11px;
+  font-weight: 650;
+}
+
+.statusActive,
+.statusInactive {
+  display: inline-flex;
+
+  width: fit-content;
+
+  border-radius: 999px;
+
+  padding:
+    4px
+    8px;
+
+  font-size: 9px;
+  font-weight: 700;
+}
+
+.statusActive {
+  background:
+    color-mix(
+      in srgb,
+      var(--sv-green) 12%,
+      transparent
+    );
+
+  color:
+    var(--sv-green);
+}
+
+.statusInactive {
+  background:
+    color-mix(
+      in srgb,
+      var(--foreground-muted) 10%,
+      transparent
+    );
+
+  color:
+    var(--foreground-muted);
+}
+
+.notes {
+  margin: 0;
+
+  color:
+    var(--foreground-muted);
+
+  font-size: 11px;
+  line-height: 1.65;
+
+  white-space: pre-wrap;
+}
+
+.loadingCard {
+  display: grid;
+
+  min-height: 220px;
+
+  place-items: center;
+
+  border:
+    1px dashed
+    var(--border);
+
+  border-radius: 20px;
+
+  color:
+    var(--foreground-muted);
+
+  font-size: 11px;
+}
+
+@media (max-width: 520px) {
+  .topBar {
+    align-items: stretch;
+  }
+
+  .editButton {
+    min-width: 44px;
+  }
+
+  .detailList > div {
+    grid-template-columns:
+      1fr;
+
+    gap: 5px;
+  }
+}
+
+@media (min-width: 760px) {
+  .grid {
+    grid-template-columns:
+      repeat(
+        2,
+        minmax(0, 1fr)
+      );
+  }
+}

@@ -61,6 +61,7 @@ export type ModuleDefinition = {
 
   label: string;
   shortLabel?: string;
+  eyebrow?: string;
 
   href: string;
 

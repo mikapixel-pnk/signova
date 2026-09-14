@@ -34,6 +34,7 @@ export const modules:
     key: "customers",
     group: "master-data",
     label: "Pelanggan",
+    eyebrow: "Data Pelanggan",
     href: "/app/pelanggan",
     tone: "violet",
     icon: Users,

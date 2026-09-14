@@ -414,17 +414,21 @@ export default function CustomersPage() {
                             styles.customerMain
                           }
                         >
-                          <div
+                          <span
                             className={
-                              styles.customerTop
+                              styles.customerName
                             }
                           >
-                            <strong>
-                              {
-                                customer.name
-                              }
-                            </strong>
+                            {
+                              customer.name
+                            }
+                          </span>
 
+                          <div
+                            className={
+                              styles.customerMeta
+                            }
+                          >
                             <span
                               className={
                                 customer.status ===
@@ -437,20 +441,21 @@ export default function CustomersPage() {
                                 customer.status,
                               )}
                             </span>
-                          </div>
 
-                          <span
-                            className={
-                              styles.customerType
-                            }
-                          >
-                            {customerTypeLabel(
-                              customer.type,
-                            )}
-                            {customer.code
-                              ? ` • ${customer.code}`
-                              : ""}
-                          </span>
+                            <span
+                              className={
+                                styles.customerType
+                              }
+                            >
+                              {customerTypeLabel(
+                                customer.type,
+                              )}
+
+                              {customer.code
+                                ? ` • ${customer.code}`
+                                : ""}
+                            </span>
+                          </div>
 
                           <div
                             className={

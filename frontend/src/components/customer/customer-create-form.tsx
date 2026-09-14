@@ -437,7 +437,10 @@ export function CustomerCreateForm() {
       </div>
 
       <ModuleHero
-        eyebrow="Master Data"
+        eyebrow={
+          customerModule.eyebrow ??
+          customerModule.label
+        }
         title="Tambah Pelanggan"
         description="Simpan data pelanggan agar dapat digunakan kembali pada penawaran, tagihan, dan pembayaran."
         icon={
