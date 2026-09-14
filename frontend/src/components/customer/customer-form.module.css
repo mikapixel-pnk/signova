@@ -457,3 +457,140 @@
     transition: none;
   }
 }
+
+.statusFieldset {
+  min-width: 0;
+
+  margin: 0;
+
+  border: 0;
+
+  padding: 0;
+}
+
+.statusFieldset legend {
+  margin-bottom: 8px;
+
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.statusGrid {
+  display: grid;
+  gap: 8px;
+}
+
+.statusCard,
+.statusCardActive,
+.statusCardInactive {
+  display: grid;
+
+  grid-template-columns:
+    16px
+    minmax(0, 1fr);
+
+  align-items: start;
+
+  gap: 10px;
+
+  width: 100%;
+
+  border:
+    1px solid
+    var(--border);
+
+  border-radius: 15px;
+
+  background:
+    var(--surface-soft);
+
+  padding: 12px;
+
+  color:
+    var(--foreground);
+
+  font: inherit;
+
+  text-align: left;
+
+  cursor: pointer;
+}
+
+.statusCardActive {
+  border-color:
+    color-mix(
+      in srgb,
+      var(--sv-green) 38%,
+      var(--border)
+    );
+
+  background:
+    color-mix(
+      in srgb,
+      var(--sv-green) 8%,
+      var(--surface)
+    );
+}
+
+.statusCardInactive {
+  border-color:
+    color-mix(
+      in srgb,
+      var(--foreground-muted) 26%,
+      var(--border)
+    );
+}
+
+.statusDotActive,
+.statusDotInactive {
+  display: block;
+
+  width: 10px;
+  height: 10px;
+
+  margin-top: 3px;
+
+  border-radius: 999px;
+}
+
+.statusDotActive {
+  background:
+    var(--sv-green);
+}
+
+.statusDotInactive {
+  background:
+    var(--foreground-muted);
+}
+
+.statusCard strong,
+.statusCardActive strong,
+.statusCardInactive strong {
+  display: block;
+
+  font-size: 12px;
+}
+
+.statusCard small,
+.statusCardActive small,
+.statusCardInactive small {
+  display: block;
+
+  margin-top: 3px;
+
+  color:
+    var(--foreground-muted);
+
+  font-size: 9px;
+  line-height: 1.45;
+}
+
+@media (min-width: 640px) {
+  .statusGrid {
+    grid-template-columns:
+      repeat(
+        2,
+        minmax(0, 1fr)
+      );
+  }
+}

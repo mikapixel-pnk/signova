@@ -3,15 +3,13 @@ import {
 } from "@/components/layout/tenant-shell";
 
 import {
-  CustomerForm,
-} from "@/components/customer/customer-form";
+  CustomerEditScreen,
+} from "@/components/customer/customer-edit-screen";
 
 export default function Page() {
   return (
     <TenantShell>
-      <CustomerForm
-        mode="create"
-      />
+      <CustomerEditScreen />
     </TenantShell>
   );
 }

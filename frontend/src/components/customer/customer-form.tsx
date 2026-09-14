@@ -32,6 +32,7 @@ import {
 
 import {
   createCustomer,
+  updateCustomer,
 } from "@/lib/customer/service";
 
 import {
@@ -40,11 +41,13 @@ import {
 } from "@/lib/api/error-message";
 
 import type {
+  Customer,
   CustomerPayload,
+  CustomerStatus,
   CustomerType,
 } from "@/types/customer";
 
-import styles from "./customer-create-form.module.css";
+import styles from "./customer-form.module.css";
 
 type FormState = {
   type: CustomerType;
@@ -55,6 +58,7 @@ type FormState = {
   taxId: string;
   paymentTermsDays: string;
   notes: string;
+  status: CustomerStatus;
 };
 
 type FieldErrors =
@@ -73,7 +77,28 @@ const initialForm:
   taxId: "",
   paymentTermsDays: "30",
   notes: "",
+  status: "ACTIVE",
 };
+
+function formFromCustomer(
+  customer: Customer,
+): FormState {
+  return {
+    type: customer.type,
+    name: customer.name,
+    code: customer.code ?? "",
+    phone: customer.phone ?? "",
+    email: customer.email ?? "",
+    taxId: customer.tax_id ?? "",
+    paymentTermsDays:
+      String(
+        customer.payment_terms_days ??
+        0,
+      ),
+    notes: customer.notes ?? "",
+    status: customer.status,
+  };
+}
 
 function nullableText(
   value: string,
@@ -147,7 +172,19 @@ function firstFieldError(
   );
 }
 
-export function CustomerCreateForm() {
+type CustomerFormProps = {
+  mode:
+    | "create"
+    | "edit";
+
+  initialCustomer?:
+    Customer;
+};
+
+export function CustomerForm({
+  mode,
+  initialCustomer,
+}: CustomerFormProps) {
   const router =
     useRouter();
 
@@ -156,11 +193,25 @@ export function CustomerCreateForm() {
       "customers",
     );
 
+  const editing =
+    mode === "edit";
+
+  const cancelHref =
+    editing &&
+    initialCustomer
+      ? `/app/pelanggan/${initialCustomer.id}`
+      : "/app/pelanggan";
+
   const [
     form,
     setForm,
   ] = useState<FormState>(
-    initialForm,
+    () =>
+      initialCustomer
+        ? formFromCustomer(
+            initialCustomer,
+          )
+        : initialForm,
   );
 
   const [
@@ -301,6 +352,11 @@ export function CustomerCreateForm() {
         ),
     };
 
+    if (editing) {
+      payload.status =
+        form.status;
+    }
+
     if (!payload.name) {
       setFieldErrors({
         name: [
@@ -334,12 +390,19 @@ export function CustomerCreateForm() {
     );
 
     try {
-      await createCustomer(
-        payload,
-      );
+      const response =
+        editing &&
+        initialCustomer
+          ? await updateCustomer(
+              initialCustomer.id,
+              payload,
+            )
+          : await createCustomer(
+              payload,
+            );
 
       router.push(
-        "/app/pelanggan",
+        `/app/pelanggan/${response.data.id}`,
       );
 
       router.refresh();
@@ -353,7 +416,9 @@ export function CustomerCreateForm() {
       setSubmitError(
         apiErrorMessage(
           error,
-          "Pelanggan belum berhasil disimpan. Silakan periksa data lalu coba lagi.",
+          editing
+            ? "Perubahan pelanggan belum berhasil disimpan. Silakan periksa data lalu coba lagi."
+            : "Pelanggan belum berhasil disimpan. Silakan periksa data lalu coba lagi.",
         ),
       );
 
@@ -423,7 +488,7 @@ export function CustomerCreateForm() {
         }
       >
         <Link
-          href="/app/pelanggan"
+          href={cancelHref}
           className={
             styles.backLink
           }
@@ -441,14 +506,30 @@ export function CustomerCreateForm() {
           customerModule.eyebrow ??
           customerModule.label
         }
-        title="Tambah Pelanggan"
-        description="Simpan data pelanggan agar dapat digunakan kembali pada penawaran, tagihan, dan pembayaran."
+        title={
+          editing
+            ? "Ubah Pelanggan"
+            : "Tambah Pelanggan"
+        }
+        description={
+          editing
+            ? "Perbarui data pelanggan yang digunakan dalam transaksi SIGNOVA."
+            : "Simpan data pelanggan agar dapat digunakan kembali pada penawaran, tagihan, dan pembayaran."
+        }
         icon={
           customerModule.icon
         }
         tone="violet"
-        insightTitle="Simpan sekali, gunakan kembali"
-        insightDescription="Data pelanggan yang lengkap akan mempercepat transaksi berikutnya dan mengurangi input berulang."
+        insightTitle={
+          editing
+            ? "Jaga data pelanggan tetap akurat"
+            : "Simpan sekali, gunakan kembali"
+        }
+        insightDescription={
+          editing
+            ? "Perubahan pada master pelanggan akan digunakan untuk transaksi berikutnya tanpa mengubah histori transaksi yang sudah tercatat."
+            : "Data pelanggan yang lengkap akan mempercepat transaksi berikutnya dan mengurangi input berulang."
+        }
       />
 
       <form
@@ -912,6 +993,122 @@ export function CustomerCreateForm() {
           </div>
         </section>
 
+        {editing ? (
+          <section
+            className={
+              styles.card
+            }
+          >
+            <div
+              className={
+                styles.sectionHeading
+              }
+            >
+              <div>
+                <p
+                  className={
+                    styles.sectionEyebrow
+                  }
+                >
+                  Status Pelanggan
+                </p>
+
+                <h2>
+                  Status penggunaan
+                </h2>
+
+                <p>
+                  Pelanggan nonaktif tetap tersimpan,
+                  tetapi tidak digunakan sebagai pilihan
+                  utama pada transaksi baru.
+                </p>
+              </div>
+            </div>
+
+            <fieldset
+              className={
+                styles.statusFieldset
+              }
+            >
+              <legend>
+                Pilih status
+              </legend>
+
+              <div
+                className={
+                  styles.statusGrid
+                }
+              >
+                <button
+                  type="button"
+                  className={
+                    form.status ===
+                    "ACTIVE"
+                      ? styles.statusCardActive
+                      : styles.statusCard
+                  }
+                  onClick={() =>
+                    updateField(
+                      "status",
+                      "ACTIVE",
+                    )
+                  }
+                >
+                  <span
+                    className={
+                      styles.statusDotActive
+                    }
+                  />
+
+                  <span>
+                    <strong>
+                      Aktif
+                    </strong>
+
+                    <small>
+                      Bisa digunakan pada
+                      transaksi baru.
+                    </small>
+                  </span>
+                </button>
+
+                <button
+                  type="button"
+                  className={
+                    form.status ===
+                    "INACTIVE"
+                      ? styles.statusCardInactive
+                      : styles.statusCard
+                  }
+                  onClick={() =>
+                    updateField(
+                      "status",
+                      "INACTIVE",
+                    )
+                  }
+                >
+                  <span
+                    className={
+                      styles.statusDotInactive
+                    }
+                  />
+
+                  <span>
+                    <strong>
+                      Nonaktif
+                    </strong>
+
+                    <small>
+                      Disimpan untuk histori
+                      dan referensi.
+                    </small>
+                  </span>
+                </button>
+              </div>
+            </fieldset>
+          </section>
+        ) : null}
+
         <SubmitArea
           stickyMobile
           feedback={
@@ -920,7 +1117,9 @@ export function CustomerCreateForm() {
                   tone:
                     "error",
                   title:
-                    "Pelanggan belum tersimpan",
+                    editing
+                      ? "Perubahan belum tersimpan"
+                      : "Pelanggan belum tersimpan",
                   message:
                     submitError,
                   requestId,
@@ -929,7 +1128,7 @@ export function CustomerCreateForm() {
           }
         >
           <Link
-            href="/app/pelanggan"
+            href={cancelHref}
             className={
               styles.cancelButton
             }
@@ -952,7 +1151,9 @@ export function CustomerCreateForm() {
 
             {submitting
               ? "Menyimpan..."
-              : "Simpan Pelanggan"}
+              : editing
+                ? "Simpan Perubahan"
+                : "Simpan Pelanggan"}
           </button>
         </SubmitArea>
       </form>
