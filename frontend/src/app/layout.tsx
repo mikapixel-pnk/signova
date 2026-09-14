@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import { ServiceWorkerRegistration } from "@/components/system/service-worker-registration";
 
 export const metadata: Metadata = {
   title: {
@@ -11,6 +12,7 @@ export const metadata: Metadata = {
     "Platform operasional bisnis yang sederhana, terhubung, dan mobile-first.",
 
   applicationName: "SIGNOVA",
+  manifest: "/manifest.webmanifest",
 };
 
 export default function RootLayout({
@@ -20,7 +22,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="id">
-      <body>{children}</body>
+      <body>
+        <ServiceWorkerRegistration />
+        {children}
+      </body>
     </html>
   );
 }

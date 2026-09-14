@@ -1,56 +1,48 @@
+"use client";
+
+import {
+  useEffect,
+} from "react";
+import {
+  useRouter,
+} from "next/navigation";
+
+import {
+  SplashScreen,
+} from "@/components/feedback/splash-screen";
+import {
+  hasCompletedOnboarding,
+} from "@/lib/auth/onboarding";
+
 export default function Home() {
-  return (
-    <main
-      style={{
-        minHeight: "100vh",
-        display: "grid",
-        placeItems: "center",
-        padding: "24px",
-      }}
-    >
-      <section
-        style={{
-          width: "min(100%, 520px)",
-          padding: "32px",
-          borderRadius: "var(--radius-lg)",
-          background: "var(--surface)",
-          boxShadow: "var(--shadow-soft)",
-          border: "1px solid var(--border)",
-        }}
-      >
-        <div
-          style={{
-            color: "var(--primary-strong)",
-            fontWeight: 800,
-            letterSpacing: "-0.02em",
-            fontSize: "28px",
-          }}
-        >
-          SIGNOVA
-        </div>
+  const router = useRouter();
 
-        <h1
-          style={{
-            margin: "20px 0 8px",
-            fontSize: "24px",
-          }}
-        >
-          Frontend Foundation
-        </h1>
+  useEffect(() => {
+    const timer = window.setTimeout(
+      () => {
+        const desktop =
+          window.matchMedia(
+            "(min-width: 900px)",
+          ).matches;
 
-        <p
-          style={{
-            margin: 0,
-            color: "var(--foreground-muted)",
-            lineHeight: 1.6,
-          }}
-        >
-          Next.js foundation aktif.
-          Splash, autentikasi, tenant app,
-          platform admin, dan PWA akan
-          dibangun pada fase berikutnya.
-        </p>
-      </section>
-    </main>
-  );
+        if (desktop) {
+          router.replace("/login");
+          return;
+        }
+
+        router.replace(
+          hasCompletedOnboarding()
+            ? "/login"
+            : "/welcome",
+        );
+      },
+      950,
+    );
+
+    return () => {
+      window.clearTimeout(timer);
+    };
+  }, [router]);
+
+  return <SplashScreen />;
 }

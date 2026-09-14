@@ -1,0 +1,39 @@
+.brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.mark {
+  position: relative;
+
+  width: 42px;
+  height: 42px;
+
+  flex: 0 0 auto;
+}
+
+.mark img {
+  object-fit: contain;
+}
+
+.name {
+  color: var(--foreground);
+
+  font-size: 21px;
+  font-weight: 900;
+  line-height: 1;
+
+  letter-spacing: -0.045em;
+}
+
+@media (max-width: 640px) {
+  .mark {
+    width: 38px;
+    height: 38px;
+  }
+
+  .name {
+    font-size: 19px;
+  }
+}

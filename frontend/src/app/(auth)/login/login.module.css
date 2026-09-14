@@ -1,0 +1,138 @@
+.cardBrand {
+  display: flex;
+  align-items: center;
+
+  margin-bottom: 2px;
+}
+
+.card {
+  padding: 28px;
+
+  display: grid;
+  gap: 22px;
+}
+
+.header {
+  display: grid;
+  gap: 8px;
+}
+
+.title {
+  margin: 0;
+
+  font-size: 30px;
+  line-height: 1.1;
+  letter-spacing: -0.04em;
+}
+
+.description {
+  margin: 0;
+
+  color: var(--foreground-muted);
+
+  line-height: 1.6;
+}
+
+.form {
+  display: grid;
+  gap: 18px;
+}
+
+.passwordRow {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.link {
+  color: var(--primary-strong);
+
+  font-size: 14px;
+  font-weight: 700;
+
+  text-decoration: none;
+}
+
+.error {
+  padding: 12px 14px;
+
+  border:
+    1px solid
+    color-mix(
+      in srgb,
+      var(--danger) 28%,
+      var(--border)
+    );
+
+  border-radius: var(--radius-sm);
+
+  background:
+    color-mix(
+      in srgb,
+      var(--danger) 8%,
+      var(--surface)
+    );
+
+  color: var(--danger);
+
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.divider {
+  display: grid;
+  grid-template-columns:
+    1fr
+    auto
+    1fr;
+  align-items: center;
+  gap: 12px;
+
+  color: var(--foreground-muted);
+
+  font-size: 12px;
+}
+
+.divider::before,
+.divider::after {
+  content: "";
+
+  height: 1px;
+
+  background: var(--border);
+}
+
+.actions {
+  display: grid;
+  gap: 10px;
+}
+
+.footer {
+  margin: 0;
+
+  text-align: center;
+
+  color: var(--foreground-muted);
+
+  font-size: 14px;
+}
+
+.note {
+  margin: 0;
+
+  color: var(--foreground-muted);
+
+  font-size: 12px;
+  line-height: 1.5;
+
+  text-align: center;
+}
+
+@media (min-width: 900px) {
+  .card {
+    padding: 34px;
+  }
+}
+
+.card {
+  padding-bottom: 34px;
+}

@@ -1,0 +1,80 @@
+.online,
+.offline,
+.syncing {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  min-height: 30px;
+  border-radius: 999px;
+  padding: 5px 9px;
+  font-size: 11px;
+  font-weight: 650;
+  white-space: nowrap;
+}
+
+.online {
+  background:
+    color-mix(
+      in srgb,
+      #34b56f 12%,
+      transparent
+    );
+  color: #238452;
+}
+
+.offline {
+  background:
+    color-mix(
+      in srgb,
+      #f0a63a 14%,
+      transparent
+    );
+  color: #a56810;
+}
+
+.syncing {
+  background:
+    color-mix(
+      in srgb,
+      var(--color-primary) 11%,
+      transparent
+    );
+  color: var(--color-primary);
+}
+
+.cloud {
+  opacity: 0.65;
+}
+
+.spinning {
+  animation: spin 0.9s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (max-width: 420px) {
+  .online span,
+  .offline span,
+  .syncing span,
+  .cloud {
+    display: none;
+  }
+
+  .online,
+  .offline,
+  .syncing {
+    width: 34px;
+    padding: 0;
+    justify-content: center;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .spinning {
+    animation: none;
+  }
+}

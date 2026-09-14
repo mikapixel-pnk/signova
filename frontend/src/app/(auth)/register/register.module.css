@@ -1,0 +1,108 @@
+.cardBrand {
+  display: flex;
+  align-items: center;
+
+  margin-bottom: 2px;
+}
+
+.card {
+  padding: 28px;
+
+  display: grid;
+  gap: 22px;
+}
+
+.header {
+  display: grid;
+  gap: 8px;
+}
+
+.title {
+  margin: 0;
+
+  font-size: 30px;
+  line-height: 1.1;
+  letter-spacing: -0.04em;
+}
+
+.description {
+  margin: 0;
+
+  color: var(--foreground-muted);
+
+  line-height: 1.6;
+}
+
+.form {
+  display: grid;
+  gap: 18px;
+}
+
+.grid {
+  display: grid;
+  gap: 18px;
+}
+
+.error {
+  padding: 12px 14px;
+
+  border:
+    1px solid
+    color-mix(
+      in srgb,
+      var(--danger) 28%,
+      var(--border)
+    );
+
+  border-radius: var(--radius-sm);
+
+  background:
+    color-mix(
+      in srgb,
+      var(--danger) 8%,
+      var(--surface)
+    );
+
+  color: var(--danger);
+
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.note {
+  margin: 0;
+
+  color: var(--foreground-muted);
+
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.footer {
+  margin: 0;
+
+  text-align: center;
+
+  color: var(--foreground-muted);
+
+  font-size: 14px;
+}
+
+.link {
+  color: var(--primary-strong);
+  font-weight: 700;
+}
+
+@media (min-width: 640px) {
+  .grid {
+    grid-template-columns:
+      minmax(0, 1fr)
+      minmax(0, 1fr);
+  }
+}
+
+@media (min-width: 900px) {
+  .card {
+    padding: 34px;
+  }
+}

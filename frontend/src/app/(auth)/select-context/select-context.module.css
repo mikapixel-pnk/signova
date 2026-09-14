@@ -1,0 +1,186 @@
+.cardBrand {
+  display: flex;
+  align-items: center;
+
+  margin-bottom: 2px;
+}
+
+.card {
+  padding: 28px;
+
+  display: grid;
+  gap: 22px;
+}
+
+.header {
+  display: grid;
+  gap: 8px;
+}
+
+.title {
+  margin: 0;
+
+  font-size: 30px;
+  line-height: 1.1;
+  letter-spacing: -0.04em;
+}
+
+.description {
+  margin: 0;
+
+  color: var(--foreground-muted);
+
+  line-height: 1.6;
+}
+
+.section {
+  display: grid;
+  gap: 12px;
+}
+
+.sectionTitle {
+  margin: 0;
+
+  font-size: 13px;
+  font-weight: 700;
+
+  color: var(--foreground-muted);
+
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.option {
+  width: 100%;
+
+  padding: 16px;
+
+  display: grid;
+  grid-template-columns:
+    auto
+    minmax(0, 1fr)
+    auto;
+  align-items: center;
+  gap: 14px;
+
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+
+  background: var(--surface);
+
+  color: var(--foreground);
+
+  text-align: left;
+
+  cursor: pointer;
+
+  transition:
+    border-color 150ms ease,
+    transform 150ms ease,
+    background 150ms ease;
+}
+
+.option:hover {
+  border-color:
+    color-mix(
+      in srgb,
+      var(--primary) 45%,
+      var(--border)
+    );
+
+  background:
+    color-mix(
+      in srgb,
+      var(--primary) 4%,
+      var(--surface)
+    );
+
+  transform: translateY(-1px);
+}
+
+.option:focus-visible {
+  outline: 3px solid
+    color-mix(
+      in srgb,
+      var(--primary) 25%,
+      transparent
+    );
+
+  outline-offset: 2px;
+}
+
+.icon {
+  width: 44px;
+  height: 44px;
+
+  display: grid;
+  place-items: center;
+
+  border-radius: 14px;
+
+  background:
+    color-mix(
+      in srgb,
+      var(--primary) 10%,
+      var(--surface)
+    );
+
+  color: var(--primary-strong);
+}
+
+.body {
+  min-width: 0;
+
+  display: grid;
+  gap: 4px;
+}
+
+.name {
+  font-weight: 750;
+}
+
+.detail {
+  color: var(--foreground-muted);
+
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.chevron {
+  color: var(--foreground-muted);
+}
+
+.notice {
+  padding: 14px 16px;
+
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+
+  color: var(--foreground-muted);
+
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.actions {
+  display: grid;
+  gap: 10px;
+}
+
+@media (min-width: 900px) {
+  .card {
+    padding: 34px;
+  }
+}
+
+@media (
+  prefers-reduced-motion: reduce
+) {
+  .option {
+    transition: none;
+  }
+
+  .option:hover {
+    transform: none;
+  }
+}
