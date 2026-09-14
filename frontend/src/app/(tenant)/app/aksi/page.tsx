@@ -1,164 +1,98 @@
-import {
-  CircleDollarSign,
-  FilePlus2,
-  HandCoins,
-  PackagePlus,
-  UserPlus,
-} from "lucide-react";
+import Link from "next/link";
 
 import {
   TenantShell,
 } from "@/components/layout/tenant-shell";
 
-const actions = [
-  {
-    label: "Buat Tagihan",
-    description:
-      "Buat tagihan baru untuk pelanggan.",
-    icon: FilePlus2,
-  },
-  {
-    label: "Tambah Pelanggan",
-    description:
-      "Simpan pelanggan baru.",
-    icon: UserPlus,
-  },
-  {
-    label: "Tambah Barang & Jasa",
-    description:
-      "Tambah item katalog usaha.",
-    icon: PackagePlus,
-  },
-  {
-    label: "Catat Pemasukan",
-    description:
-      "Catat pemasukan usaha.",
-    icon: HandCoins,
-  },
-  {
-    label: "Catat Pengeluaran",
-    description:
-      "Catat biaya atau pengeluaran usaha.",
-    icon: CircleDollarSign,
-  },
-];
+import {
+  ModuleHero,
+} from "@/components/module/module-hero";
+
+import {
+  getQuickActions,
+} from "@/lib/module/actions";
+
+import styles from "./page.module.css";
+
+const quickActions =
+  getQuickActions();
 
 export default function ActionsPage() {
   return (
     <TenantShell>
       <section
-        style={{
-          display: "grid",
-          gap: 20,
-        }}
+        className={
+          styles.page
+        }
       >
-        <header>
-          <p
-            style={{
-              margin: "0 0 6px",
-              color:
-                "var(--color-primary)",
-              fontSize: 12,
-              fontWeight: 700,
-            }}
-          >
-            Aksi Cepat
-          </p>
-
-          <h1
-            style={{
-              margin: 0,
-              fontSize:
-                "clamp(26px, 6vw, 36px)",
-            }}
-          >
-            Mau melakukan apa?
-          </h1>
-
-          <p
-            style={{
-              margin: "7px 0 0",
-              color:
-                "var(--color-muted-foreground)",
-            }}
-          >
-            Pilih pekerjaan yang ingin Anda mulai.
-          </p>
-        </header>
+        <ModuleHero
+          eyebrow="Aksi Cepat"
+          title="Mau melakukan apa?"
+          description="Pilih pekerjaan yang ingin Anda mulai."
+          icon={
+            quickActions[0]
+              .icon
+          }
+          tone="blue"
+          insightTitle="Mulai pekerjaan utama lebih cepat"
+          insightDescription="Akses tugas harian SIGNOVA tanpa harus membuka banyak menu."
+        />
 
         <div
-          style={{
-            display: "grid",
-            gap: 10,
-          }}
+          className={
+            styles.actionGrid
+          }
         >
-          {actions.map((item) => {
-            const Icon = item.icon;
+          {quickActions.map(
+            (action) => {
+              const Icon =
+                action.icon;
 
-            return (
-              <button
-                key={item.label}
-                type="button"
-                style={{
-                  display: "grid",
-                  gridTemplateColumns:
-                    "48px 1fr",
-                  alignItems: "center",
-                  gap: 13,
-                  width: "100%",
-                  border:
-                    "1px solid var(--color-border)",
-                  borderRadius: 17,
-                  background:
-                    "var(--color-card)",
-                  padding: 13,
-                  color:
-                    "var(--color-foreground)",
-                  font: "inherit",
-                  textAlign: "left",
-                }}
-              >
-                <span
-                  style={{
-                    display: "grid",
-                    width: 48,
-                    height: 48,
-                    placeItems: "center",
-                    borderRadius: 14,
-                    background:
-                      "color-mix(in srgb, var(--color-primary) 10%, transparent)",
-                    color:
-                      "var(--color-primary)",
-                  }}
+              return (
+                <Link
+                  key={
+                    action.key
+                  }
+                  href={
+                    action.href
+                  }
+                  data-tone={
+                    action.tone
+                  }
+                  className={
+                    styles.actionCard
+                  }
                 >
-                  <Icon size={21} />
-                </span>
-
-                <span>
-                  <strong
-                    style={{
-                      display: "block",
-                      fontSize: 14,
-                    }}
+                  <span
+                    className={
+                      styles.actionIcon
+                    }
                   >
-                    {item.label}
-                  </strong>
+                    <Icon
+                      size={22}
+                      strokeWidth={1.9}
+                    />
+                  </span>
 
-                  <small
-                    style={{
-                      display: "block",
-                      marginTop: 4,
-                      color:
-                        "var(--color-muted-foreground)",
-                      fontSize: 11,
-                    }}
+                  <span
+                    className={
+                      styles.actionCopy
+                    }
                   >
-                    {item.description}
-                  </small>
-                </span>
-              </button>
-            );
-          })}
+                    <strong>
+                      {action.label}
+                    </strong>
+
+                    <small>
+                      {
+                        action.description
+                      }
+                    </small>
+                  </span>
+                </Link>
+              );
+            },
+          )}
         </div>
       </section>
     </TenantShell>
