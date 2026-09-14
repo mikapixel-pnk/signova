@@ -22,6 +22,8 @@ class TenantDocumentSetting extends Model
         'tax_id',
         'quotation_footer',
         'invoice_footnote',
+        'invoice_template_key',
+        'invoice_palette_key',
         'signature_name',
         'signature_title',
         'signature_image_file_id',

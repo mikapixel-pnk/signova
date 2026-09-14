@@ -10,6 +10,7 @@ use App\Http\Controllers\Api\V1\Finance\IncomeController;
 use App\Http\Controllers\Api\V1\Invoice\InvoiceController;
 use App\Http\Controllers\Api\V1\Payment\PaymentController;
 use App\Http\Controllers\Api\V1\Settings\DocumentSettingController;
+use App\Http\Controllers\Api\V1\Settings\InvoiceTemplateSettingController;
 use App\Http\Controllers\Api\V1\Settings\PaymentSettingController;
 use App\Http\Controllers\Api\V1\Quotation\QuotationController;
 use App\Http\Controllers\Api\V1\Customer\CustomerController;
@@ -536,6 +537,33 @@ Route::prefix('v1')->group(function () {
         Route::delete(
             '/settings/document/signature',
             [DocumentSettingController::class, 'destroySignature']
+        )->middleware(
+            'capability:settings.manage'
+        );
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Template Invoice
+        |--------------------------------------------------------------------------
+        */
+
+        Route::get(
+            '/settings/invoice-templates',
+            [
+                InvoiceTemplateSettingController::class,
+                'index',
+            ]
+        )->middleware(
+            'capability:settings.view'
+        );
+
+        Route::patch(
+            '/settings/invoice-templates',
+            [
+                InvoiceTemplateSettingController::class,
+                'update',
+            ]
         )->middleware(
             'capability:settings.manage'
         );
