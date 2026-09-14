@@ -2,6 +2,15 @@
 
 return [
 
+    'ana_whatsapp' => [
+        'base_url' => env('ANA_WA_GATEWAY_BASE_URL'),
+        'sender' => env(
+            'ANA_WA_GATEWAY_SENDER',
+            '6287739029392'
+        ),
+        'api_key' => env('ANA_WA_GATEWAY_API_KEY'),
+    ],
+
     /*
     |--------------------------------------------------------------------------
     | Third Party Services

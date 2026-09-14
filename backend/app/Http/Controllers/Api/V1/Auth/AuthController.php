@@ -4,10 +4,14 @@ namespace App\Http\Controllers\Api\V1\Auth;
 
 use App\Actions\Tenancy\CreateTenantWorkspaceAction;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Auth\ForgotPasswordRequest;
 use App\Http\Requests\Auth\LoginRequest;
+use App\Http\Requests\Auth\ResetPasswordRequest;
+use App\Http\Requests\Auth\VerifyPasswordResetOtpRequest;
 use App\Http\Requests\Auth\RegisterRequest;
 use App\Models\User;
 use App\Services\Auth\AuthAccessContextService;
+use App\Services\Auth\PasswordRecoveryService;
 use App\Tenancy\TenantContext;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -128,6 +132,94 @@ class AuthController extends Controller
                 'token' => $token,
                 'token_type' => 'Bearer',
             ],
+        ]);
+    }
+
+    public function forgotPassword(
+        ForgotPasswordRequest $request,
+        PasswordRecoveryService $recovery
+    ): JsonResponse {
+        $requestId =
+            $recovery->request(
+                $request->validated(
+                    'identifier'
+                ),
+                $request->ip(),
+                $request->userAgent()
+            );
+
+        return response()->json([
+            'message' =>
+                'Jika data tersebut terdaftar, kode verifikasi akan dikirim.',
+
+            'data' => [
+                'request_id' =>
+                    $requestId,
+            ],
+        ]);
+    }
+
+    public function verifyPasswordResetOtp(
+        VerifyPasswordResetOtpRequest $request,
+        PasswordRecoveryService $recovery
+    ): JsonResponse {
+        try {
+            $resetProof =
+                $recovery->verify(
+                    $request->validated(
+                        'challenge_id'
+                    ),
+                    $request->validated(
+                        'code'
+                    )
+                );
+        } catch (
+            \App\Exceptions\Auth\OtpVerificationException
+        ) {
+            throw ValidationException::withMessages([
+                'code' => [
+                    'Kode verifikasi tidak valid atau sudah tidak berlaku.',
+                ],
+            ]);
+        }
+
+        return response()->json([
+            'message' =>
+                'Kode verifikasi valid.',
+
+            'data' => [
+                'reset_proof' =>
+                    $resetProof,
+            ],
+        ]);
+    }
+
+    public function resetPassword(
+        ResetPasswordRequest $request,
+        PasswordRecoveryService $recovery
+    ): JsonResponse {
+        try {
+            $recovery->reset(
+                $request->validated(
+                    'reset_proof'
+                ),
+                $request->validated(
+                    'password'
+                )
+            );
+        } catch (
+            \App\Exceptions\Auth\PasswordResetProofException
+        ) {
+            throw ValidationException::withMessages([
+                'reset_proof' => [
+                    'Token reset tidak valid atau sudah tidak berlaku.',
+                ],
+            ]);
+        }
+
+        return response()->json([
+            'message' =>
+                'Kata sandi berhasil diperbarui. Silakan masuk kembali.',
         ]);
     }
 

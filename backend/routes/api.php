@@ -60,6 +60,27 @@ Route::prefix('v1')->group(function () {
         Route::post('/register', [AuthController::class, 'register']);
         Route::post('/login', [AuthController::class, 'login']);
 
+        Route::post(
+            '/password/forgot',
+            [AuthController::class, 'forgotPassword']
+        )->middleware(
+            'throttle:auth.password.forgot'
+        );
+
+        Route::post(
+            '/password/verify',
+            [AuthController::class, 'verifyPasswordResetOtp']
+        )->middleware(
+            'throttle:auth.password.verify'
+        );
+
+        Route::post(
+            '/password/reset',
+            [AuthController::class, 'resetPassword']
+        )->middleware(
+            'throttle:auth.password.reset'
+        );
+
         Route::middleware('auth:sanctum')->group(function () {
             Route::get(
                 '/context',
