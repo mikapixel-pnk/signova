@@ -172,13 +172,55 @@ class CatalogService
         return $category->refresh();
     }
 
+    public function findUnitOrFail(
+        string $unitId
+    ): Unit {
+        return $this->unitQuery()
+            ->where('id', $unitId)
+            ->firstOrFail();
+    }
+
+    public function createUnit(
+        array $data
+    ): Unit {
+        return Unit::query()->create([
+            'id' => (string) Str::ulid(),
+
+            'tenant_id' =>
+                $this->tenantContext->tenantId(),
+
+            'code' => $data['code'],
+
+            'name' => $data['name'],
+
+            'symbol' =>
+                $data['symbol'] ?? null,
+
+            'unit_type' =>
+                $data['unit_type']
+                ?? 'OTHER',
+
+            'decimal_precision' =>
+                $data['decimal_precision']
+                ?? 2,
+
+            'status' => 'ACTIVE',
+        ]);
+    }
+
+    public function updateUnit(
+        Unit $unit,
+        array $data
+    ): Unit {
+        $unit->fill($data);
+        $unit->save();
+
+        return $unit->refresh();
+    }
+
     public function units(): array
     {
-        return Unit::query()
-            ->where(
-                'tenant_id',
-                $this->tenantContext->tenantId()
-            )
+        return $this->unitQuery()
             ->orderBy('name')
             ->get()
             ->all();
@@ -196,6 +238,15 @@ class CatalogService
     private function categoryQuery(): Builder
     {
         return CatalogCategory::query()
+            ->where(
+                'tenant_id',
+                $this->tenantContext->tenantId()
+            );
+    }
+
+    private function unitQuery(): Builder
+    {
+        return Unit::query()
             ->where(
                 'tenant_id',
                 $this->tenantContext->tenantId()

@@ -721,5 +721,19 @@ Route::prefix('v1')->group(function () {
         )->middleware(
             'capability:catalog.view'
         );
+
+        Route::post(
+            '/units',
+            [UnitController::class, 'store']
+        )->middleware(
+            'capability:catalog.manage'
+        );
+
+        Route::patch(
+            '/units/{unitId}',
+            [UnitController::class, 'update']
+        )->middleware(
+            'capability:catalog.manage'
+        );
     });
 });

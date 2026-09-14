@@ -446,6 +446,278 @@ class CatalogApiTest extends TestCase
         }
     }
 
+    public function test_owner_can_create_custom_unit(): void
+    {
+        $workspace = $this->workspace(
+            'unit-create@example.test',
+            'Unit Create'
+        );
+
+        $this->actingAsWorkspace($workspace);
+
+        $response = $this->postJson(
+            '/api/v1/units',
+            [
+                'code' => 'ROLL',
+                'name' => 'Roll',
+                'symbol' => 'roll',
+                'unit_type' => 'COUNT',
+                'decimal_precision' => 0,
+            ]
+        );
+
+        $response
+            ->assertCreated()
+            ->assertJsonPath(
+                'success',
+                true
+            )
+            ->assertJsonPath(
+                'data.code',
+                'ROLL'
+            )
+            ->assertJsonPath(
+                'data.name',
+                'Roll'
+            )
+            ->assertJsonPath(
+                'data.symbol',
+                'roll'
+            )
+            ->assertJsonPath(
+                'data.unit_type',
+                'COUNT'
+            )
+            ->assertJsonPath(
+                'data.unit_type_label',
+                'Jumlah'
+            )
+            ->assertJsonPath(
+                'data.decimal_precision',
+                0
+            )
+            ->assertJsonPath(
+                'data.status',
+                'ACTIVE'
+            )
+            ->assertJsonPath(
+                'data.status_label',
+                'Aktif'
+            )
+            ->assertJsonMissingPath(
+                'data.tenant_id'
+            );
+
+        $this->assertDatabaseHas(
+            'units',
+            [
+                'tenant_id' =>
+                    $workspace['tenant_id'],
+                'code' => 'ROLL',
+                'name' => 'Roll',
+                'unit_type' => 'COUNT',
+                'decimal_precision' => 0,
+                'status' => 'ACTIVE',
+            ]
+        );
+    }
+
+    public function test_owner_can_update_and_deactivate_unit(): void
+    {
+        $workspace = $this->workspace(
+            'unit-update@example.test',
+            'Unit Update'
+        );
+
+        $this->actingAsWorkspace($workspace);
+
+        $unitId = DB::table('units')
+            ->where(
+                'tenant_id',
+                $workspace['tenant_id']
+            )
+            ->where(
+                'code',
+                'PCS'
+            )
+            ->value('id');
+
+        $this->assertNotNull($unitId);
+
+        $response = $this->patchJson(
+            "/api/v1/units/{$unitId}",
+            [
+                'name' => 'Buah',
+                'symbol' => 'bh',
+                'status' => 'INACTIVE',
+            ]
+        );
+
+        $response
+            ->assertOk()
+            ->assertJsonPath(
+                'data.id',
+                $unitId
+            )
+            ->assertJsonPath(
+                'data.name',
+                'Buah'
+            )
+            ->assertJsonPath(
+                'data.symbol',
+                'bh'
+            )
+            ->assertJsonPath(
+                'data.status',
+                'INACTIVE'
+            )
+            ->assertJsonPath(
+                'data.status_label',
+                'Nonaktif'
+            );
+
+        $this->assertDatabaseHas(
+            'units',
+            [
+                'id' => $unitId,
+                'tenant_id' =>
+                    $workspace['tenant_id'],
+                'name' => 'Buah',
+                'symbol' => 'bh',
+                'status' => 'INACTIVE',
+            ]
+        );
+    }
+
+    public function test_unit_code_is_unique_per_tenant(): void
+    {
+        $workspace = $this->workspace(
+            'unit-duplicate@example.test',
+            'Unit Duplicate'
+        );
+
+        $this->actingAsWorkspace($workspace);
+
+        $response = $this->postJson(
+            '/api/v1/units',
+            [
+                'code' => ' pcs ',
+                'name' => 'Duplikat PCS',
+            ]
+        );
+
+        $response
+            ->assertStatus(422)
+            ->assertJsonPath(
+                'error.code',
+                'VALIDATION_FAILED'
+            );
+
+        $duplicateCount = DB::table('units')
+            ->where(
+                'tenant_id',
+                $workspace['tenant_id']
+            )
+            ->where(
+                'code',
+                'PCS'
+            )
+            ->count();
+
+        $this->assertSame(
+            1,
+            $duplicateCount
+        );
+    }
+
+    public function test_cross_tenant_unit_update_returns_not_found(): void
+    {
+        $first = $this->workspace(
+            'unit-first@example.test',
+            'Unit First'
+        );
+
+        $second = $this->workspace(
+            'unit-second@example.test',
+            'Unit Second'
+        );
+
+        $foreignUnitId = DB::table('units')
+            ->where(
+                'tenant_id',
+                $second['tenant_id']
+            )
+            ->where(
+                'code',
+                'M2'
+            )
+            ->value('id');
+
+        $this->assertNotNull($foreignUnitId);
+
+        $this->actingAsWorkspace($first);
+
+        $this->patchJson(
+            "/api/v1/units/{$foreignUnitId}",
+            [
+                'name' => 'Tidak Boleh Diubah',
+            ]
+        )
+            ->assertNotFound()
+            ->assertJsonPath(
+                'error.code',
+                'RESOURCE_NOT_FOUND'
+            );
+
+        $this->assertDatabaseMissing(
+            'units',
+            [
+                'id' => $foreignUnitId,
+                'tenant_id' =>
+                    $second['tenant_id'],
+                'name' => 'Tidak Boleh Diubah',
+            ]
+        );
+    }
+
+    public function test_missing_catalog_manage_capability_is_denied_for_unit_mutation(): void
+    {
+        $workspace = $this->workspace(
+            'unit-manage-denied@example.test',
+            'Unit Manage Denied'
+        );
+
+        $this->revokeOwnerCapability(
+            $workspace,
+            'catalog.manage'
+        );
+
+        $this->actingAsWorkspace($workspace);
+
+        $this->postJson(
+            '/api/v1/units',
+            [
+                'code' => 'BOX',
+                'name' => 'Box',
+            ]
+        )
+            ->assertForbidden()
+            ->assertJsonPath(
+                'error.code',
+                'FORBIDDEN_CAPABILITY'
+            );
+
+        $this->assertDatabaseMissing(
+            'units',
+            [
+                'tenant_id' =>
+                    $workspace['tenant_id'],
+                'code' => 'BOX',
+            ]
+        );
+    }
+
+
     public function test_missing_catalog_view_capability_is_denied(): void
     {
         $workspace = $this->workspace(
