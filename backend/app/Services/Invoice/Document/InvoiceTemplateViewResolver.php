@@ -9,6 +9,37 @@ class InvoiceTemplateViewResolver
     ) {
     }
 
+    public function resolveSnapshot(
+        ?string $templateKey,
+        ?string $paletteKey,
+        ?int $templateVersion
+    ): array {
+        if ($templateKey === null) {
+            return $this->resolve(
+                InvoiceTemplateRegistry::DEFAULT_TEMPLATE_KEY,
+                InvoiceTemplateRegistry::DEFAULT_PALETTE_KEY
+            );
+        }
+
+        $resolved =
+            $this->resolve(
+                $templateKey,
+                $paletteKey
+            );
+
+        if (
+            $templateVersion !== null
+            && $templateVersion
+                !== $resolved['template']['version']
+        ) {
+            throw new \InvalidArgumentException(
+                'Unsupported invoice template version.'
+            );
+        }
+
+        return $resolved;
+    }
+
     public function resolve(
         ?string $templateKey = null,
         ?string $paletteKey = null

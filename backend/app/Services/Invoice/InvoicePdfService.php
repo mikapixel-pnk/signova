@@ -4,13 +4,15 @@ namespace App\Services\Invoice;
 
 use App\Services\Invoice\Document\InvoiceDocumentViewModelBuilder;
 use App\Services\Invoice\Document\InvoicePdfRenderer;
+use App\Services\Invoice\Document\InvoiceTemplateViewResolver;
 
 class InvoicePdfService
 {
     public function __construct(
         private readonly InvoiceService $invoiceService,
         private readonly InvoiceDocumentViewModelBuilder $viewModelBuilder,
-        private readonly InvoicePdfRenderer $renderer
+        private readonly InvoicePdfRenderer $renderer,
+        private readonly InvoiceTemplateViewResolver $templateResolver
     ) {
     }
 
@@ -31,16 +33,37 @@ class InvoicePdfService
                     $invoiceId
                 );
 
-        $viewModel =
-            $this->viewModelBuilder
-                ->build(
-                    $invoice
+        $resolvedTemplate =
+            $this->templateResolver
+                ->resolveSnapshot(
+                    $invoice->invoice_template_key,
+                    $invoice->invoice_palette_key,
+                    $invoice->invoice_template_version
                 );
+
+        $viewModel =
+            array_merge(
+                $this->viewModelBuilder
+                    ->build(
+                        $invoice
+                    ),
+                [
+                    'template' =>
+                        $resolvedTemplate[
+                            'template'
+                        ],
+
+                    'theme' =>
+                        $resolvedTemplate[
+                            'palette'
+                        ]['tokens'],
+                ]
+            );
 
         return [
             'content' =>
                 $this->renderer->render(
-                    'pdf.invoices.classic',
+                    $resolvedTemplate['view'],
                     $viewModel
                 ),
 

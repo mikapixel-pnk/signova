@@ -10,6 +10,7 @@ use App\Models\InvoiceItem;
 use App\Models\InvoiceStatusHistory;
 use App\Models\Unit;
 use App\Services\Document\DocumentNumberService;
+use App\Services\Invoice\Document\InvoiceTemplateSnapshotService;
 use App\Services\Quotation\QuotationPricingCalculator;
 use App\Tenancy\TenantContext;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
@@ -22,7 +23,8 @@ class InvoiceService
     public function __construct(
         private readonly TenantContext $tenantContext,
         private readonly DocumentNumberService $documentNumberService,
-        private readonly QuotationPricingCalculator $pricingCalculator
+        private readonly QuotationPricingCalculator $pricingCalculator,
+        private readonly InvoiceTemplateSnapshotService $templateSnapshotService
     ) {
     }
 
@@ -525,6 +527,13 @@ class InvoiceService
 
                 $attributes['outstanding_amount'] =
                     $invoice->total;
+
+                $attributes =
+                    array_merge(
+                        $attributes,
+                        $this->templateSnapshotService
+                            ->current()
+                    );
             }
 
             if ($toState === 'VOID') {

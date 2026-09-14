@@ -82,4 +82,77 @@ class InvoiceTemplateViewResolverTest extends TestCase
             ]['key']
         );
     }
+    public function test_legacy_snapshot_uses_classic_blue(): void
+    {
+        $resolver =
+            new InvoiceTemplateViewResolver(
+                new InvoiceTemplateRegistry()
+            );
+
+        $resolved =
+            $resolver->resolveSnapshot(
+                null,
+                null,
+                null
+            );
+
+        $this->assertSame(
+            'classic_blue',
+            $resolved['template']['key']
+        );
+
+        $this->assertSame(
+            'blue',
+            $resolved['palette']['key']
+        );
+
+        $this->assertSame(
+            'pdf.invoices.classic',
+            $resolved['view']
+        );
+    }
+
+    public function test_snapshot_resolves_saved_template(): void
+    {
+        $resolver =
+            new InvoiceTemplateViewResolver(
+                new InvoiceTemplateRegistry()
+            );
+
+        $resolved =
+            $resolver->resolveSnapshot(
+                'modern_emerald',
+                'emerald',
+                1
+            );
+
+        $this->assertSame(
+            'modern_emerald',
+            $resolved['template']['key']
+        );
+
+        $this->assertSame(
+            'pdf.invoices.modern',
+            $resolved['view']
+        );
+    }
+
+    public function test_snapshot_rejects_unsupported_version(): void
+    {
+        $this->expectException(
+            \InvalidArgumentException::class
+        );
+
+        $resolver =
+            new InvoiceTemplateViewResolver(
+                new InvoiceTemplateRegistry()
+            );
+
+        $resolver->resolveSnapshot(
+            'minimal_slate',
+            'slate',
+            999
+        );
+    }
+
 }

@@ -32,6 +32,9 @@ class Invoice extends Model
         'total',
         'paid_amount',
         'outstanding_amount',
+        'invoice_template_key',
+        'invoice_palette_key',
+        'invoice_template_version',
         'notes',
         'created_by_user_id',
     ];
@@ -45,6 +48,7 @@ class Invoice extends Model
         'total' => 'decimal:2',
         'paid_amount' => 'decimal:2',
         'outstanding_amount' => 'decimal:2',
+        'invoice_template_version' => 'integer',
     ];
 
     public function customer(): BelongsTo

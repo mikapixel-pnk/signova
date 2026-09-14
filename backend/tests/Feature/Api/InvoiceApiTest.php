@@ -571,6 +571,263 @@ class InvoiceApiTest extends TestCase
         );
     }
 
+    public function test_issuing_invoice_snapshots_default_template_without_creating_setting_row(): void
+    {
+        $workspace =
+            $this->workspace(
+                'invoice-template-default@example.test',
+                'Invoice Template Default'
+            );
+
+        $customerId =
+            $this->insertCustomer(
+                $workspace['tenant_id'],
+                'CUST-TEMPLATE-DEFAULT',
+                'Pelanggan Template Default'
+            );
+
+        $invoiceId =
+            $this->insertInvoice(
+                $workspace,
+                $customerId,
+                'INV-TEMPLATE-DEFAULT',
+                'DRAFT'
+            );
+
+        $this->assertDatabaseHas(
+            'invoices',
+            [
+                'id' =>
+                    $invoiceId,
+
+                'invoice_template_key' =>
+                    null,
+
+                'invoice_palette_key' =>
+                    null,
+
+                'invoice_template_version' =>
+                    null,
+            ]
+        );
+
+        $this->assertDatabaseMissing(
+            'tenant_document_settings',
+            [
+                'tenant_id' =>
+                    $workspace['tenant_id'],
+            ]
+        );
+
+        $this->actingAsWorkspace(
+            $workspace
+        );
+
+        $this->postJson(
+            "/api/v1/invoices/{$invoiceId}/actions/issue"
+        )->assertOk();
+
+        $this->assertDatabaseHas(
+            'invoices',
+            [
+                'id' =>
+                    $invoiceId,
+
+                'tenant_id' =>
+                    $workspace['tenant_id'],
+
+                'status' =>
+                    'ISSUED',
+
+                'invoice_template_key' =>
+                    'classic_blue',
+
+                'invoice_palette_key' =>
+                    'blue',
+
+                'invoice_template_version' =>
+                    1,
+            ]
+        );
+
+        $this->assertDatabaseMissing(
+            'tenant_document_settings',
+            [
+                'tenant_id' =>
+                    $workspace['tenant_id'],
+            ]
+        );
+    }
+
+    public function test_issuing_invoice_snapshots_selected_tenant_template(): void
+    {
+        $workspace =
+            $this->workspace(
+                'invoice-template-modern@example.test',
+                'Invoice Template Modern'
+            );
+
+        $customerId =
+            $this->insertCustomer(
+                $workspace['tenant_id'],
+                'CUST-TEMPLATE-MODERN',
+                'Pelanggan Template Modern'
+            );
+
+        $invoiceId =
+            $this->insertInvoice(
+                $workspace,
+                $customerId,
+                'INV-TEMPLATE-MODERN',
+                'DRAFT'
+            );
+
+        DB::table(
+            'tenant_document_settings'
+        )->insert([
+            'tenant_id' =>
+                $workspace['tenant_id'],
+
+            'invoice_template_key' =>
+                'modern_emerald',
+
+            'invoice_palette_key' =>
+                'emerald',
+
+            'created_at' =>
+                now(),
+
+            'updated_at' =>
+                now(),
+        ]);
+
+        $this->actingAsWorkspace(
+            $workspace
+        );
+
+        $this->postJson(
+            "/api/v1/invoices/{$invoiceId}/actions/issue"
+        )->assertOk();
+
+        $this->assertDatabaseHas(
+            'invoices',
+            [
+                'id' =>
+                    $invoiceId,
+
+                'invoice_template_key' =>
+                    'modern_emerald',
+
+                'invoice_palette_key' =>
+                    'emerald',
+
+                'invoice_template_version' =>
+                    1,
+            ]
+        );
+    }
+
+    public function test_changing_tenant_template_after_issue_does_not_change_invoice_snapshot(): void
+    {
+        $workspace =
+            $this->workspace(
+                'invoice-template-history@example.test',
+                'Invoice Template History'
+            );
+
+        $customerId =
+            $this->insertCustomer(
+                $workspace['tenant_id'],
+                'CUST-TEMPLATE-HISTORY',
+                'Pelanggan Template History'
+            );
+
+        $invoiceId =
+            $this->insertInvoice(
+                $workspace,
+                $customerId,
+                'INV-TEMPLATE-HISTORY',
+                'DRAFT'
+            );
+
+        DB::table(
+            'tenant_document_settings'
+        )->insert([
+            'tenant_id' =>
+                $workspace['tenant_id'],
+
+            'invoice_template_key' =>
+                'modern_emerald',
+
+            'invoice_palette_key' =>
+                'emerald',
+
+            'created_at' =>
+                now(),
+
+            'updated_at' =>
+                now(),
+        ]);
+
+        $this->actingAsWorkspace(
+            $workspace
+        );
+
+        $this->postJson(
+            "/api/v1/invoices/{$invoiceId}/actions/issue"
+        )->assertOk();
+
+        DB::table(
+            'tenant_document_settings'
+        )
+            ->where(
+                'tenant_id',
+                $workspace['tenant_id']
+            )
+            ->update([
+                'invoice_template_key' =>
+                    'minimal_slate',
+
+                'invoice_palette_key' =>
+                    'slate',
+
+                'updated_at' =>
+                    now(),
+            ]);
+
+        $this->assertDatabaseHas(
+            'tenant_document_settings',
+            [
+                'tenant_id' =>
+                    $workspace['tenant_id'],
+
+                'invoice_template_key' =>
+                    'minimal_slate',
+
+                'invoice_palette_key' =>
+                    'slate',
+            ]
+        );
+
+        $this->assertDatabaseHas(
+            'invoices',
+            [
+                'id' =>
+                    $invoiceId,
+
+                'invoice_template_key' =>
+                    'modern_emerald',
+
+                'invoice_palette_key' =>
+                    'emerald',
+
+                'invoice_template_version' =>
+                    1,
+            ]
+        );
+    }
+
+
     public function test_non_draft_invoice_cannot_be_issued(): void
     {
         $workspace = $this->workspace(
@@ -1147,6 +1404,139 @@ class InvoiceApiTest extends TestCase
                 'error.code',
                 'FORBIDDEN_CAPABILITY'
             );
+    }
+
+
+    public function test_invoice_pdf_renders_modern_template_from_snapshot(): void
+    {
+        $workspace =
+            $this->workspace(
+                'invoice-pdf-modern@example.test',
+                'Invoice PDF Modern'
+            );
+
+        $customerId =
+            $this->insertCustomer(
+                $workspace['tenant_id'],
+                'CUST-PDF-MODERN',
+                'Pelanggan PDF Modern'
+            );
+
+        $invoiceId =
+            $this->insertInvoice(
+                $workspace,
+                $customerId,
+                'INV-PDF-MODERN',
+                'ISSUED'
+            );
+
+        DB::table('invoices')
+            ->where(
+                'id',
+                $invoiceId
+            )
+            ->update([
+                'invoice_template_key' =>
+                    'modern_emerald',
+
+                'invoice_palette_key' =>
+                    'emerald',
+
+                'invoice_template_version' =>
+                    1,
+            ]);
+
+        $this->insertInvoiceItem(
+            $workspace['tenant_id'],
+            $invoiceId,
+            'Jasa Modern',
+            '350000.00'
+        );
+
+        $this->actingAsWorkspace(
+            $workspace
+        );
+
+        $response =
+            $this->get(
+                "/api/v1/invoices/{$invoiceId}/pdf"
+            )
+                ->assertOk()
+                ->assertHeader(
+                    'Content-Type',
+                    'application/pdf'
+                );
+
+        $this->assertStringStartsWith(
+            '%PDF',
+            $response->getContent()
+        );
+    }
+
+    public function test_invoice_pdf_renders_minimal_template_from_snapshot(): void
+    {
+        $workspace =
+            $this->workspace(
+                'invoice-pdf-minimal@example.test',
+                'Invoice PDF Minimal'
+            );
+
+        $customerId =
+            $this->insertCustomer(
+                $workspace['tenant_id'],
+                'CUST-PDF-MINIMAL',
+                'Pelanggan PDF Minimal'
+            );
+
+        $invoiceId =
+            $this->insertInvoice(
+                $workspace,
+                $customerId,
+                'INV-PDF-MINIMAL',
+                'ISSUED'
+            );
+
+        DB::table('invoices')
+            ->where(
+                'id',
+                $invoiceId
+            )
+            ->update([
+                'invoice_template_key' =>
+                    'minimal_slate',
+
+                'invoice_palette_key' =>
+                    'slate',
+
+                'invoice_template_version' =>
+                    1,
+            ]);
+
+        $this->insertInvoiceItem(
+            $workspace['tenant_id'],
+            $invoiceId,
+            'Jasa Minimal',
+            '275000.00'
+        );
+
+        $this->actingAsWorkspace(
+            $workspace
+        );
+
+        $response =
+            $this->get(
+                "/api/v1/invoices/{$invoiceId}/pdf"
+            )
+                ->assertOk()
+                ->assertHeader(
+                    'Content-Type',
+                    'application/pdf'
+                );
+
+        $this->assertStringStartsWith(
+            '%PDF',
+            $response->getContent()
+        );
     }
 
 
