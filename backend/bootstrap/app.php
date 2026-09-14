@@ -28,6 +28,12 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        /*
+         * SIGNOVA Web/PWA memakai first-party
+         * Sanctum session cookie.
+         */
+        $middleware->statefulApi();
+
         $middleware->api(
             prepend: [
                 AssignRequestId::class,

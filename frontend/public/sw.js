@@ -1,4 +1,4 @@
-const VERSION = "signova-shell-v5";
+const VERSION = "signova-shell-v6";
 
 const SHELL_CACHE =
   `${VERSION}-shell`;

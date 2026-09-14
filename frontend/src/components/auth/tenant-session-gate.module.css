@@ -1,0 +1,74 @@
+.state,
+.loading {
+  width: min(100%, 560px);
+  margin: 48px auto;
+}
+
+.state {
+  display: grid;
+  gap: 12px;
+}
+
+.loading {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+
+  border: 1px solid var(--border);
+  border-radius: 18px;
+
+  padding: 16px;
+
+  background: var(--surface);
+}
+
+.loading strong {
+  font-size: 13px;
+}
+
+.loading p {
+  margin: 3px 0 0;
+
+  color: var(--foreground-muted);
+
+  font-size: 11px;
+}
+
+.spinner {
+  width: 22px;
+  height: 22px;
+
+  flex: 0 0 auto;
+
+  border:
+    2px solid
+    color-mix(
+      in srgb,
+      var(--primary-strong) 18%,
+      transparent
+    );
+
+  border-top-color:
+    var(--primary-strong);
+
+  border-radius: 999px;
+
+  animation:
+    session-spin
+    800ms linear infinite;
+}
+
+@keyframes session-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (
+  prefers-reduced-motion:
+  reduce
+) {
+  .spinner {
+    animation-duration: 1600ms;
+  }
+}

@@ -11,6 +11,19 @@ import {
   WalletCards,
 } from "lucide-react";
 
+import {
+  useEffect,
+  useState,
+} from "react";
+
+import {
+  getSelectedContext,
+} from "@/lib/auth/active-context";
+
+import {
+  getAuthContext,
+} from "@/lib/auth/context";
+
 import styles from "./tenant-home.module.css";
 
 const summaryItems = [
@@ -59,7 +72,117 @@ const quickActions = [
   },
 ];
 
+function firstName(
+  value:
+    | string
+    | null
+    | undefined,
+): string | null {
+  const normalized =
+    value?.trim();
+
+  if (!normalized) {
+    return null;
+  }
+
+  return (
+    normalized.split(/\s+/)[0] ??
+    null
+  );
+}
+
 export function TenantHome() {
+  const [
+    userName,
+    setUserName,
+  ] = useState<
+    string | null
+  >(null);
+
+  const [
+    tenantName,
+    setTenantName,
+  ] = useState<
+    string | null
+  >(null);
+
+  useEffect(() => {
+    let cancelled =
+      false;
+
+    void getAuthContext()
+      .then((response) => {
+        if (cancelled) {
+          return;
+        }
+
+        const data =
+          response.data;
+
+        setUserName(
+          firstName(
+            data.user.name,
+          ),
+        );
+
+        const selected =
+          getSelectedContext();
+
+        if (
+          selected?.type ===
+          "TENANT"
+        ) {
+          const tenant =
+            data.access.tenants.find(
+              (item) =>
+                item.id ===
+                selected.tenantId,
+            );
+
+          if (tenant) {
+            setTenantName(
+              tenant.name,
+            );
+
+            return;
+          }
+        }
+
+        if (
+          data.default_context
+            ?.type ===
+          "TENANT"
+        ) {
+          const tenant =
+            data.access.tenants.find(
+              (item) =>
+                item.id ===
+                data.default_context
+                  ?.tenant_id,
+            );
+
+          if (tenant) {
+            setTenantName(
+              tenant.name,
+            );
+          }
+        }
+      })
+      .catch(() => {
+        /*
+         * Session gate adalah sumber
+         * otorisasi utama.
+         *
+         * Sapaan Beranda bersifat
+         * enhancement visual saja.
+         */
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   return (
     <div className={styles.page}>
       <section className={styles.hero}>
@@ -68,13 +191,35 @@ export function TenantHome() {
             Beranda
           </p>
 
+          <p className={styles.greeting}>
+            {userName
+              ? `Halo, ${userName}`
+              : "Halo"}
+          </p>
+
           <h1 className={styles.title}>
             Selamat datang di SIGNOVA
           </h1>
 
           <p className={styles.description}>
-            Lihat kondisi usaha dan lanjutkan pekerjaan
-            penting dari satu tempat.
+            {tenantName
+              ? (
+                  <>
+                    Pantau kondisi{" "}
+                    <strong>
+                      {tenantName}
+                    </strong>{" "}
+                    dan lanjutkan pekerjaan
+                    penting dari satu tempat.
+                  </>
+                )
+              : (
+                  <>
+                    Pantau kondisi usaha dan
+                    lanjutkan pekerjaan penting
+                    dari satu tempat.
+                  </>
+                )}
           </p>
         </div>
 
@@ -129,7 +274,10 @@ export function TenantHome() {
         <div className={styles.sectionHeading}>
           <div>
             <h2>Aksi Cepat</h2>
-            <p>Kerjakan aktivitas yang paling sering digunakan.</p>
+            <p>
+              Kerjakan aktivitas yang paling
+              sering digunakan.
+            </p>
           </div>
         </div>
 
@@ -163,7 +311,9 @@ export function TenantHome() {
         <div className={styles.sectionHeading}>
           <div>
             <h2>Aktivitas Terbaru</h2>
-            <p>Perubahan terakhir dalam usaha Anda.</p>
+            <p>
+              Perubahan terakhir dalam usaha Anda.
+            </p>
           </div>
         </div>
 
@@ -175,8 +325,8 @@ export function TenantHome() {
           <strong>Belum ada aktivitas</strong>
 
           <p>
-            Mulai dengan membuat pelanggan atau tagihan
-            pertama Anda.
+            Mulai dengan membuat pelanggan atau
+            tagihan pertama Anda.
           </p>
         </div>
       </section>

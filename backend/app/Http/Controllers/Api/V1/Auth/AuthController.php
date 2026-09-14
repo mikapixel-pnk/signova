@@ -15,6 +15,8 @@ use App\Services\Auth\PasswordRecoveryService;
 use App\Tenancy\TenantContext;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Laravel\Sanctum\PersonalAccessToken;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\ValidationException;
@@ -31,6 +33,17 @@ class AuthController extends Controller
 
         $user = User::query()
             ->findOrFail($result['user_id']);
+
+        /*
+         * First-party SIGNOVA Web/PWA session.
+         * Bearer token tetap diterbitkan sementara
+         * untuk compatibility API client lainnya.
+         */
+        if ($request->hasSession()) {
+            Auth::guard('web')->login($user);
+
+            $request->session()->regenerate();
+        }
 
         $token = $user->createToken(
             'signova-api'
@@ -86,6 +99,17 @@ class AuthController extends Controller
                     'Akun tidak memiliki akses aktif.',
                 ],
             ]);
+        }
+
+        /*
+         * First-party SIGNOVA Web/PWA session.
+         * Bearer token tetap diterbitkan sementara
+         * untuk backward compatibility API client.
+         */
+        if ($request->hasSession()) {
+            Auth::guard('web')->login($user);
+
+            $request->session()->regenerate();
         }
 
         $token = $user->createToken(
@@ -258,11 +282,35 @@ class AuthController extends Controller
         ]);
     }
 
-    public function logout(Request $request): JsonResponse
-    {
-        $request->user()
-            ?->currentAccessToken()
-            ?->delete();
+    public function logout(
+        Request $request
+    ): JsonResponse {
+        $currentAccessToken =
+            $request->user()
+                ?->currentAccessToken();
+
+        /*
+         * Request Web/PWA berbasis session
+         * menggunakan Sanctum TransientToken.
+         *
+         * Hanya bearer PersonalAccessToken
+         * yang merupakan record database
+         * dan boleh dihapus di sini.
+         */
+        if (
+            $currentAccessToken instanceof
+                PersonalAccessToken
+        ) {
+            $currentAccessToken->delete();
+        }
+
+        if ($request->hasSession()) {
+            Auth::guard('web')->logout();
+
+            $request->session()->invalidate();
+
+            $request->session()->regenerateToken();
+        }
 
         return response()->json([
             'message' => 'Logout berhasil.',

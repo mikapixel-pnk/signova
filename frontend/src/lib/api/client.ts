@@ -8,10 +8,6 @@ import {
 } from "@/lib/auth/active-context";
 
 import {
-  getAccessToken,
-} from "@/lib/auth/session";
-
-import {
   appConfig,
 } from "@/lib/config/app";
 
@@ -22,6 +18,12 @@ type ApiRequestOptions =
   > & {
     body?: unknown;
 
+    /*
+     * Dipertahankan sementara untuk client
+     * non-Web / backward compatibility.
+     * SIGNOVA Web/PWA tidak bergantung
+     * pada bearer token lagi.
+     */
     accessToken?:
       | string
       | null;
@@ -45,18 +47,188 @@ function buildUrl(
   );
 }
 
-function firstValidationMessage(
-  errors:
-    | Record<
-        string,
-        string[]
-      >
-    | undefined,
+function readCookie(
+  name: string,
 ): string | null {
-  if (!errors) {
+  if (
+    typeof document ===
+    "undefined"
+  ) {
     return null;
   }
 
+  const prefix =
+    `${name}=`;
+
+  for (
+    const part of
+    document.cookie.split(";")
+  ) {
+    const value =
+      part.trim();
+
+    if (
+      value.startsWith(
+        prefix,
+      )
+    ) {
+      return decodeURIComponent(
+        value.slice(
+          prefix.length,
+        ),
+      );
+    }
+  }
+
+  return null;
+}
+
+function isUnsafeMethod(
+  method:
+    | string
+    | undefined,
+): boolean {
+  const normalized =
+    (
+      method ??
+      "GET"
+    ).toUpperCase();
+
+  return ![
+    "GET",
+    "HEAD",
+    "OPTIONS",
+  ].includes(normalized);
+}
+
+let csrfRequest:
+  | Promise<void>
+  | null = null;
+
+export async function ensureCsrfCookie(
+  force = false,
+): Promise<void> {
+  if (
+    typeof window ===
+    "undefined"
+  ) {
+    return;
+  }
+
+  if (
+    !force &&
+    readCookie(
+      "XSRF-TOKEN",
+    )
+  ) {
+    return;
+  }
+
+  if (
+    csrfRequest &&
+    !force
+  ) {
+    return csrfRequest;
+  }
+
+  csrfRequest =
+    fetch(
+      appConfig.csrfPath,
+      {
+        method: "GET",
+        credentials:
+          "include",
+        headers: {
+          Accept:
+            "application/json",
+        },
+        cache:
+          "no-store",
+      },
+    ).then(
+      (response) => {
+        if (!response.ok) {
+          throw new ApiClientError(
+            "Sesi keamanan belum dapat disiapkan. Silakan coba lagi.",
+            response.status,
+            {
+              code:
+                "CSRF_BOOTSTRAP_FAILED",
+            },
+          );
+        }
+      },
+    ).finally(
+      () => {
+        csrfRequest =
+          null;
+      },
+    );
+
+  return csrfRequest;
+}
+
+function normalizeFieldErrors(
+  value: unknown,
+): Record<
+  string,
+  string[]
+> {
+  if (
+    !value ||
+    typeof value !== "object" ||
+    Array.isArray(value)
+  ) {
+    return {};
+  }
+
+  const normalized:
+    Record<
+      string,
+      string[]
+    > = {};
+
+  for (
+    const [
+      field,
+      messages,
+    ] of Object.entries(
+      value,
+    )
+  ) {
+    if (
+      Array.isArray(
+        messages,
+      )
+    ) {
+      const valid =
+        messages.filter(
+          (
+            message,
+          ): message is string =>
+            typeof message ===
+            "string",
+        );
+
+      if (
+        valid.length > 0
+      ) {
+        normalized[field] =
+          valid;
+      }
+    }
+  }
+
+  return normalized;
+}
+
+function firstValidationMessage(
+  errors:
+    Record<
+      string,
+      string[]
+    >,
+): string | null {
   for (
     const messages
     of Object.values(
@@ -64,10 +236,8 @@ function firstValidationMessage(
     )
   ) {
     if (
-      Array.isArray(
-        messages,
-      ) &&
-      messages.length > 0
+      messages.length >
+      0
     ) {
       return (
         messages[0] ??
@@ -90,12 +260,34 @@ async function parseApiError(
       (await response.json()) as
         ApiErrorPayload;
   } catch {
-    // Response may not
-    // contain JSON.
+    // Response may not contain JSON.
   }
 
+  /*
+   * SIGNOVA canonical error:
+   * error.details.fields
+   *
+   * payload.errors tetap dibaca sementara
+   * untuk compatibility endpoint legacy.
+   */
+  const detailFields =
+    normalizeFieldErrors(
+      payload.error
+        ?.details
+        ?.fields,
+    );
+
+  const legacyFields =
+    normalizeFieldErrors(
+      payload.errors,
+    );
+
   const fieldErrors =
-    payload.errors ?? {};
+    Object.keys(
+      detailFields,
+    ).length > 0
+      ? detailFields
+      : legacyFields;
 
   const validationMessage =
     firstValidationMessage(
@@ -135,12 +327,13 @@ async function parseApiError(
   );
 }
 
-export async function apiRequest<
+async function performRequest<
   T,
 >(
   path: string,
   options:
-    ApiRequestOptions = {},
+    ApiRequestOptions,
+  retryCsrf: boolean,
 ): Promise<T> {
   const {
     accessToken,
@@ -149,6 +342,20 @@ export async function apiRequest<
     headers,
     ...requestOptions
   } = options;
+
+  const method =
+    (
+      requestOptions.method ??
+      "GET"
+    ).toUpperCase();
+
+  if (
+    isUnsafeMethod(
+      method,
+    )
+  ) {
+    await ensureCsrfCookie();
+  }
 
   const requestHeaders =
     new Headers(
@@ -183,11 +390,34 @@ export async function apiRequest<
     );
   }
 
+  if (
+    isUnsafeMethod(
+      method,
+    )
+  ) {
+    const xsrf =
+      readCookie(
+        "XSRF-TOKEN",
+      );
+
+    if (xsrf) {
+      requestHeaders.set(
+        "X-XSRF-TOKEN",
+        xsrf,
+      );
+    }
+  }
+
   const response =
     await fetch(
       buildUrl(path),
       {
         ...requestOptions,
+
+        method,
+
+        credentials:
+          "include",
 
         headers:
           requestHeaders,
@@ -201,6 +431,30 @@ export async function apiRequest<
               ),
       },
     );
+
+  /*
+   * Session atau CSRF dapat berganti
+   * setelah login/logout. Refresh token
+   * CSRF sekali lalu retry aman.
+   */
+  if (
+    response.status ===
+      419 &&
+    retryCsrf &&
+    isUnsafeMethod(
+      method,
+    )
+  ) {
+    await ensureCsrfCookie(
+      true,
+    );
+
+    return performRequest<T>(
+      path,
+      options,
+      false,
+    );
+  }
 
   if (!response.ok) {
     throw await parseApiError(
@@ -220,6 +474,20 @@ export async function apiRequest<
   ) as T;
 }
 
+export async function apiRequest<
+  T,
+>(
+  path: string,
+  options:
+    ApiRequestOptions = {},
+): Promise<T> {
+  return performRequest<T>(
+    path,
+    options,
+    true,
+  );
+}
+
 export async function authenticatedApiRequest<
   T,
 >(
@@ -231,20 +499,6 @@ export async function authenticatedApiRequest<
       | "tenantId"
     > = {},
 ): Promise<T> {
-  const accessToken =
-    getAccessToken();
-
-  if (!accessToken) {
-    throw new ApiClientError(
-      "Sesi masuk tidak tersedia. Silakan masuk kembali.",
-      401,
-      {
-        code:
-          "AUTH_REQUIRED",
-      },
-    );
-  }
-
   const context =
     getSelectedContext();
 
@@ -254,11 +508,14 @@ export async function authenticatedApiRequest<
       ? context.tenantId
       : null;
 
+  /*
+   * Authentication berasal dari
+   * HttpOnly Laravel session cookie.
+   */
   return apiRequest<T>(
     path,
     {
       ...options,
-      accessToken,
       tenantId,
     },
   );

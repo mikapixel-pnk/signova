@@ -16,11 +16,20 @@
   font-weight: 700;
 }
 
+.greeting {
+  margin: 0 0 5px;
+  color: var(--color-muted-foreground);
+  font-size: 12px;
+  font-weight: 650;
+  letter-spacing: 0.01em;
+}
+
 .title {
   margin: 0;
-  font-size: clamp(25px, 4vw, 36px);
+  font-size: clamp(23px, 4vw, 34px);
   line-height: 1.12;
   letter-spacing: -0.03em;
+  color: var(--color-foreground);
 }
 
 .description {
@@ -226,4 +235,9 @@
     grid-template-columns:
       repeat(4, minmax(0, 1fr));
   }
+}
+
+.description strong {
+  color: var(--color-primary);
+  font-weight: 650;
 }

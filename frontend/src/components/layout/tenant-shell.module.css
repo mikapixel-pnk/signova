@@ -402,3 +402,36 @@
     transition: none;
   }
 }
+
+/* Mobile: konteks usaha tetap terlihat. */
+@media (max-width: 767px) {
+  .header {
+    gap: 10px;
+  }
+
+  .mobileBrand {
+    flex: 0 0 auto;
+  }
+
+  .headerContext {
+    display: block;
+    min-width: 0;
+    flex: 1;
+  }
+
+  .headerLabel {
+    font-size: 9px;
+    line-height: 1.1;
+  }
+
+  .headerBusiness {
+    margin-top: 1px;
+    font-size: 12px;
+    line-height: 1.2;
+  }
+
+  .headerActions {
+    flex: 0 0 auto;
+    gap: 5px;
+  }
+}

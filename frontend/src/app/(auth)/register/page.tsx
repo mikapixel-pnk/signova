@@ -42,8 +42,8 @@ import {
   register,
 } from "@/lib/auth/register";
 import {
-  setAccessToken,
-} from "@/lib/auth/session";
+  setSelectedContext,
+} from "@/lib/auth/active-context";
 
 import styles from "./register.module.css";
 
@@ -150,9 +150,21 @@ export default function RegisterPage() {
             detectLocale(),
         });
 
-      setAccessToken(
-        response.data.token,
-      );
+      if (
+        !response.data.tenant
+      ) {
+        setError(
+          "Akun berhasil dibuat, tetapi usaha aktif belum dapat disiapkan.",
+        );
+
+        return;
+      }
+
+      setSelectedContext({
+        type: "TENANT",
+        tenantId:
+          response.data.tenant.id,
+      });
 
       router.replace("/app");
     } catch (caught) {

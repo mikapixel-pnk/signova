@@ -29,6 +29,7 @@ import {
 import {
   clearPendingAccessSelection,
   getPendingAccessSelection,
+  setPendingAccessSelection,
   type PendingAccessSelection,
 } from "@/lib/auth/access-selection";
 import {
@@ -36,36 +37,57 @@ import {
   setSelectedContext,
 } from "@/lib/auth/active-context";
 import {
-  clearAccessToken,
-  getAccessToken,
-} from "@/lib/auth/session";
+  getAuthContext,
+} from "@/lib/auth/context";
 
 import styles from "./select-context.module.css";
 
 export default function SelectContextPage() {
   const router = useRouter();
 
-  const [access] =
-    useState<
-      PendingAccessSelection
-      | null
-    >(
-      () =>
-        getPendingAccessSelection()
-    );
+  const [
+    access,
+    setAccess,
+  ] = useState<
+    PendingAccessSelection
+    | null
+  >(
+    () =>
+      getPendingAccessSelection()
+  );
 
   useEffect(() => {
-    const token =
-      getAccessToken();
-
-    if (
-      ! token
-      || ! access
-    ) {
-      router.replace(
-        "/login",
-      );
+    if (access) {
+      return;
     }
+
+    let cancelled = false;
+
+    void getAuthContext()
+      .then((response) => {
+        if (cancelled) {
+          return;
+        }
+
+        setPendingAccessSelection(
+          response.data.access,
+        );
+
+        setAccess(
+          response.data.access,
+        );
+      })
+      .catch(() => {
+        if (!cancelled) {
+          router.replace(
+            "/login",
+          );
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
   }, [
     access,
     router,
@@ -108,8 +130,6 @@ export default function SelectContextPage() {
 
   function backToLogin() {
     clearPendingAccessSelection();
-    clearAccessToken();
-
     clearSelectedContext();
 
     router.replace(

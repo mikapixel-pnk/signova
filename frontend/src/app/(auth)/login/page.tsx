@@ -46,9 +46,6 @@ import {
 import {
   setSelectedContext,
 } from "@/lib/auth/active-context";
-import {
-  setAccessToken,
-} from "@/lib/auth/session";
 
 import styles from "./login.module.css";
 
@@ -59,7 +56,18 @@ function loginErrorMessage(
     error instanceof ApiClientError
   ) {
     if (error.status === 429) {
-      return "Terlalu banyak percobaan. Tunggu sebentar lalu coba lagi.";
+      return "Terlalu banyak percobaan masuk. Tunggu sebentar lalu coba lagi.";
+    }
+
+    if (
+      error.status === 401 ||
+      error.status === 422
+    ) {
+      return "Email atau kata sandi tidak cocok. Periksa kembali lalu coba lagi.";
+    }
+
+    if (error.status >= 500) {
+      return "SIGNOVA sedang mengalami gangguan. Silakan coba lagi.";
     }
 
     return error.message;
@@ -99,10 +107,6 @@ export default function LoginPage() {
           device_name:
             "signova-web",
         });
-
-      setAccessToken(
-        response.data.token,
-      );
 
       if (
         response.data

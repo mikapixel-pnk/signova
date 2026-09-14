@@ -26,6 +26,9 @@ import {
 } from "react";
 
 import {
+  TenantSessionGate,
+} from "@/components/auth/tenant-session-gate";
+import {
   SyncStatus,
 } from "@/components/system/sync-status";
 import {
@@ -163,6 +166,13 @@ export function TenantShell({
     setLoggingOut,
   ] = useState(false);
 
+  const [
+    activeTenantName,
+    setActiveTenantName,
+  ] = useState(
+    "Memuat usaha...",
+  );
+
   async function handleLogout() {
     if (loggingOut) {
       return;
@@ -284,7 +294,7 @@ export function TenantShell({
             <strong
               className={styles.headerBusiness}
             >
-              SIGNOVA
+              {activeTenantName}
             </strong>
           </div>
 
@@ -311,7 +321,13 @@ export function TenantShell({
         </header>
 
         <main className={styles.main}>
-          {children}
+          <TenantSessionGate
+            onTenantResolved={
+              setActiveTenantName
+            }
+          >
+            {children}
+          </TenantSessionGate>
         </main>
 
         <nav
