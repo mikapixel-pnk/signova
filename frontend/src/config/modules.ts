@@ -46,6 +46,12 @@ export const modules:
       description:
         "Data pelanggan yang rapi membantu hubungan bisnis tetap terjaga dan mudah ditelusuri.",
     },
+    footer: {
+      title:
+        "Data pelanggan yang rapi mempermudah transaksi",
+      description:
+        "Simpan data pelanggan sekali agar dapat digunakan kembali pada penawaran, tagihan, dan pembayaran.",
+    },
     highlights: [
       "Data pelanggan tersimpan dalam satu tempat",
       "Digunakan kembali saat membuat penawaran dan tagihan",

@@ -1,13 +1,21 @@
-import { ModulePlaceholder } from "@/components/layout/module-placeholder";
-import { TenantShell } from "@/components/layout/tenant-shell";
+import {
+  Suspense,
+} from "react";
+
+import {
+  TenantShell,
+} from "@/components/layout/tenant-shell";
+
+import {
+  SettingsPage,
+} from "@/components/settings/settings-page";
 
 export default function Page() {
   return (
     <TenantShell>
-      <ModulePlaceholder
-        title="Pengaturan"
-        description="Atur profil usaha dan preferensi SIGNOVA."
-      />
+      <Suspense>
+        <SettingsPage />
+      </Suspense>
     </TenantShell>
   );
 }

@@ -26,6 +26,14 @@ import {
 } from "@/components/layout/tenant-shell";
 
 import {
+  ModuleHero,
+} from "@/components/module/module-hero";
+
+import {
+  ModuleFooterCard,
+} from "@/components/module/module-footer-card";
+
+import {
   apiErrorMessage,
   apiRequestId,
 } from "@/lib/api/error-message";
@@ -39,6 +47,10 @@ import {
   customerTypeLabel,
 } from "@/lib/customer/labels";
 
+import {
+  getModule,
+} from "@/lib/module/registry";
+
 import type {
   Customer,
   CustomerStatus,
@@ -51,6 +63,14 @@ type StatusFilter =
   | CustomerStatus;
 
 export default function CustomersPage() {
+  const customerModule =
+    getModule(
+      "customers",
+    );
+
+  const CustomerModuleIcon =
+    customerModule.icon;
+
   const [
     customers,
     setCustomers,
@@ -150,47 +170,32 @@ export default function CustomersPage() {
       <section
         className={styles.page}
       >
-        <header
-          className={styles.pageHeader}
-        >
-          <div>
-            <p
-              className={
-                styles.eyebrow
-              }
+        <ModuleHero
+          eyebrow="Master Data"
+          title={customerModule.label}
+          description={customerModule.description}
+          icon={CustomerModuleIcon}
+          tone={
+            customerModule.tone === "amber"
+              ? "blue"
+              : customerModule.tone
+          }
+          insightTitle={
+            customerModule.insight.title
+          }
+          insightDescription={
+            customerModule.insight.description
+          }
+          actions={
+            <Link
+              href="/app/pelanggan/tambah"
+              className={styles.primaryAction}
             >
-              Data Usaha
-            </p>
-
-            <h1
-              className={
-                styles.title
-              }
-            >
-              Pelanggan
-            </h1>
-
-            <p
-              className={
-                styles.description
-              }
-            >
-              Kelola pelanggan yang digunakan
-              untuk penawaran, tagihan, dan
-              pembayaran.
-            </p>
-          </div>
-
-          <Link
-            href="/app/pelanggan/new"
-            className={
-              styles.primaryAction
-            }
-          >
-            <Plus size={18} />
-            Tambah Pelanggan
-          </Link>
-        </header>
+              <Plus size={18} />
+              Tambah Pelanggan
+            </Link>
+          }
+        />
 
         <section
           className={styles.toolbar}
@@ -344,7 +349,7 @@ export default function CustomersPage() {
             </p>
 
             <Link
-              href="/app/pelanggan/new"
+              href="/app/pelanggan/tambah"
               className={
                 styles.primaryAction
               }
@@ -566,6 +571,22 @@ export default function CustomersPage() {
             </div>
           </>
         ) : null}
+
+        <ModuleFooterCard
+          tone={
+            customerModule.tone === "amber"
+              ? "blue"
+              : customerModule.tone
+          }
+          title={
+            customerModule.footer?.title ??
+            customerModule.insight.title
+          }
+          description={
+            customerModule.footer?.description ??
+            customerModule.insight.description
+          }
+        />
       </section>
     </TenantShell>
   );

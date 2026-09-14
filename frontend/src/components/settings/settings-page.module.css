@@ -1,0 +1,176 @@
+.layout {
+  display: grid;
+  gap: 16px;
+}
+
+.tabs {
+  display: grid;
+
+  grid-template-columns:
+    repeat(
+      2,
+      minmax(0, 1fr)
+    );
+
+  gap: 8px;
+
+  overflow: visible;
+
+  padding-bottom: 0;
+}
+
+.tab,
+.tabActive {
+  --sv-accent:
+    var(--sv-violet);
+
+  display: inline-flex;
+
+  min-height: 40px;
+
+  flex: 0 0 auto;
+
+  align-items: center;
+  gap: 7px;
+
+  border:
+    1px solid
+    var(--border);
+
+  border-radius: 13px;
+
+  background:
+    var(--surface);
+
+  padding:
+    8px
+    11px;
+
+  color:
+    var(--foreground-muted);
+
+  font-size: 10px;
+  font-weight: 650;
+
+  text-decoration: none;
+}
+
+.tabActive {
+  border-color:
+    color-mix(
+      in srgb,
+      var(--sv-accent) 32%,
+      var(--border)
+    );
+
+  background:
+    color-mix(
+      in srgb,
+      var(--sv-accent) 8%,
+      var(--surface)
+    );
+
+  color:
+    var(--sv-accent);
+}
+
+.tab[data-tone="blue"],
+.tabActive[data-tone="blue"] {
+  --sv-accent:
+    var(--sv-blue);
+}
+
+.tab[data-tone="cyan"],
+.tabActive[data-tone="cyan"] {
+  --sv-accent:
+    var(--sv-cyan);
+}
+
+.tab[data-tone="teal"],
+.tabActive[data-tone="teal"] {
+  --sv-accent:
+    var(--sv-teal);
+}
+
+.tab[data-tone="green"],
+.tabActive[data-tone="green"] {
+  --sv-accent:
+    var(--sv-green);
+}
+
+.tab[data-tone="violet"],
+.tabActive[data-tone="violet"] {
+  --sv-accent:
+    var(--sv-violet);
+}
+
+.tab[data-tone="rose"],
+.tabActive[data-tone="rose"] {
+  --sv-accent:
+    var(--sv-rose);
+}
+
+.tab,
+.tabActive {
+  min-width: 0;
+  width: 100%;
+
+  justify-content: flex-start;
+
+  white-space: normal;
+}
+
+.tab span,
+.tabActive span {
+  min-width: 0;
+
+  line-height: 1.25;
+
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 420px) {
+  .tabs {
+    gap: 7px;
+  }
+
+  .tab,
+  .tabActive {
+    min-height: 44px;
+
+    padding:
+      8px
+      9px;
+
+    font-size: 9px;
+  }
+}
+
+@media (min-width: 760px) {
+  .tabs {
+    display: flex;
+
+    gap: 7px;
+
+    overflow-x: auto;
+
+    padding-bottom: 2px;
+
+    scrollbar-width: none;
+  }
+
+  .tabs::-webkit-scrollbar {
+    display: none;
+  }
+
+  .tab,
+  .tabActive {
+    width: auto;
+
+    flex: 0 0 auto;
+
+    justify-content: center;
+
+    white-space: nowrap;
+  }
+}
