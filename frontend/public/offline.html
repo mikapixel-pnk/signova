@@ -1,0 +1,527 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+
+  <meta
+    name="viewport"
+    content="width=device-width,initial-scale=1,viewport-fit=cover"
+  >
+
+  <meta
+    name="theme-color"
+    content="#101b2b"
+  >
+
+  <title>SIGNOVA • Offline</title>
+
+  <style>
+    :root {
+      color-scheme: light dark;
+
+      --bg: #f4f7fb;
+      --surface: #ffffff;
+      --surface-soft: #eef3f8;
+      --text: #101828;
+      --muted: #667085;
+      --border: #dce4ee;
+
+      --blue: #3488ff;
+      --cyan: #27c4d8;
+      --green: #35c98b;
+      --violet: #8b5cf6;
+
+      --shadow:
+        0 22px 60px
+        rgba(16, 24, 40, 0.10);
+    }
+
+    @media (
+      prefers-color-scheme: dark
+    ) {
+      :root {
+        --bg: #08111b;
+        --surface: #101b2b;
+        --surface-soft: #142235;
+        --text: #f7fafc;
+        --muted: #9baabc;
+        --border: #26374c;
+
+        --shadow:
+          0 22px 60px
+          rgba(0, 0, 0, 0.32);
+      }
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      min-height: 100dvh;
+
+      margin: 0;
+
+      display: grid;
+      place-items: center;
+
+      background:
+        radial-gradient(
+          circle at 10% 0%,
+          color-mix(
+            in srgb,
+            var(--cyan) 13%,
+            transparent
+          ),
+          transparent 38%
+        ),
+        radial-gradient(
+          circle at 100% 100%,
+          color-mix(
+            in srgb,
+            var(--violet) 12%,
+            transparent
+          ),
+          transparent 42%
+        ),
+        var(--bg);
+
+      padding:
+        max(24px, env(safe-area-inset-top))
+        18px
+        max(24px, env(safe-area-inset-bottom));
+
+      color: var(--text);
+
+      font-family:
+        Inter,
+        ui-sans-serif,
+        system-ui,
+        -apple-system,
+        BlinkMacSystemFont,
+        "Segoe UI",
+        sans-serif;
+    }
+
+    .shell {
+      width: min(100%, 460px);
+
+      border:
+        1px solid
+        var(--border);
+
+      border-radius: 28px;
+
+      background:
+        color-mix(
+          in srgb,
+          var(--surface) 94%,
+          transparent
+        );
+
+      padding: 24px;
+
+      box-shadow:
+        var(--shadow);
+    }
+
+    .brand {
+      display: flex;
+
+      align-items: center;
+      gap: 12px;
+    }
+
+    .logoBox {
+      display: grid;
+
+      width: 58px;
+      height: 58px;
+
+      place-items: center;
+
+      border-radius: 18px;
+
+      background:
+        linear-gradient(
+          135deg,
+          color-mix(
+            in srgb,
+            var(--violet) 14%,
+            var(--surface)
+          ),
+          color-mix(
+            in srgb,
+            var(--cyan) 14%,
+            var(--surface)
+          )
+        );
+    }
+
+    .logoBox img {
+      width: 42px;
+      height: 42px;
+
+      object-fit: contain;
+    }
+
+    .brandText strong {
+      display: block;
+
+      font-size: 21px;
+      line-height: 1;
+    }
+
+    .brandText span {
+      display: block;
+
+      margin-top: 5px;
+
+      color:
+        var(--muted);
+
+      font-size: 11px;
+    }
+
+    .status {
+      display: inline-flex;
+
+      align-items: center;
+      gap: 7px;
+
+      margin-top: 28px;
+
+      border-radius: 999px;
+
+      background:
+        color-mix(
+          in srgb,
+          var(--violet) 10%,
+          var(--surface)
+        );
+
+      padding:
+        7px 10px;
+
+      color:
+        var(--violet);
+
+      font-size: 11px;
+      font-weight: 750;
+    }
+
+    .statusDot {
+      width: 7px;
+      height: 7px;
+
+      border-radius: 999px;
+
+      background:
+        currentColor;
+    }
+
+    h1 {
+      margin:
+        15px
+        0
+        0;
+
+      font-size:
+        clamp(
+          25px,
+          8vw,
+          35px
+        );
+
+      line-height: 1.08;
+      letter-spacing: -0.035em;
+    }
+
+    .description {
+      margin:
+        12px
+        0
+        0;
+
+      color:
+        var(--muted);
+
+      font-size: 13px;
+      line-height: 1.65;
+    }
+
+    .info {
+      display: grid;
+
+      grid-template-columns:
+        42px
+        minmax(0, 1fr);
+
+      gap: 12px;
+
+      margin-top: 22px;
+
+      border:
+        1px solid
+        color-mix(
+          in srgb,
+          var(--cyan) 22%,
+          var(--border)
+        );
+
+      border-radius: 18px;
+
+      background:
+        linear-gradient(
+          135deg,
+          color-mix(
+            in srgb,
+            var(--cyan) 7%,
+            var(--surface-soft)
+          ),
+          color-mix(
+            in srgb,
+            var(--violet) 6%,
+            var(--surface-soft)
+          )
+        );
+
+      padding: 14px;
+    }
+
+    .infoIcon {
+      display: grid;
+
+      width: 42px;
+      height: 42px;
+
+      place-items: center;
+
+      border-radius: 14px;
+
+      background:
+        color-mix(
+          in srgb,
+          var(--cyan) 13%,
+          transparent
+        );
+
+      color:
+        var(--cyan);
+
+      font-size: 21px;
+    }
+
+    .info strong {
+      display: block;
+
+      font-size: 12px;
+    }
+
+    .info p {
+      margin:
+        4px
+        0
+        0;
+
+      color:
+        var(--muted);
+
+      font-size: 10px;
+      line-height: 1.55;
+    }
+
+    .actions {
+      display: grid;
+
+      grid-template-columns:
+        1fr
+        1fr;
+
+      gap: 9px;
+
+      margin-top: 24px;
+    }
+
+    button,
+    a {
+      min-height: 48px;
+
+      display: inline-flex;
+
+      align-items: center;
+      justify-content: center;
+
+      border-radius: 14px;
+
+      padding:
+        0
+        14px;
+
+      font: inherit;
+      font-size: 11px;
+      font-weight: 750;
+
+      text-decoration: none;
+    }
+
+    button {
+      border: 0;
+
+      background:
+        linear-gradient(
+          135deg,
+          var(--blue),
+          var(--cyan)
+        );
+
+      color: white;
+
+      cursor: pointer;
+
+      box-shadow:
+        0 10px 24px
+        color-mix(
+          in srgb,
+          var(--blue) 22%,
+          transparent
+        );
+    }
+
+    a {
+      border:
+        1px solid
+        var(--border);
+
+      background:
+        var(--surface-soft);
+
+      color:
+        var(--text);
+    }
+
+    .footer {
+      margin:
+        18px
+        0
+        0;
+
+      color:
+        var(--muted);
+
+      font-size: 9px;
+      line-height: 1.5;
+
+      text-align: center;
+    }
+
+    @media (
+      max-width: 380px
+    ) {
+      .shell {
+        padding: 20px;
+      }
+
+      .actions {
+        grid-template-columns:
+          1fr;
+      }
+    }
+
+    @media (
+      prefers-reduced-motion:
+      reduce
+    ) {
+      * {
+        scroll-behavior: auto;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <main class="shell">
+    <div class="brand">
+      <div class="logoBox">
+        <img
+          src="/brand/signova-mark.png"
+          alt=""
+          width="42"
+          height="42"
+        >
+      </div>
+
+      <div class="brandText">
+        <strong>SIGNOVA</strong>
+        <span>
+          Platform operasional bisnis
+        </span>
+      </div>
+    </div>
+
+    <div class="status">
+      <span class="statusDot"></span>
+      Anda sedang offline
+    </div>
+
+    <h1>
+      Koneksi internet terputus.
+    </h1>
+
+    <p class="description">
+      SIGNOVA belum dapat mengambil data terbaru.
+      Sambungkan kembali perangkat ke internet,
+      lalu coba lagi.
+    </p>
+
+    <section class="info">
+      <div
+        class="infoIcon"
+        aria-hidden="true"
+      >
+        ✓
+      </div>
+
+      <div>
+        <strong>
+          Data bisnis tetap kami lindungi
+        </strong>
+
+        <p>
+          Data pelanggan, tagihan, pembayaran,
+          dan informasi finansial tidak disimpan
+          sembarangan untuk penggunaan offline.
+        </p>
+      </div>
+    </section>
+
+    <div class="actions">
+      <button
+        type="button"
+        onclick="window.location.reload()"
+      >
+        Coba Lagi
+      </button>
+
+      <a href="/app">
+        Beranda SIGNOVA
+      </a>
+    </div>
+
+    <p class="footer">
+      Beberapa tampilan dasar tetap tersedia,
+      tetapi transaksi penting memerlukan
+      konfirmasi server.
+    </p>
+  </main>
+
+  <script>
+    window.addEventListener(
+      "online",
+      function () {
+        window.location.reload();
+      },
+    );
+  </script>
+</body>
+</html>

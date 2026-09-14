@@ -1,27 +1,23 @@
-const VERSION = "signova-shell-v6";
-
 const SHELL_CACHE =
-  `${VERSION}-shell`;
+  "signova-shell-v7";
 
 const RUNTIME_CACHE =
-  `${VERSION}-runtime`;
+  "signova-runtime-v7";
 
-const APP_ROUTES = [
-  "/app",
-  "/app/pelanggan",
-  "/app/barang-jasa",
-  "/app/tagihan",
-  "/app/keuangan",
-  "/app/pembayaran",
-  "/app/penawaran",
-  "/app/pengaturan",
-  "/app/menu",
-  "/app/aksi",
-  "/app/keuangan/kas-bank",
-  "/app/keuangan/pemasukan",
-  "/app/keuangan/pengeluaran",
-  "/app/keuangan/piutang",
+const OFFLINE_URL =
+  "/offline.html";
+
+const SAFE_PRECACHE = [
+  OFFLINE_URL,
+  "/brand/signova-mark.png",
 ];
+
+function isSignovaCache(key) {
+  return (
+    key.startsWith("signova-shell-") ||
+    key.startsWith("signova-runtime-")
+  );
+}
 
 function isApiRequest(url) {
   return url.pathname.startsWith("/api/");
@@ -36,11 +32,11 @@ function isAuthRoute(url) {
     "/ana-login",
     "/select-context",
   ].some((path) =>
-    url.pathname.startsWith(path),
+    url.pathname.startsWith(path)
   );
 }
 
-function isStaticAsset(url) {
+function isSafeStaticAsset(url) {
   return (
     url.pathname.startsWith("/_next/static/") ||
     url.pathname.startsWith("/brand/") ||
@@ -50,27 +46,27 @@ function isStaticAsset(url) {
   );
 }
 
-async function cacheAppRoute(path) {
-  try {
-    const response = await fetch(path, {
-      credentials: "same-origin",
-      cache: "reload",
-    });
+async function precacheShell() {
+  const cache =
+    await caches.open(SHELL_CACHE);
 
-    if (!response.ok) {
-      return;
+  for (const path of SAFE_PRECACHE) {
+    try {
+      const response =
+        await fetch(path, {
+          cache: "reload",
+          credentials: "same-origin",
+        });
+
+      if (response.ok) {
+        await cache.put(
+          path,
+          response.clone(),
+        );
+      }
+    } catch {
+      // Best effort.
     }
-
-    const cache =
-      await caches.open(SHELL_CACHE);
-
-    await cache.put(
-      path,
-      response.clone(),
-    );
-  } catch {
-    // Install must not fail only because
-    // one route is temporarily unavailable.
   }
 }
 
@@ -78,11 +74,7 @@ self.addEventListener(
   "install",
   (event) => {
     event.waitUntil(
-      Promise.all(
-        APP_ROUTES.map(
-          cacheAppRoute,
-        ),
-      ).then(() =>
+      precacheShell().then(() =>
         self.skipWaiting(),
       ),
     );
@@ -93,119 +85,74 @@ self.addEventListener(
   "activate",
   (event) => {
     event.waitUntil(
-      caches
-        .keys()
-        .then((keys) =>
-          Promise.all(
-            keys
-              .filter(
-                (key) =>
-                  !key.startsWith(VERSION),
-              )
-              .map((key) =>
-                caches.delete(key),
-              ),
-          ),
-        )
-        .then(() =>
-          self.clients.claim(),
-        ),
+      (async () => {
+        const keys =
+          await caches.keys();
+
+        await Promise.all(
+          keys
+            .filter(
+              (key) =>
+                isSignovaCache(key) &&
+                key !== SHELL_CACHE &&
+                key !== RUNTIME_CACHE,
+            )
+            .map((key) =>
+              caches.delete(key),
+            ),
+        );
+
+        await self.clients.claim();
+      })(),
     );
   },
 );
 
-async function networkFirstNavigation(
-  request,
-) {
+async function offlineResponse() {
   const cache =
     await caches.open(SHELL_CACHE);
 
+  const cached =
+    await cache.match(OFFLINE_URL);
+
+  if (cached) {
+    return cached;
+  }
+
+  return new Response(
+    "SIGNOVA sedang offline.",
+    {
+      status: 503,
+      headers: {
+        "Content-Type":
+          "text/plain; charset=utf-8",
+      },
+    },
+  );
+}
+
+async function networkOnlyNavigation(
+  request,
+) {
   try {
-    const response =
-      await fetch(request);
-
-    if (
-      response.ok &&
-      request.method === "GET"
-    ) {
-      await cache.put(
-        request.url,
-        response.clone(),
-      );
-    }
-
-    return response;
-  } catch {
-    const exact =
-      await cache.match(request);
-
-    if (exact) {
-      return exact;
-    }
-
-    const url =
-      new URL(request.url);
-
-    const route =
-      await cache.match(
-        url.pathname,
-      );
-
-    if (route) {
-      return route;
-    }
-
-    const home =
-      await cache.match("/app");
-
-    if (home) {
-      return home;
-    }
-
-    return new Response(
-      `<!doctype html>
-<html lang="id">
-<head>
-  <meta charset="utf-8">
-  <meta
-    name="viewport"
-    content="width=device-width,initial-scale=1"
-  >
-  <title>SIGNOVA • Offline</title>
-</head>
-<body
-  style="
-    font-family:system-ui,sans-serif;
-    padding:32px;
-    background:#f7f9fc;
-    color:#172033;
-  "
->
-  <h1>SIGNOVA</h1>
-  <p>Mode Offline</p>
-  <p>
-    Halaman ini belum tersimpan di perangkat.
-    Sambungkan internet lalu buka halaman tersebut
-    sekali agar tersedia saat offline.
-  </p>
-</body>
-</html>`,
+    return await fetch(
+      request,
       {
-        status: 503,
-        headers: {
-          "Content-Type":
-            "text/html; charset=utf-8",
-        },
+        cache: "no-store",
       },
     );
+  } catch {
+    return offlineResponse();
   }
 }
 
-async function staleWhileRevalidate(
+async function staleWhileRevalidateAsset(
   request,
 ) {
   const cache =
-    await caches.open(RUNTIME_CACHE);
+    await caches.open(
+      RUNTIME_CACHE,
+    );
 
   const cached =
     await cache.match(request);
@@ -213,7 +160,10 @@ async function staleWhileRevalidate(
   const networkPromise =
     fetch(request)
       .then(async (response) => {
-        if (response.ok) {
+        if (
+          response.ok &&
+          response.type !== "opaque"
+        ) {
           await cache.put(
             request,
             response.clone(),
@@ -225,9 +175,7 @@ async function staleWhileRevalidate(
       .catch(() => null);
 
   if (cached) {
-    networkPromise.catch(
-      () => null,
-    );
+    void networkPromise;
 
     return cached;
   }
@@ -262,9 +210,6 @@ self.addEventListener(
       return;
     }
 
-    // API responses, auth endpoints, OTP,
-    // finance mutations, and private user data
-    // are intentionally not cached here.
     if (
       isApiRequest(url) ||
       isAuthRoute(url)
@@ -273,11 +218,10 @@ self.addEventListener(
     }
 
     if (
-      url.pathname === "/app" ||
-      url.pathname.startsWith("/app/")
+      request.mode === "navigate"
     ) {
       event.respondWith(
-        networkFirstNavigation(
+        networkOnlyNavigation(
           request,
         ),
       );
@@ -286,20 +230,10 @@ self.addEventListener(
     }
 
     if (
-      request.mode === "navigate"
+      isSafeStaticAsset(url)
     ) {
       event.respondWith(
-        networkFirstNavigation(
-          request,
-        ),
-      );
-
-      return;
-    }
-
-    if (isStaticAsset(url)) {
-      event.respondWith(
-        staleWhileRevalidate(
+        staleWhileRevalidateAsset(
           request,
         ),
       );
@@ -323,13 +257,26 @@ self.addEventListener(
     }
 
     const urls =
-      data.urls.filter(
-        (value) =>
-          typeof value === "string" &&
-          value.startsWith(
-            self.location.origin,
-          ),
-      );
+      data.urls.filter((value) => {
+        if (
+          typeof value !== "string"
+        ) {
+          return false;
+        }
+
+        try {
+          const url =
+            new URL(value);
+
+          return (
+            url.origin ===
+              self.location.origin &&
+            isSafeStaticAsset(url)
+          );
+        } catch {
+          return false;
+        }
+      });
 
     event.waitUntil(
       (async () => {
@@ -338,11 +285,11 @@ self.addEventListener(
             RUNTIME_CACHE,
           );
 
-        for (const url of urls) {
+        for (const value of urls) {
           try {
             const response =
               await fetch(
-                url,
+                value,
                 {
                   credentials:
                     "same-origin",
@@ -350,15 +297,18 @@ self.addEventListener(
                 },
               );
 
-            if (response.ok) {
+            if (
+              response.ok &&
+              response.type !==
+                "opaque"
+            ) {
               await cache.put(
-                url,
+                value,
                 response.clone(),
               );
             }
           } catch {
-            // Asset tertentu boleh gagal
-            // tanpa menggagalkan warmup.
+            // Best effort.
           }
         }
       })(),

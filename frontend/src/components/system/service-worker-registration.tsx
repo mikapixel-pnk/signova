@@ -7,20 +7,30 @@ import {
 export function ServiceWorkerRegistration() {
   useEffect(() => {
     if (
-      !("serviceWorker" in navigator)
+      !(
+        "serviceWorker"
+        in navigator
+      )
     ) {
       return;
     }
 
     async function register() {
       try {
-        await navigator.serviceWorker.register(
-          "/sw.js",
-          {
-            scope: "/",
-            updateViaCache: "none",
-          },
-        );
+        const registration =
+          await navigator
+            .serviceWorker
+            .register(
+              "/sw.js",
+              {
+                scope: "/",
+                updateViaCache:
+                  "none",
+              },
+            );
+
+        await registration
+          .update();
       } catch (error) {
         console.error(
           "SIGNOVA service worker gagal didaftarkan.",
@@ -30,9 +40,11 @@ export function ServiceWorkerRegistration() {
     }
 
     if (
-      document.readyState === "complete"
+      document.readyState ===
+      "complete"
     ) {
       void register();
+
       return;
     }
 

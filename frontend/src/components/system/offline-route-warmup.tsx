@@ -4,23 +4,6 @@ import {
   useEffect,
 } from "react";
 
-const routes = [
-  "/app",
-  "/app/pelanggan",
-  "/app/barang-jasa",
-  "/app/tagihan",
-  "/app/keuangan",
-  "/app/pembayaran",
-  "/app/penawaran",
-  "/app/pengaturan",
-  "/app/menu",
-  "/app/aksi",
-  "/app/keuangan/kas-bank",
-  "/app/keuangan/pemasukan",
-  "/app/keuangan/pengeluaran",
-  "/app/keuangan/piutang",
-];
-
 function collectRuntimeAssets():
   string[] {
   const urls =
@@ -29,12 +12,22 @@ function collectRuntimeAssets():
   document
     .querySelectorAll<
       HTMLScriptElement
-    >("script[src]")
-    .forEach((element) => {
-      if (element.src) {
-        urls.add(element.src);
-      }
-    });
+    >(
+      "script[src]",
+    )
+    .forEach(
+      (element) => {
+        if (
+          element.src.startsWith(
+            window.location.origin,
+          )
+        ) {
+          urls.add(
+            element.src,
+          );
+        }
+      },
+    );
 
   document
     .querySelectorAll<
@@ -42,50 +35,79 @@ function collectRuntimeAssets():
     >(
       'link[rel="stylesheet"][href]',
     )
-    .forEach((element) => {
-      if (element.href) {
-        urls.add(element.href);
-      }
-    });
+    .forEach(
+      (element) => {
+        if (
+          element.href.startsWith(
+            window.location.origin,
+          )
+        ) {
+          urls.add(
+            element.href,
+          );
+        }
+      },
+    );
 
   document
     .querySelectorAll<
       HTMLImageElement
-    >("img[src]")
-    .forEach((element) => {
-      if (element.src) {
-        urls.add(element.src);
-      }
-    });
+    >(
+      "img[src]",
+    )
+    .forEach(
+      (element) => {
+        if (
+          element.src.startsWith(
+            window.location.origin,
+          )
+        ) {
+          urls.add(
+            element.src,
+          );
+        }
+      },
+    );
 
   performance
-    .getEntriesByType("resource")
-    .forEach((entry) => {
-      if (
-        entry.name.startsWith(
-          window.location.origin,
-        ) &&
-        (
-          entry.name.includes(
-            "/_next/static/",
-          ) ||
-          entry.name.includes(
-            "/brand/",
+    .getEntriesByType(
+      "resource",
+    )
+    .forEach(
+      (entry) => {
+        if (
+          entry.name.startsWith(
+            window.location.origin,
+          ) &&
+          (
+            entry.name.includes(
+              "/_next/static/",
+            ) ||
+            entry.name.includes(
+              "/brand/",
+            )
           )
-        )
-      ) {
-        urls.add(entry.name);
-      }
-    });
+        ) {
+          urls.add(
+            entry.name,
+          );
+        }
+      },
+    );
 
-  return [...urls];
+  return [
+    ...urls,
+  ];
 }
 
 export function OfflineRouteWarmup() {
   useEffect(() => {
     if (
       !navigator.onLine ||
-      !("serviceWorker" in navigator)
+      !(
+        "serviceWorker"
+        in navigator
+      )
     ) {
       return;
     }
@@ -97,26 +119,6 @@ export function OfflineRouteWarmup() {
             .serviceWorker
             .ready;
 
-        for (const route of routes) {
-          try {
-            await fetch(
-              route,
-              {
-                method: "GET",
-                credentials:
-                  "same-origin",
-                cache: "reload",
-                headers: {
-                  "X-Signova-Prefetch":
-                    "offline-shell",
-                },
-              },
-            );
-          } catch {
-            // Best effort.
-          }
-        }
-
         const assets =
           collectRuntimeAssets();
 
@@ -124,11 +126,15 @@ export function OfflineRouteWarmup() {
           ?.postMessage({
             type:
               "SIGNOVA_WARM_ASSETS",
-            urls: assets,
+
+            urls:
+              assets,
           });
       } catch {
-        // Offline warmup
-        // tidak boleh mengganggu app.
+        /*
+         * Warmup statis bersifat
+         * best effort.
+         */
       }
     }
 
@@ -141,7 +147,9 @@ export function OfflineRouteWarmup() {
       );
 
     return () => {
-      window.clearTimeout(timer);
+      window.clearTimeout(
+        timer,
+      );
     };
   }, []);
 
