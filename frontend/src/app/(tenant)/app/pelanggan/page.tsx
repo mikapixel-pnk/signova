@@ -34,6 +34,10 @@ import {
 } from "@/components/module/module-footer-card";
 
 import {
+  CustomerActionsMenu,
+} from "@/components/customer/customer-actions-menu";
+
+import {
   apiErrorMessage,
   apiRequestId,
 } from "@/lib/api/error-message";
@@ -379,99 +383,117 @@ export default function CustomersPage() {
                       : UserRound;
 
                   return (
-                    <Link
+                    <article
                       key={
                         customer.id
-                      }
-                      href={
-                        `/app/pelanggan/${customer.id}`
                       }
                       className={
                         styles.customerCard
                       }
                     >
-                      <span
+                      <Link
+                        href={
+                          `/app/pelanggan/${customer.id}`
+                        }
                         className={
-                          styles.customerIcon
+                          styles.customerCardLink
                         }
                       >
-                        <TypeIcon
-                          size={21}
-                        />
-                      </span>
-
-                      <div
-                        className={
-                          styles.customerMain
-                        }
-                      >
-                        <div
-                          className={
-                            styles.customerTop
-                          }
-                        >
-                          <strong>
-                            {
-                              customer.name
-                            }
-                          </strong>
-
-                          <span
-                            className={
-                              customer.status ===
-                              "ACTIVE"
-                                ? styles.statusActive
-                                : styles.statusInactive
-                            }
-                          >
-                            {customerStatusLabel(
-                              customer.status,
-                            )}
-                          </span>
-                        </div>
-
                         <span
                           className={
-                            styles.customerType
+                            styles.customerIcon
                           }
                         >
-                          {customerTypeLabel(
-                            customer.type,
-                          )}
-                          {customer.code
-                            ? ` • ${customer.code}`
-                            : ""}
+                          <TypeIcon
+                            size={21}
+                          />
                         </span>
 
                         <div
                           className={
-                            styles.contactRow
+                            styles.customerMain
                           }
                         >
-                          {customer.phone ? (
-                            <span>
-                              <Phone
-                                size={14}
-                              />
+                          <div
+                            className={
+                              styles.customerTop
+                            }
+                          >
+                            <strong>
                               {
-                                customer.phone
+                                customer.name
                               }
-                            </span>
-                          ) : null}
+                            </strong>
 
-                          {customer.email ? (
-                            <span>
-                              <Mail
-                                size={14}
-                              />
-                              {
-                                customer.email
+                            <span
+                              className={
+                                customer.status ===
+                                "ACTIVE"
+                                  ? styles.statusActive
+                                  : styles.statusInactive
                               }
+                            >
+                              {customerStatusLabel(
+                                customer.status,
+                              )}
                             </span>
-                          ) : null}
+                          </div>
+
+                          <span
+                            className={
+                              styles.customerType
+                            }
+                          >
+                            {customerTypeLabel(
+                              customer.type,
+                            )}
+                            {customer.code
+                              ? ` • ${customer.code}`
+                              : ""}
+                          </span>
+
+                          <div
+                            className={
+                              styles.contactRow
+                            }
+                          >
+                            {customer.phone ? (
+                              <span>
+                                <Phone
+                                  size={14}
+                                />
+                                {
+                                  customer.phone
+                                }
+                              </span>
+                            ) : null}
+
+                            {customer.email ? (
+                              <span>
+                                <Mail
+                                  size={14}
+                                />
+                                {
+                                  customer.email
+                                }
+                              </span>
+                            ) : null}
+                          </div>
                         </div>
+                      </Link>
+
+                      <div
+                        className={
+                          styles.customerCardActions
+                        }
+                      >
+                        <CustomerActionsMenu
+                          customerId={
+                            customer.id
+                          }
+                        />
                       </div>
-                    </Link>
+                    </article>
                   );
                 },
               )}
@@ -493,7 +515,7 @@ export default function CustomersPage() {
                     <th>Kontak</th>
                     <th>Tipe</th>
                     <th>Status</th>
-                    <th />
+                    <th>Aksi</th>
                   </tr>
                 </thead>
 
@@ -552,16 +574,11 @@ export default function CustomersPage() {
                         </td>
 
                         <td>
-                          <Link
-                            href={
-                              `/app/pelanggan/${customer.id}`
+                          <CustomerActionsMenu
+                            customerId={
+                              customer.id
                             }
-                            className={
-                              styles.detailLink
-                            }
-                          >
-                            Lihat
-                          </Link>
+                          />
                         </td>
                       </tr>
                     ),

@@ -1,0 +1,459 @@
+.page {
+  display: grid;
+  gap: 16px;
+}
+
+.backRow {
+  display: flex;
+}
+
+.backLink {
+  display: inline-flex;
+
+  align-items: center;
+  gap: 6px;
+
+  color:
+    var(--foreground-muted);
+
+  font-size: 11px;
+  font-weight: 650;
+
+  text-decoration: none;
+}
+
+.form {
+  display: grid;
+  gap: 14px;
+}
+
+.card {
+  display: grid;
+  gap: 18px;
+
+  border:
+    1px solid
+    var(--border);
+
+  border-radius: 20px;
+
+  background:
+    var(--surface);
+
+  padding: 16px;
+
+  box-shadow:
+    0 12px 32px
+    rgba(16, 24, 40, 0.04);
+}
+
+.sectionHeading h2 {
+  margin: 0;
+
+  font-size: 17px;
+}
+
+.sectionHeading p:not(
+  .sectionEyebrow
+) {
+  max-width: 540px;
+
+  margin:
+    5px
+    0
+    0;
+
+  color:
+    var(--foreground-muted);
+
+  font-size: 11px;
+  line-height: 1.55;
+}
+
+.sectionEyebrow {
+  margin:
+    0
+    0
+    4px;
+
+  color:
+    var(--sv-violet);
+
+  font-size: 9px;
+  font-weight: 800;
+
+  letter-spacing:
+    0.07em;
+
+  text-transform:
+    uppercase;
+}
+
+.typeFieldset {
+  min-width: 0;
+
+  margin: 0;
+
+  border: 0;
+
+  padding: 0;
+}
+
+.typeFieldset legend {
+  margin-bottom: 8px;
+
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.typeGrid {
+  display: grid;
+  gap: 8px;
+}
+
+.typeCard,
+.typeCardActive {
+  display: grid;
+
+  grid-template-columns:
+    42px
+    minmax(0, 1fr);
+
+  align-items: center;
+
+  gap: 10px;
+
+  width: 100%;
+
+  border:
+    1px solid
+    var(--border);
+
+  border-radius: 15px;
+
+  background:
+    var(--surface-soft);
+
+  padding: 11px;
+
+  color:
+    var(--foreground);
+
+  font: inherit;
+
+  text-align: left;
+
+  cursor: pointer;
+}
+
+.typeCardActive {
+  border-color:
+    color-mix(
+      in srgb,
+      var(--sv-violet) 38%,
+      var(--border)
+    );
+
+  background:
+    color-mix(
+      in srgb,
+      var(--sv-violet) 8%,
+      var(--surface)
+    );
+}
+
+.typeIcon {
+  display: grid;
+
+  width: 42px;
+  height: 42px;
+
+  place-items: center;
+
+  border-radius: 13px;
+
+  background:
+    color-mix(
+      in srgb,
+      var(--sv-violet) 12%,
+      transparent
+    );
+
+  color:
+    var(--sv-violet);
+}
+
+.typeCard strong,
+.typeCardActive strong {
+  display: block;
+
+  font-size: 12px;
+}
+
+.typeCard small,
+.typeCardActive small {
+  display: block;
+
+  margin-top: 3px;
+
+  color:
+    var(--foreground-muted);
+
+  font-size: 9px;
+}
+
+.fields {
+  display: grid;
+  gap: 13px;
+}
+
+.fields label {
+  display: grid;
+  gap: 6px;
+
+  min-width: 0;
+
+  font-size: 11px;
+  font-weight: 650;
+}
+
+.fields label > span b {
+  color:
+    var(--sv-rose);
+}
+
+.fields input,
+.fields textarea {
+  width: 100%;
+
+  border:
+    1px solid
+    var(--border);
+
+  border-radius: 13px;
+
+  outline: none;
+
+  background:
+    var(--surface-soft);
+
+  padding:
+    11px
+    12px;
+
+  color:
+    var(--foreground);
+
+  font: inherit;
+  font-size: 12px;
+
+  transition:
+    border-color 160ms ease,
+    box-shadow 160ms ease,
+    background 160ms ease;
+}
+
+.fields textarea {
+  resize: vertical;
+
+  line-height: 1.55;
+}
+
+.fields input:focus,
+.fields textarea:focus {
+  border-color:
+    color-mix(
+      in srgb,
+      var(--sv-violet) 55%,
+      var(--border)
+    );
+
+  background:
+    var(--surface);
+
+  box-shadow:
+    0 0 0 3px
+    color-mix(
+      in srgb,
+      var(--sv-violet) 10%,
+      transparent
+    );
+}
+
+.fields input[
+  aria-invalid="true"
+],
+.fields textarea[
+  aria-invalid="true"
+] {
+  border-color:
+    var(--sv-rose);
+}
+
+.help,
+.fieldError {
+  font-size: 9px;
+  font-weight: 500;
+
+  line-height: 1.45;
+}
+
+.help {
+  color:
+    var(--foreground-muted);
+}
+
+.fieldError {
+  color:
+    var(--sv-rose);
+}
+
+.inputSuffix {
+  display: grid;
+
+  grid-template-columns:
+    minmax(0, 1fr)
+    auto;
+
+  align-items: center;
+
+  border:
+    1px solid
+    var(--border);
+
+  border-radius: 13px;
+
+  background:
+    var(--surface-soft);
+
+  overflow: hidden;
+}
+
+.inputSuffix input {
+  border: 0;
+
+  border-radius: 0;
+
+  background:
+    transparent;
+
+  box-shadow: none;
+}
+
+.inputSuffix > span {
+  padding:
+    0
+    12px;
+
+  color:
+    var(--foreground-muted);
+
+  font-size: 10px;
+  font-weight: 650;
+}
+
+.cancelButton,
+.submitButton {
+  display: inline-flex;
+
+  min-height: 44px;
+
+  align-items: center;
+  justify-content: center;
+
+  gap: 7px;
+
+  border-radius: 13px;
+
+  padding:
+    0
+    15px;
+
+  font: inherit;
+  font-size: 11px;
+  font-weight: 720;
+
+  text-decoration: none;
+}
+
+.cancelButton {
+  border:
+    1px solid
+    var(--border);
+
+  background:
+    var(--surface);
+
+  color:
+    var(--foreground);
+}
+
+.submitButton {
+  border: 0;
+
+  background:
+    linear-gradient(
+      135deg,
+      var(--sv-violet),
+      var(--sv-blue)
+    );
+
+  color: white;
+
+  cursor: pointer;
+
+  box-shadow:
+    0 9px 24px
+    color-mix(
+      in srgb,
+      var(--sv-violet) 24%,
+      transparent
+    );
+}
+
+.submitButton:disabled {
+  opacity: 0.65;
+
+  cursor: wait;
+}
+
+@media (min-width: 640px) {
+  .typeGrid,
+  .fields {
+    grid-template-columns:
+      repeat(
+        2,
+        minmax(0, 1fr)
+      );
+  }
+
+  .fieldWide {
+    grid-column:
+      1 / -1;
+  }
+}
+
+@media (min-width: 900px) {
+  .form {
+    max-width: 860px;
+
+    margin:
+      0 auto;
+
+    width: 100%;
+  }
+
+  .card {
+    padding: 20px;
+  }
+}
+
+@media (
+  prefers-reduced-motion:
+  reduce
+) {
+  .fields input,
+  .fields textarea {
+    transition: none;
+  }
+}

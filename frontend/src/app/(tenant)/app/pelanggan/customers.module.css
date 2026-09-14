@@ -470,7 +470,7 @@
   .desktopTableWrap {
     display: block;
 
-    overflow: hidden;
+    overflow: visible;
 
     border:
       1px solid
@@ -557,5 +557,52 @@
 
   .skeletonCard {
     animation: none;
+  }
+}
+
+.customerCard {
+  position: relative;
+}
+
+.customerCardLink {
+  display: grid;
+  grid-template-columns:
+    auto
+    minmax(0, 1fr);
+
+  gap: 12px;
+
+  min-width: 0;
+
+  color: inherit;
+  text-decoration: none;
+
+  padding-right: 44px;
+}
+
+.customerCardActions {
+  position: absolute;
+
+  top: 10px;
+  right: 10px;
+
+  z-index: 5;
+}
+
+@media (max-width: 759px) {
+  .customerTop {
+    padding-right: 2px;
+  }
+}
+
+@media (min-width: 760px) {
+  .table th:last-child,
+  .table td:last-child {
+    width: 72px;
+    text-align: right;
+  }
+
+  .table td:last-child {
+    overflow: visible;
   }
 }
