@@ -106,3 +106,41 @@
     padding: 34px;
   }
 }
+
+.form :global(input:focus-visible) {
+  transform: translateY(-1px);
+}
+
+.form :global(input[aria-invalid="true"]) {
+  animation:
+    signova-field-error
+    180ms
+    ease-out;
+}
+
+@keyframes signova-field-error {
+  0% {
+    transform: translateX(0);
+  }
+
+  35% {
+    transform: translateX(-3px);
+  }
+
+  70% {
+    transform: translateX(3px);
+  }
+
+  100% {
+    transform: translateX(0);
+  }
+}
+
+@media (
+  prefers-reduced-motion:
+  reduce
+) {
+  .form :global(input[aria-invalid="true"]) {
+    animation: none;
+  }
+}

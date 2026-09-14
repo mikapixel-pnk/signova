@@ -1,0 +1,55 @@
+.area {
+  display: grid;
+  gap: 10px;
+}
+
+.actions {
+  display: grid;
+  gap: 10px;
+}
+
+@media (max-width: 639px) {
+  .sticky {
+    position: sticky;
+    bottom:
+      calc(
+        10px +
+        env(safe-area-inset-bottom)
+      );
+
+    z-index: 20;
+
+    margin:
+      0
+      -8px;
+
+    border:
+      1px solid
+      color-mix(
+        in srgb,
+        var(--border) 74%,
+        transparent
+      );
+
+    border-radius: 18px;
+
+    padding: 8px;
+
+    background:
+      color-mix(
+        in srgb,
+        var(--surface) 94%,
+        transparent
+      );
+
+    backdrop-filter: blur(18px);
+
+    box-shadow:
+      0 14px 35px
+      color-mix(
+        in srgb,
+        #101828 10%,
+        transparent
+      );
+  }
+}

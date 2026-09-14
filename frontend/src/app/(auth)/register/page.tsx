@@ -17,6 +17,9 @@ import {
 } from "react";
 
 import {
+  SubmitArea,
+} from "@/components/feedback/submit-area";
+import {
   AuthShell,
 } from "@/components/layout/auth-shell";
 import {
@@ -92,6 +95,11 @@ export default function RegisterPage() {
   const [error, setError] =
     useState<string | null>(null);
 
+  const [
+    passwordConfirmationError,
+    setPasswordConfirmationError,
+  ] = useState<string | null>(null);
+
   const [loading, setLoading] =
     useState(false);
 
@@ -101,13 +109,14 @@ export default function RegisterPage() {
     event.preventDefault();
 
     setError(null);
+    setPasswordConfirmationError(null);
 
     if (
       password !==
       passwordConfirmation
     ) {
-      setError(
-        "Konfirmasi kata sandi tidak sama.",
+      setPasswordConfirmationError(
+        "Ulangi kata sandi harus sama dengan kata sandi di atas.",
       );
 
       return;
@@ -188,15 +197,6 @@ export default function RegisterPage() {
             masuk.
           </p>
         </header>
-
-        {error ? (
-          <div
-            className={styles.error}
-            role="alert"
-          >
-            {error}
-          </div>
-        ) : null}
 
         <form
           className={styles.form}
@@ -301,10 +301,22 @@ export default function RegisterPage() {
               value={
                 passwordConfirmation
               }
-              onChange={(event) =>
+              onChange={(event) => {
                 setPasswordConfirmation(
                   event.target.value,
-                )
+                );
+
+                if (
+                  passwordConfirmationError
+                ) {
+                  setPasswordConfirmationError(
+                    null,
+                  );
+                }
+              }}
+              error={
+                passwordConfirmationError ??
+                undefined
               }
               leadingIcon={
                 <LockKeyhole
@@ -322,15 +334,27 @@ export default function RegisterPage() {
             workspace bisnis yang baru.
           </p>
 
-          <Button
-            type="submit"
-            fullWidth
-            disabled={loading}
+          <SubmitArea
+            feedback={
+              error
+                ? {
+                    tone: "error",
+                    title:
+                      "Akun belum berhasil dibuat",
+                    message: error,
+                  }
+                : undefined
+            }
           >
-            {loading
-              ? "Membuat akun..."
-              : "Daftar"}
-          </Button>
+            <Button
+              type="submit"
+              fullWidth
+              loading={loading}
+              loadingLabel="Membuat akun..."
+            >
+              Daftar
+            </Button>
+          </SubmitArea>
         </form>
 
         <p className={styles.footer}>

@@ -1,0 +1,187 @@
+.feedback {
+  display: grid;
+  grid-template-columns: 36px minmax(0, 1fr);
+  gap: 11px;
+  align-items: flex-start;
+
+  border: 1px solid var(--border);
+  border-radius: 15px;
+
+  padding: 12px 13px;
+
+  background: var(--surface);
+
+  animation:
+    feedback-enter 180ms ease-out;
+}
+
+.icon {
+  display: grid;
+  width: 36px;
+  height: 36px;
+  place-items: center;
+
+  border-radius: 11px;
+}
+
+.content {
+  min-width: 0;
+}
+
+.title {
+  display: block;
+
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.message {
+  margin: 3px 0 0;
+
+  font-size: 12px;
+  line-height: 1.5;
+
+  color: var(--foreground-muted);
+}
+
+.reference {
+  margin: 5px 0 0;
+
+  font-size: 10px;
+  line-height: 1.4;
+
+  color: var(--foreground-muted);
+}
+
+.error {
+  border-color:
+    color-mix(
+      in srgb,
+      var(--danger) 28%,
+      var(--border)
+    );
+
+  background:
+    color-mix(
+      in srgb,
+      var(--danger) 7%,
+      var(--surface)
+    );
+}
+
+.error .icon {
+  color: var(--danger);
+
+  background:
+    color-mix(
+      in srgb,
+      var(--danger) 12%,
+      transparent
+    );
+}
+
+.error .title {
+  color: var(--danger);
+}
+
+.success {
+  border-color:
+    color-mix(
+      in srgb,
+      #2fa66a 30%,
+      var(--border)
+    );
+
+  background:
+    color-mix(
+      in srgb,
+      #2fa66a 7%,
+      var(--surface)
+    );
+}
+
+.success .icon {
+  color: #2fa66a;
+
+  background:
+    color-mix(
+      in srgb,
+      #2fa66a 12%,
+      transparent
+    );
+}
+
+.warning {
+  border-color:
+    color-mix(
+      in srgb,
+      #e2a239 32%,
+      var(--border)
+    );
+
+  background:
+    color-mix(
+      in srgb,
+      #e2a239 8%,
+      var(--surface)
+    );
+}
+
+.warning .icon {
+  color: #c88a21;
+
+  background:
+    color-mix(
+      in srgb,
+      #e2a239 14%,
+      transparent
+    );
+}
+
+.info {
+  border-color:
+    color-mix(
+      in srgb,
+      var(--primary-strong) 25%,
+      var(--border)
+    );
+
+  background:
+    color-mix(
+      in srgb,
+      var(--primary-strong) 6%,
+      var(--surface)
+    );
+}
+
+.info .icon {
+  color: var(--primary-strong);
+
+  background:
+    color-mix(
+      in srgb,
+      var(--primary-strong) 11%,
+      transparent
+    );
+}
+
+@keyframes feedback-enter {
+  from {
+    opacity: 0;
+    transform: translateY(5px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (
+  prefers-reduced-motion:
+  reduce
+) {
+  .feedback {
+    animation: none;
+  }
+}

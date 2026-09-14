@@ -1,3 +1,7 @@
+import {
+  LoaderCircle,
+} from "lucide-react";
+
 import type {
   ButtonHTMLAttributes,
   ReactNode,
@@ -17,12 +21,17 @@ type ButtonProps =
     variant?: ButtonVariant;
     fullWidth?: boolean;
     leadingIcon?: ReactNode;
+    loading?: boolean;
+    loadingLabel?: string;
   };
 
 export function Button({
   variant = "primary",
   fullWidth = false,
   leadingIcon,
+  loading = false,
+  loadingLabel = "Memproses...",
+  disabled,
   className,
   children,
   ...props
@@ -35,10 +44,29 @@ export function Button({
         fullWidth && styles.full,
         className,
       )}
+      disabled={
+        disabled ||
+        loading
+      }
+      aria-busy={loading}
       {...props}
     >
-      {leadingIcon}
-      {children}
+      {loading ? (
+        <LoaderCircle
+          className={styles.spinner}
+          size={18}
+          strokeWidth={2}
+          aria-hidden="true"
+        />
+      ) : (
+        leadingIcon
+      )}
+
+      <span>
+        {loading
+          ? loadingLabel
+          : children}
+      </span>
     </button>
   );
 }

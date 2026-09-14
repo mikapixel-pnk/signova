@@ -16,6 +16,9 @@ import {
 } from "react";
 
 import {
+  SubmitArea,
+} from "@/components/feedback/submit-area";
+import {
   AuthShell,
 } from "@/components/layout/auth-shell";
 import {
@@ -192,15 +195,6 @@ export default function LoginPage() {
           </p>
         </header>
 
-        {error ? (
-          <div
-            className={styles.error}
-            role="alert"
-          >
-            {error}
-          </div>
-        ) : null}
-
         <form
           className={styles.form}
           onSubmit={handleSubmit}
@@ -256,15 +250,27 @@ export default function LoginPage() {
             </Link>
           </div>
 
-          <Button
-            type="submit"
-            fullWidth
-            disabled={loading}
+          <SubmitArea
+            feedback={
+              error
+                ? {
+                    tone: "error",
+                    title:
+                      "Belum dapat masuk",
+                    message: error,
+                  }
+                : undefined
+            }
           >
-            {loading
-              ? "Memproses..."
-              : "Masuk"}
-          </Button>
+            <Button
+              type="submit"
+              fullWidth
+              loading={loading}
+              loadingLabel="Memeriksa akun..."
+            >
+              Masuk
+            </Button>
+          </SubmitArea>
         </form>
 
         <div
