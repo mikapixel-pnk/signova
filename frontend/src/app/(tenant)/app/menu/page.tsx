@@ -15,9 +15,11 @@ import {
 } from "lucide-react";
 
 import Link from "next/link";
+
 import {
   useRouter,
 } from "next/navigation";
+
 import {
   useState,
 } from "react";
@@ -25,65 +27,84 @@ import {
 import {
   TenantShell,
 } from "@/components/layout/tenant-shell";
+
+import {
+  ThemeSelector,
+} from "@/components/theme/theme-selector";
+
 import {
   logout,
 } from "@/lib/auth/logout";
+
+import styles from "./page.module.css";
 
 const menuItems = [
   {
     label: "Pelanggan",
     href: "/app/pelanggan",
     icon: Users,
+    tone: "violet",
   },
   {
     label: "Barang & Jasa",
     href: "/app/barang-jasa",
     icon: Package,
+    tone: "cyan",
   },
   {
     label: "Penawaran",
     href: "/app/penawaran",
     icon: BookOpenText,
+    tone: "violet",
   },
   {
     label: "Pembayaran",
     href: "/app/pembayaran",
     icon: ReceiptText,
+    tone: "blue",
   },
   {
     label: "Ringkasan Keuangan",
     href: "/app/keuangan",
     icon: WalletCards,
+    tone: "teal",
   },
   {
     label: "Kas & Bank",
     href: "/app/keuangan/kas-bank",
     icon: Building2,
+    tone: "green",
   },
   {
     label: "Pemasukan",
     href: "/app/keuangan/pemasukan",
     icon: HandCoins,
+    tone: "cyan",
   },
   {
     label: "Pengeluaran",
     href: "/app/keuangan/pengeluaran",
     icon: CircleDollarSign,
+    tone: "rose",
   },
   {
     label: "Piutang",
     href: "/app/keuangan/piutang",
     icon: FileText,
+    tone: "blue",
   },
   {
     label: "Pengaturan",
     href: "/app/pengaturan",
     icon: Settings,
+    tone: "violet",
   },
-];
+] as const;
 
 export default function MoreMenuPage() {
-  const router = useRouter();
+  const router =
+    useRouter();
+
   const [
     loggingOut,
     setLoggingOut,
@@ -99,123 +120,128 @@ export default function MoreMenuPage() {
     try {
       await logout();
     } finally {
-      router.replace("/login");
+      router.replace(
+        "/login",
+      );
     }
   }
 
   return (
     <TenantShell>
       <section
-        style={{
-          display: "grid",
-          gap: 22,
-        }}
+        className={
+          styles.page
+        }
       >
         <header>
           <p
-            style={{
-              margin: "0 0 6px",
-              color:
-                "var(--color-primary)",
-              fontSize: 12,
-              fontWeight: 700,
-            }}
+            className={
+              styles.eyebrow
+            }
           >
             SIGNOVA
           </p>
 
           <h1
-            style={{
-              margin: 0,
-              fontSize:
-                "clamp(26px, 6vw, 36px)",
-            }}
+            className={
+              styles.title
+            }
           >
             Menu Lainnya
           </h1>
 
           <p
-            style={{
-              margin: "7px 0 0",
-              color:
-                "var(--color-muted-foreground)",
-            }}
+            className={
+              styles.description
+            }
           >
             Semua fitur Starter dalam satu tempat.
           </p>
         </header>
 
         <div
-          style={{
-            display: "grid",
-            gridTemplateColumns:
-              "repeat(2, minmax(0, 1fr))",
-            gap: 10,
-          }}
+          className={
+            styles.menuGrid
+          }
         >
-          {menuItems.map((item) => {
-            const Icon = item.icon;
+          {menuItems.map(
+            (item) => {
+              const Icon =
+                item.icon;
 
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                style={{
-                  display: "flex",
-                  minHeight: 92,
-                  flexDirection: "column",
-                  justifyContent:
-                    "space-between",
-                  gap: 12,
-                  border:
-                    "1px solid var(--color-border)",
-                  borderRadius: 18,
-                  background:
-                    "var(--color-card)",
-                  padding: 15,
-                  color:
-                    "var(--color-foreground)",
-                  textDecoration: "none",
-                }}
-              >
-                <Icon
-                  size={22}
-                  strokeWidth={1.8}
-                />
-
-                <strong
-                  style={{
-                    fontSize: 13,
-                  }}
+              return (
+                <Link
+                  key={
+                    item.href
+                  }
+                  href={
+                    item.href
+                  }
+                  data-tone={
+                    item.tone
+                  }
+                  className={
+                    styles.menuCard
+                  }
                 >
-                  {item.label}
-                </strong>
-              </Link>
-            );
-          })}
+                  <span
+                    className={
+                      styles.iconBox
+                    }
+                  >
+                    <Icon
+                      size={21}
+                      strokeWidth={1.9}
+                    />
+                  </span>
+
+                  <strong>
+                    {item.label}
+                  </strong>
+                </Link>
+              );
+            },
+          )}
         </div>
+
+        <section
+          className={
+            styles.themeSection
+          }
+        >
+          <div>
+            <h2
+              className={
+                styles.sectionTitle
+              }
+            >
+              Tampilan
+            </h2>
+
+            <p
+              className={
+                styles.sectionNote
+              }
+            >
+              Pilih tema SIGNOVA di perangkat ini.
+            </p>
+          </div>
+
+          <ThemeSelector />
+        </section>
 
         <button
           type="button"
-          onClick={
-            () => void handleLogout()
+          className={
+            styles.logout
           }
-          disabled={loggingOut}
-          style={{
-            display: "flex",
-            width: "100%",
-            alignItems: "center",
-            justifyContent: "center",
-            gap: 9,
-            border:
-              "1px solid #e4575740",
-            borderRadius: 15,
-            background: "#e457570d",
-            padding: 14,
-            color: "#df5353",
-            font: "inherit",
-            fontWeight: 700,
-          }}
+          onClick={
+            () =>
+              void handleLogout()
+          }
+          disabled={
+            loggingOut
+          }
         >
           <LogOut size={19} />
 

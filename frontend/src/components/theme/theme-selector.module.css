@@ -1,0 +1,89 @@
+.group {
+  display: grid;
+  grid-template-columns:
+    repeat(3, minmax(0, 1fr));
+  gap: 7px;
+
+  border:
+    1px solid var(--border);
+
+  border-radius: 16px;
+
+  background:
+    color-mix(
+      in srgb,
+      var(--surface) 92%,
+      transparent
+    );
+
+  padding: 6px;
+}
+
+.option,
+.active {
+  display: flex;
+  min-width: 0;
+  min-height: 42px;
+
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+
+  border: 1px solid transparent;
+  border-radius: 11px;
+
+  background: transparent;
+
+  color:
+    var(--foreground-muted);
+
+  font: inherit;
+  font-size: 11px;
+  font-weight: 700;
+
+  cursor: pointer;
+
+  transition:
+    background 160ms ease,
+    border-color 160ms ease,
+    color 160ms ease,
+    box-shadow 160ms ease;
+}
+
+.active {
+  border-color:
+    color-mix(
+      in srgb,
+      var(--sv-cyan) 32%,
+      var(--border)
+    );
+
+  background:
+    linear-gradient(
+      145deg,
+      color-mix(
+        in srgb,
+        var(--sv-cyan) 13%,
+        var(--surface)
+      ),
+      color-mix(
+        in srgb,
+        var(--sv-blue) 7%,
+        var(--surface)
+      )
+    );
+
+  color: var(--foreground);
+
+  box-shadow:
+    0 6px 18px
+      color-mix(
+        in srgb,
+        var(--sv-cyan) 10%,
+        transparent
+      );
+}
+
+.active svg {
+  color: var(--sv-cyan);
+}

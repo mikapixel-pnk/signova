@@ -1,6 +1,12 @@
-import type { Metadata } from "next";
+import type {
+  Metadata,
+} from "next";
+
 import "./globals.css";
-import { ServiceWorkerRegistration } from "@/components/system/service-worker-registration";
+
+import {
+  ServiceWorkerRegistration,
+} from "@/components/system/service-worker-registration";
 
 export const metadata: Metadata = {
   title: {
@@ -15,13 +21,51 @@ export const metadata: Metadata = {
   manifest: "/manifest.webmanifest",
 };
 
+const themeBootstrap = `
+(function () {
+  try {
+    var key = "signova.theme.v1";
+    var preference =
+      localStorage.getItem(key) || "system";
+
+    var resolved =
+      preference === "system"
+        ? (
+            window.matchMedia(
+              "(prefers-color-scheme: dark)"
+            ).matches
+              ? "dark"
+              : "light"
+          )
+        : preference;
+
+    document.documentElement.dataset.theme =
+      resolved;
+
+    document.documentElement.dataset.themePreference =
+      preference;
+  } catch (_) {}
+})();
+`;
+
 export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="id">
+    <html
+      lang="id"
+      suppressHydrationWarning
+    >
+      <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: themeBootstrap,
+          }}
+        />
+      </head>
+
       <body>
         <ServiceWorkerRegistration />
         {children}

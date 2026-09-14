@@ -35,10 +35,42 @@
   --transition-base: 240ms ease;
 
   --content-max: 1440px;
+
+  /*
+   * SIGNOVA Global Visual Template v1
+   * Semantic accents.
+   */
+  --sv-blue: #3488ff;
+  --sv-cyan: #27c4d8;
+  --sv-teal: #24bda8;
+  --sv-green: #35c98b;
+  --sv-violet: #8b5cf6;
+  --sv-rose: #ec5b88;
+  --sv-red: #e45757;
+  --sv-amber: #e7a53b;
+
+  --sv-accent: var(--sv-cyan);
+  --sv-accent-soft:
+    color-mix(
+      in srgb,
+      var(--sv-accent) 10%,
+      transparent
+    );
+  --sv-accent-border:
+    color-mix(
+      in srgb,
+      var(--sv-accent) 25%,
+      var(--border)
+    );
+  --sv-accent-glow:
+    color-mix(
+      in srgb,
+      var(--sv-accent) 18%,
+      transparent
+    );
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
+html[data-theme="dark"] {
     color-scheme: dark;
 
     --background: #0b1018;
@@ -60,9 +92,8 @@
     --border: #273241;
     --border-strong: #364254;
 
-    --shadow-soft:
-      0 18px 48px rgba(0, 0, 0, 0.28);
-  }
+  --shadow-soft:
+    0 18px 48px rgba(0, 0, 0, 0.28);
 }
 
 * {
@@ -129,4 +160,49 @@ a {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
   }
+}
+
+html {
+  color-scheme: light;
+}
+
+html[data-theme="dark"] {
+  color-scheme: dark;
+}
+
+html[data-theme="light"] {
+  color-scheme: light;
+}
+
+/* Semantic visual accents. */
+[data-tone="blue"] {
+  --sv-accent: var(--sv-blue);
+}
+
+[data-tone="cyan"] {
+  --sv-accent: var(--sv-cyan);
+}
+
+[data-tone="teal"] {
+  --sv-accent: var(--sv-teal);
+}
+
+[data-tone="green"] {
+  --sv-accent: var(--sv-green);
+}
+
+[data-tone="violet"] {
+  --sv-accent: var(--sv-violet);
+}
+
+[data-tone="rose"] {
+  --sv-accent: var(--sv-rose);
+}
+
+[data-tone="red"] {
+  --sv-accent: var(--sv-red);
+}
+
+[data-tone="amber"] {
+  --sv-accent: var(--sv-amber);
 }

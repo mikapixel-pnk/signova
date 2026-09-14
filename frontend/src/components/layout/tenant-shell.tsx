@@ -50,6 +50,13 @@ type TenantShellProps = {
 type NavigationItem = {
   label: string;
   href: string;
+  tone:
+    | "blue"
+    | "cyan"
+    | "teal"
+    | "green"
+    | "violet"
+    | "rose";
   icon: React.ComponentType<{
     size?: number;
     strokeWidth?: number;
@@ -59,26 +66,31 @@ type NavigationItem = {
 const salesNavigation: NavigationItem[] = [
   {
     label: "Pelanggan",
+    tone: "violet",
     href: "/app/pelanggan",
     icon: Users,
   },
   {
     label: "Barang & Jasa",
+    tone: "cyan",
     href: "/app/barang-jasa",
     icon: Package,
   },
   {
     label: "Penawaran",
+    tone: "violet",
     href: "/app/penawaran",
     icon: BookOpenText,
   },
   {
     label: "Tagihan",
+    tone: "blue",
     href: "/app/tagihan",
     icon: FileText,
   },
   {
     label: "Pembayaran",
+    tone: "teal",
     href: "/app/pembayaran",
     icon: ReceiptText,
   },
@@ -87,26 +99,31 @@ const salesNavigation: NavigationItem[] = [
 const financeNavigation: NavigationItem[] = [
   {
     label: "Ringkasan",
+    tone: "teal",
     href: "/app/keuangan",
     icon: WalletCards,
   },
   {
     label: "Kas & Bank",
+    tone: "green",
     href: "/app/keuangan/kas-bank",
     icon: Building2,
   },
   {
     label: "Pemasukan",
+    tone: "cyan",
     href: "/app/keuangan/pemasukan",
     icon: HandCoins,
   },
   {
     label: "Pengeluaran",
+    tone: "rose",
     href: "/app/keuangan/pengeluaran",
     icon: CircleDollarSign,
   },
   {
     label: "Piutang",
+    tone: "blue",
     href: "/app/keuangan/piutang",
     icon: ReceiptText,
   },
@@ -140,6 +157,7 @@ function NavigationLink({
   return (
     <Link
       href={item.href}
+      data-tone={item.tone}
       className={
         active
           ? styles.sidebarLinkActive
@@ -205,6 +223,7 @@ export function TenantShell({
             item={{
               label: "Beranda",
               href: "/app",
+              tone: "cyan",
               icon: Home,
             }}
           />
@@ -247,6 +266,7 @@ export function TenantShell({
               item={{
                 label: "Pengaturan",
                 href: "/app/pengaturan",
+                tone: "violet",
                 icon: Settings,
               }}
             />
@@ -336,6 +356,7 @@ export function TenantShell({
         >
           <Link
             href="/app"
+            data-tone="cyan"
             className={
               isActiveRoute(
                 pathname,
@@ -354,6 +375,7 @@ export function TenantShell({
 
           <Link
             href="/app/tagihan"
+            data-tone="blue"
             className={
               isActiveRoute(
                 pathname,
@@ -372,6 +394,7 @@ export function TenantShell({
 
           <Link
             href="/app/aksi"
+            data-tone="primary"
             className={styles.bottomPrimary}
             aria-label="Tambah"
           >
@@ -380,6 +403,7 @@ export function TenantShell({
 
           <Link
             href="/app/keuangan"
+            data-tone="green"
             className={
               isActiveRoute(
                 pathname,
@@ -398,6 +422,7 @@ export function TenantShell({
 
           <Link
             href="/app/menu"
+            data-tone="violet"
             className={
               isActiveRoute(
                 pathname,

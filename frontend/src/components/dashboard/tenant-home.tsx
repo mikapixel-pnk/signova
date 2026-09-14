@@ -32,24 +32,28 @@ const summaryItems = [
     value: "Rp0",
     note: "Belum ada tagihan berjalan",
     icon: ReceiptText,
+    tone: "blue",
   },
   {
     label: "Kas & Bank",
     value: "Rp0",
     note: "Saldo tercatat",
     icon: WalletCards,
+    tone: "green",
   },
   {
     label: "Pemasukan",
     value: "Rp0",
     note: "Bulan ini",
     icon: ArrowUpRight,
+    tone: "cyan",
   },
   {
     label: "Pengeluaran",
     value: "Rp0",
     note: "Bulan ini",
     icon: ArrowDownRight,
+    tone: "violet",
   },
 ];
 
@@ -57,18 +61,22 @@ const quickActions = [
   {
     label: "Buat Tagihan",
     icon: FilePlus2,
+    tone: "blue",
   },
   {
     label: "Tambah Pelanggan",
     icon: UserPlus,
+    tone: "violet",
   },
   {
     label: "Catat Pemasukan",
     icon: Plus,
+    tone: "green",
   },
   {
     label: "Catat Pengeluaran",
     icon: ArrowDownRight,
+    tone: "rose",
   },
 ];
 
@@ -223,13 +231,6 @@ export function TenantHome() {
           </p>
         </div>
 
-        <button
-          className={styles.primaryAction}
-          type="button"
-        >
-          <FilePlus2 size={18} />
-          Buat Tagihan
-        </button>
       </section>
 
       <section>
@@ -248,6 +249,7 @@ export function TenantHome() {
               <article
                 key={item.label}
                 className={styles.summaryCard}
+                data-tone={item.tone}
               >
                 <div className={styles.summaryIcon}>
                   <Icon size={19} />
@@ -289,6 +291,7 @@ export function TenantHome() {
               <button
                 key={item.label}
                 className={styles.quickAction}
+                data-tone={item.tone}
                 type="button"
               >
                 <span className={styles.quickIcon}>

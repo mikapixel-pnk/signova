@@ -39,21 +39,6 @@
   line-height: 1.65;
 }
 
-.primaryAction {
-  display: inline-flex;
-  width: fit-content;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  border: 0;
-  border-radius: 13px;
-  background: var(--color-primary);
-  padding: 12px 16px;
-  color: var(--color-primary-foreground);
-  font: inherit;
-  font-weight: 650;
-  cursor: pointer;
-}
 
 .sectionHeading {
   display: flex;
@@ -240,4 +225,282 @@
 .description strong {
   color: var(--color-primary);
   font-weight: 650;
+}
+
+/* =========================================================
+   SIGNOVA Dashboard Visual System
+   Colorful, elegant, restrained.
+   ========================================================= */
+
+.summaryCard,
+.quickAction {
+  --accent: var(--color-primary);
+  --accent-soft:
+    color-mix(
+      in srgb,
+      var(--accent) 12%,
+      transparent
+    );
+  --accent-border:
+    color-mix(
+      in srgb,
+      var(--accent) 30%,
+      var(--color-border)
+    );
+}
+
+.summaryCard[data-tone="blue"],
+.quickAction[data-tone="blue"] {
+  --accent: #3488ff;
+}
+
+.summaryCard[data-tone="green"],
+.quickAction[data-tone="green"] {
+  --accent: #2ecb8b;
+}
+
+.summaryCard[data-tone="cyan"],
+.quickAction[data-tone="cyan"] {
+  --accent: #25c6cf;
+}
+
+.summaryCard[data-tone="violet"],
+.quickAction[data-tone="violet"] {
+  --accent: #8b5cf6;
+}
+
+.summaryCard[data-tone="rose"],
+.quickAction[data-tone="rose"] {
+  --accent: #ec5b88;
+}
+
+.summaryCard {
+  position: relative;
+  overflow: hidden;
+
+  border-color:
+    var(--accent-border);
+
+  background:
+    radial-gradient(
+      circle at 100% 0%,
+      color-mix(
+        in srgb,
+        var(--accent) 18%,
+        transparent
+      ),
+      transparent 54%
+    ),
+    linear-gradient(
+      145deg,
+      color-mix(
+        in srgb,
+        var(--accent) 8%,
+        var(--color-card)
+      ),
+      var(--color-card)
+    );
+
+  box-shadow:
+    0 12px 32px
+      color-mix(
+        in srgb,
+        var(--accent) 8%,
+        transparent
+      ),
+    inset 0 1px 0
+      color-mix(
+        in srgb,
+        white 4%,
+        transparent
+      );
+
+  transition:
+    transform 180ms ease,
+    border-color 180ms ease,
+    box-shadow 180ms ease;
+}
+
+.summaryCard::after {
+  content: "";
+  position: absolute;
+  width: 92px;
+  height: 92px;
+  top: -48px;
+  right: -42px;
+  border-radius: 999px;
+
+  background:
+    var(--accent);
+
+  opacity: 0.06;
+
+  filter: blur(4px);
+}
+
+.summaryIcon {
+  position: relative;
+
+  background:
+    linear-gradient(
+      145deg,
+      color-mix(
+        in srgb,
+        var(--accent) 88%,
+        white
+      ),
+      var(--accent)
+    );
+
+  color: white;
+
+  box-shadow:
+    0 8px 24px
+      color-mix(
+        in srgb,
+        var(--accent) 30%,
+        transparent
+      );
+}
+
+.summaryLabel {
+  color:
+    color-mix(
+      in srgb,
+      var(--accent) 72%,
+      var(--color-foreground)
+    );
+
+  font-weight: 650;
+}
+
+.summaryValue {
+  color: var(--color-foreground);
+}
+
+.quickAction {
+  position: relative;
+  overflow: hidden;
+
+  border-color:
+    color-mix(
+      in srgb,
+      var(--accent) 18%,
+      var(--color-border)
+    );
+
+  background:
+    linear-gradient(
+      145deg,
+      color-mix(
+        in srgb,
+        var(--accent) 7%,
+        var(--color-card)
+      ),
+      var(--color-card)
+    );
+
+  transition:
+    transform 160ms ease,
+    border-color 160ms ease,
+    background 160ms ease;
+}
+
+.quickAction:hover {
+  transform: translateY(-1px);
+
+  border-color:
+    color-mix(
+      in srgb,
+      var(--accent) 34%,
+      var(--color-border)
+    );
+}
+
+.quickIcon {
+  background:
+    linear-gradient(
+      145deg,
+      color-mix(
+        in srgb,
+        var(--accent) 92%,
+        white
+      ),
+      var(--accent)
+    );
+
+  color: white;
+
+  box-shadow:
+    0 7px 20px
+      color-mix(
+        in srgb,
+        var(--accent) 24%,
+        transparent
+      );
+}
+
+.quickArrow {
+  color:
+    color-mix(
+      in srgb,
+      var(--accent) 72%,
+      var(--color-muted-foreground)
+    );
+}
+
+.description strong {
+  color: #35bfd8;
+}
+
+.activityCard {
+  background:
+    linear-gradient(
+      150deg,
+      color-mix(
+        in srgb,
+        #3488ff 5%,
+        var(--color-card)
+      ),
+      var(--color-card)
+    );
+
+  box-shadow:
+    0 16px 42px
+      color-mix(
+        in srgb,
+        #3488ff 5%,
+        transparent
+      );
+}
+
+@media (hover: hover) {
+  .summaryCard:hover {
+    transform: translateY(-2px);
+
+    border-color:
+      color-mix(
+        in srgb,
+        var(--accent) 48%,
+        var(--color-border)
+      );
+
+    box-shadow:
+      0 16px 38px
+        color-mix(
+          in srgb,
+          var(--accent) 13%,
+          transparent
+        );
+  }
+}
+
+@media (
+  prefers-reduced-motion:
+  reduce
+) {
+  .summaryCard,
+  .quickAction {
+    transition: none;
+  }
 }

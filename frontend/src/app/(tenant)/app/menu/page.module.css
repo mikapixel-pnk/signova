@@ -1,0 +1,228 @@
+.page {
+  display: grid;
+  gap: 24px;
+}
+
+.eyebrow {
+  margin: 0 0 6px;
+  color: var(--sv-violet);
+  font-size: 11px;
+  font-weight: 750;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.title {
+  margin: 0;
+  font-size: clamp(26px, 6vw, 36px);
+  letter-spacing: -0.035em;
+}
+
+.description {
+  margin: 7px 0 0;
+  color: var(--foreground-muted);
+  font-size: 13px;
+}
+
+.menuGrid {
+  display: grid;
+  grid-template-columns:
+    repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.menuCard {
+  position: relative;
+  display: flex;
+  min-height: 104px;
+  overflow: hidden;
+
+  flex-direction: column;
+  justify-content: space-between;
+
+  gap: 14px;
+
+  border:
+    1px solid
+    var(--sv-accent-border);
+
+  border-radius: 18px;
+
+  background:
+    radial-gradient(
+      circle at 100% 0%,
+      color-mix(
+        in srgb,
+        var(--sv-accent) 14%,
+        transparent
+      ),
+      transparent 55%
+    ),
+    linear-gradient(
+      145deg,
+      color-mix(
+        in srgb,
+        var(--sv-accent) 6%,
+        var(--surface)
+      ),
+      var(--surface)
+    );
+
+  padding: 14px;
+
+  color: var(--foreground);
+  text-decoration: none;
+
+  box-shadow:
+    0 10px 26px
+      var(--sv-accent-glow);
+
+  transition:
+    transform 160ms ease,
+    border-color 160ms ease,
+    box-shadow 160ms ease;
+}
+
+.menuCard:hover {
+  transform: translateY(-2px);
+}
+
+.iconBox {
+  display: grid;
+
+  width: 42px;
+  height: 42px;
+
+  place-items: center;
+
+  border-radius: 13px;
+
+  background:
+    linear-gradient(
+      145deg,
+      color-mix(
+        in srgb,
+        var(--sv-accent) 88%,
+        white
+      ),
+      var(--sv-accent)
+    );
+
+  color: white;
+
+  box-shadow:
+    0 8px 20px
+      var(--sv-accent-glow);
+}
+
+.menuCard strong {
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.themeSection {
+  display: grid;
+  gap: 10px;
+
+  border:
+    1px solid var(--border);
+
+  border-radius: 18px;
+
+  background:
+    var(--surface);
+
+  padding: 14px;
+}
+
+.sectionTitle {
+  margin: 0;
+  font-size: 13px;
+}
+
+.sectionNote {
+  margin: 3px 0 0;
+  color: var(--foreground-muted);
+  font-size: 11px;
+}
+
+.logout {
+  display: flex;
+  width: 100%;
+  min-height: 48px;
+
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+
+  border:
+    1px solid
+    color-mix(
+      in srgb,
+      var(--sv-red) 28%,
+      var(--border)
+    );
+
+  border-radius: 15px;
+
+  background:
+    color-mix(
+      in srgb,
+      var(--sv-red) 7%,
+      transparent
+    );
+
+  color: var(--sv-red);
+
+  font: inherit;
+  font-weight: 700;
+
+  cursor: pointer;
+}
+
+@media (min-width: 760px) {
+  .menuGrid {
+    grid-template-columns:
+      repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1100px) {
+  .menuGrid {
+    grid-template-columns:
+      repeat(4, minmax(0, 1fr));
+  }
+}
+
+@media (
+  prefers-reduced-motion:
+  reduce
+) {
+  .menuCard {
+    transition: none;
+  }
+}
+
+.menuCard[data-tone="violet"] {
+  --sv-accent: var(--sv-violet);
+}
+
+.menuCard[data-tone="cyan"] {
+  --sv-accent: var(--sv-cyan);
+}
+
+.menuCard[data-tone="blue"] {
+  --sv-accent: var(--sv-blue);
+}
+
+.menuCard[data-tone="teal"] {
+  --sv-accent: var(--sv-teal);
+}
+
+.menuCard[data-tone="green"] {
+  --sv-accent: var(--sv-green);
+}
+
+.menuCard[data-tone="rose"] {
+  --sv-accent: var(--sv-rose);
+}
