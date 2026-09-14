@@ -558,6 +558,17 @@ Route::prefix('v1')->group(function () {
             'capability:settings.view'
         );
 
+        Route::get(
+            '/settings/invoice-templates/{templateKey}/preview',
+            [
+                InvoiceTemplateSettingController::class,
+                'preview',
+            ]
+        )->middleware(
+            'capability:settings.view'
+        );
+
+
         Route::patch(
             '/settings/invoice-templates',
             [

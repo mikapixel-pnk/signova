@@ -423,6 +423,146 @@ class InvoiceTemplateSettingApiTest extends TestCase
         );
     }
 
+    public function test_owner_can_preview_all_starter_templates(): void
+    {
+        $workspace =
+            $this->workspace(
+                'template-preview@example.test',
+                'Template Preview'
+            );
+
+        $this->actingAsWorkspace(
+            $workspace
+        );
+
+        $cases = [
+            'classic_blue' =>
+                'classic',
+
+            'modern_emerald' =>
+                'modern',
+
+            'minimal_slate' =>
+                'minimal',
+        ];
+
+        foreach (
+            $cases
+            as $templateKey =>
+                $layout
+        ) {
+            $response =
+                $this->get(
+                    "/api/v1/settings/invoice-templates/{$templateKey}/preview"
+                )
+                    ->assertOk()
+                    ->assertHeader(
+                        'Content-Type',
+                        'text/html; charset=UTF-8'
+                    );
+
+            $this->assertStringContainsString(
+                'data-invoice-layout="'
+                . $layout
+                . '"',
+                $response->getContent()
+            );
+
+            $this->assertStringContainsString(
+                'INV-202609-0001',
+                $response->getContent()
+            );
+        }
+    }
+
+    public function test_preview_does_not_create_document_setting_row(): void
+    {
+        $workspace =
+            $this->workspace(
+                'template-preview-readonly@example.test',
+                'Template Preview Readonly'
+            );
+
+        $this->actingAsWorkspace(
+            $workspace
+        );
+
+        $this->get(
+            '/api/v1/settings/invoice-templates/classic_blue/preview'
+        )->assertOk();
+
+        $this->assertDatabaseMissing(
+            'tenant_document_settings',
+            [
+                'tenant_id' =>
+                    $workspace['tenant_id'],
+            ]
+        );
+    }
+
+    public function test_preview_unknown_template_returns_not_found(): void
+    {
+        $workspace =
+            $this->workspace(
+                'template-preview-missing@example.test',
+                'Template Preview Missing'
+            );
+
+        $this->actingAsWorkspace(
+            $workspace
+        );
+
+        $this->get(
+            '/api/v1/settings/invoice-templates/not_a_template/preview'
+        )->assertNotFound();
+    }
+
+    public function test_preview_rejects_unsupported_palette(): void
+    {
+        $workspace =
+            $this->workspace(
+                'template-preview-palette@example.test',
+                'Template Preview Palette'
+            );
+
+        $this->actingAsWorkspace(
+            $workspace
+        );
+
+        $this->getJson(
+            '/api/v1/settings/invoice-templates/classic_blue/preview?palette=emerald'
+        )
+            ->assertUnprocessable()
+            ->assertJsonPath(
+                'error.code',
+                'VALIDATION_FAILED'
+            );
+    }
+
+    public function test_settings_view_capability_is_required_for_preview(): void
+    {
+        $workspace =
+            $this->workspace(
+                'template-preview-denied@example.test',
+                'Template Preview Denied'
+            );
+
+        $this->actingAsWorkspace(
+            $workspace
+        );
+
+        $this->denyCapability(
+            $workspace,
+            'settings.view'
+        );
+
+        $this->get(
+            '/api/v1/settings/invoice-templates/classic_blue/preview'
+        )
+            ->assertForbidden();
+    }
+
+
     private function workspace(
         string $email,
         string $businessName

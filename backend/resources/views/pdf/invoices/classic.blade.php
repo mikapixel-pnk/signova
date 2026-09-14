@@ -15,7 +15,7 @@
         body {
             font-family: DejaVu Sans, sans-serif;
             font-size: 11px;
-            color: #222;
+            color: {{ $theme['text'] ?? '#222' }};
             line-height: 1.45;
         }
 
@@ -65,14 +65,14 @@
         }
 
         .items-table th {
-            background: #f1f1f1;
-            border: 1px solid #ddd;
+            background: {{ $theme['accent'] ?? '#f1f1f1' }};
+            border: 1px solid {{ $theme['border'] ?? '#ddd' }};
             padding: 7px 6px;
             font-size: 10px;
         }
 
         .items-table td {
-            border: 1px solid #ddd;
+            border: 1px solid {{ $theme['border'] ?? '#ddd' }};
             padding: 7px 6px;
             vertical-align: top;
         }
@@ -96,7 +96,7 @@
         }
 
         .summary-total td {
-            border-top: 1px solid #222;
+            border-top: 1px solid {{ $theme['primary'] ?? '#222' }};
             padding-top: 7px;
             font-weight: bold;
             font-size: 12px;
@@ -148,7 +148,7 @@
     </style>
 </head>
 
-<body>
+<body data-invoice-layout="classic">
 
 <table class="header-table">
     <tr>
