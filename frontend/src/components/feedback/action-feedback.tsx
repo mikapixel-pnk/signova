@@ -21,6 +21,7 @@ export type ActionFeedbackProps = {
   message?: string;
   requestId?: string | null;
   className?: string;
+  placement?: "inline" | "viewport";
 };
 
 const icons = {
@@ -36,6 +37,7 @@ export function ActionFeedback({
   message,
   requestId,
   className,
+  placement = "inline",
 }: ActionFeedbackProps) {
   const Icon = icons[tone];
 
@@ -44,6 +46,9 @@ export function ActionFeedback({
       className={cx(
         styles.feedback,
         styles[tone],
+        placement === "viewport"
+          ? styles.viewport
+          : undefined,
         className,
       )}
       role={tone === "error" ? "alert" : "status"}
