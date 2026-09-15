@@ -8,7 +8,10 @@ import {
 
 import type {
   QuotationCreatePayload,
+  QuotationInvoiceResponse,
   QuotationListResponse,
+  QuotationManualDecisionPayload,
+  QuotationPublicLinkResponse,
   QuotationResponse,
   QuotationStatus,
 } from "@/types/quotation";
@@ -124,5 +127,65 @@ export function quotationPdfUrl(
   return (
     `${appConfig.apiBaseUrl}` +
     `/quotations/${id}/pdf`
+  );
+}
+
+
+export async function sendQuotation(
+  id: string,
+): Promise<QuotationResponse> {
+  return authenticatedApiRequest<
+    QuotationResponse
+  >(
+    `/quotations/${id}/actions/send`,
+    {
+      method: "POST",
+    },
+  );
+}
+
+export async function issueQuotationPublicLink(
+  id: string,
+): Promise<QuotationPublicLinkResponse> {
+  return authenticatedApiRequest<
+    QuotationPublicLinkResponse
+  >(
+    `/quotations/${id}/actions/issue-public-link`,
+    {
+      method: "POST",
+    },
+  );
+}
+
+export async function recordQuotationManualDecision(
+  id: string,
+  payload: QuotationManualDecisionPayload,
+): Promise<QuotationResponse> {
+  return authenticatedApiRequest<
+    QuotationResponse
+  >(
+    `/quotations/${id}/actions/manual-decision`,
+    {
+      method: "POST",
+      body: payload,
+    },
+  );
+}
+
+export async function createInvoiceFromQuotation(
+  id: string,
+  dueAt?: string | null,
+): Promise<QuotationInvoiceResponse> {
+  return authenticatedApiRequest<
+    QuotationInvoiceResponse
+  >(
+    `/quotations/${id}/actions/create-invoice`,
+    {
+      method: "POST",
+      body: {
+        due_at:
+          dueAt ?? null,
+      },
+    },
   );
 }

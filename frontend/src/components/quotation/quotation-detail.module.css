@@ -373,3 +373,145 @@
     border-radius: 22px;
   }
 }
+
+.actionCard {
+  display: grid;
+  gap: 14px;
+  padding: 15px;
+  border: 1px solid
+    color-mix(
+      in srgb,
+      var(--sv-teal) 24%,
+      var(--border)
+    );
+  border-radius: 18px;
+  background:
+    color-mix(
+      in srgb,
+      var(--sv-teal) 5%,
+      var(--surface)
+    );
+}
+
+.actionCard > div:first-child {
+  display: grid;
+  gap: 4px;
+}
+
+.actionCard > div:first-child p {
+  margin: 0;
+  color: var(--foreground-muted);
+  font-size: 10px;
+  line-height: 1.5;
+}
+
+.lifecycleActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.publicLinkBox {
+  display: grid;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--surface);
+}
+
+.publicLinkBox > div {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.publicLinkBox span {
+  color: var(--foreground-muted);
+  font-size: 9px;
+  font-weight: 700;
+}
+
+.publicLinkBox code {
+  overflow-wrap: anywhere;
+  color: var(--foreground);
+  font-size: 10px;
+}
+
+.decisionModal {
+  display: grid;
+  grid-template-rows:
+    auto
+    minmax(0, 1fr)
+    auto;
+  width: 100%;
+  max-height: 92dvh;
+  border-radius: 22px 22px 0 0;
+  background: var(--surface);
+}
+
+.decisionBody {
+  display: grid;
+  gap: 14px;
+  overflow-y: auto;
+  padding: 18px;
+}
+
+.decisionBody label {
+  display: grid;
+  gap: 6px;
+}
+
+.decisionBody label > span {
+  color: var(--foreground-muted);
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.decisionBody select,
+.decisionBody textarea {
+  width: 100%;
+  min-height: 42px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  outline: 0;
+  background: var(--surface-muted);
+  color: var(--foreground);
+  font: inherit;
+}
+
+.decisionBody textarea {
+  min-height: 96px;
+  resize: vertical;
+}
+
+.decisionFooter {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 14px 18px;
+  border-top: 1px solid var(--border);
+}
+
+@media (min-width: 760px) {
+  .actionCard {
+    grid-template-columns:
+      minmax(0, 1fr)
+      auto;
+    align-items: center;
+  }
+
+  .publicLinkBox {
+    grid-column: 1 / -1;
+    grid-template-columns:
+      minmax(0, 1fr)
+      auto;
+    align-items: center;
+  }
+
+  .decisionModal {
+    width: min(520px, 100%);
+    border-radius: 22px;
+  }
+}

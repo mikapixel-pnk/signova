@@ -281,3 +281,53 @@ export type QuotationCreatePayload = {
   items:
     QuotationItemPayload[];
 };
+
+export type QuotationPublicLink = {
+  quotation_id: string;
+  quotation_version_id: string;
+  public_url: string;
+  expires_at: string | null;
+};
+
+export type QuotationPublicLinkResponse = {
+  success: true;
+  data: QuotationPublicLink;
+  meta: ApiMeta;
+  message?: string;
+};
+
+export type QuotationManualDecisionMethod =
+  | "SIGNATURE"
+  | "WHATSAPP"
+  | "EMAIL"
+  | "PHONE"
+  | "MEETING"
+  | "OTHER";
+
+export type QuotationManualDecisionPayload = {
+  decision:
+    | "APPROVE"
+    | "REJECT";
+
+  method:
+    QuotationManualDecisionMethod;
+
+  reason?:
+    string | null;
+
+  note?:
+    string | null;
+
+  decided_at?:
+    string | null;
+};
+
+export type QuotationInvoiceResponse = {
+  success: true;
+  data: {
+    id: string;
+    [key: string]: unknown;
+  };
+  meta: ApiMeta;
+  message?: string;
+};
