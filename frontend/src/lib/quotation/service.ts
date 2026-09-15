@@ -14,6 +14,7 @@ import type {
   QuotationManualDecisionPayload,
   QuotationPublicLinkResponse,
   QuotationResponse,
+  QuotationRevisionPayload,
   QuotationStatus,
 } from "@/types/quotation";
 
@@ -203,6 +204,23 @@ export async function updateQuotationHeader(
     `/quotations/${id}`,
     {
       method: "PATCH",
+      body: payload,
+    },
+  );
+}
+
+
+export async function createQuotationRevision(
+  id: string,
+  payload:
+    QuotationRevisionPayload,
+): Promise<QuotationResponse> {
+  return authenticatedApiRequest<
+    QuotationResponse
+  >(
+    `/quotations/${id}/versions`,
+    {
+      method: "POST",
       body: payload,
     },
   );

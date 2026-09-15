@@ -340,3 +340,19 @@ export type QuotationHeaderUpdatePayload = {
     | string
     | null;
 };
+
+export type QuotationRevisionPayload = {
+  currency?:
+    string;
+
+  terms?:
+    | string
+    | null;
+
+  notes?:
+    | string
+    | null;
+
+  items:
+    QuotationItemPayload[];
+};

@@ -516,3 +516,148 @@
     border-radius: 22px;
   }
 }
+
+.revisionModal {
+  display: grid;
+  grid-template-rows:
+    auto
+    minmax(0, 1fr)
+    auto;
+  width: 100%;
+  max-height: 94dvh;
+  border-radius: 22px 22px 0 0;
+  background: var(--surface);
+}
+
+.revisionBody {
+  display: grid;
+  gap: 16px;
+  overflow-y: auto;
+  padding: 18px;
+}
+
+.revisionToolbar,
+.revisionLineHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.revisionToolbar > div {
+  display: grid;
+  gap: 3px;
+}
+
+.revisionToolbar p {
+  margin: 0;
+  color: var(--foreground-muted);
+  font-size: 9px;
+}
+
+.revisionLines {
+  display: grid;
+  gap: 12px;
+}
+
+.revisionLine {
+  display: grid;
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: var(--surface-soft);
+}
+
+.removeRevisionButton {
+  display: grid;
+  width: 34px;
+  height: 34px;
+  place-items: center;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--danger);
+  cursor: pointer;
+}
+
+.removeRevisionButton:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.revisionGrid {
+  display: grid;
+  gap: 10px;
+}
+
+.revisionGrid label,
+.revisionNotes label {
+  display: grid;
+  gap: 5px;
+}
+
+.revisionGrid label > span,
+.revisionNotes label > span {
+  color: var(--foreground-muted);
+  font-size: 9px;
+  font-weight: 700;
+}
+
+.revisionGrid select,
+.revisionGrid input,
+.revisionNotes textarea {
+  width: 100%;
+  min-height: 42px;
+  padding: 9px 11px;
+  border: 1px solid var(--border);
+  border-radius: 11px;
+  outline: 0;
+  background: var(--surface);
+  color: var(--foreground);
+  font: inherit;
+}
+
+.revisionItemField {
+  grid-column: 1 / -1;
+}
+
+.revisionItemField small {
+  color: var(--foreground-muted);
+  font-size: 9px;
+}
+
+.revisionNotes {
+  display: grid;
+  gap: 12px;
+}
+
+.revisionNotes textarea {
+  min-height: 96px;
+  resize: vertical;
+}
+
+@media (min-width: 760px) {
+  .revisionModal {
+    width: min(980px, 100%);
+    max-height: 92dvh;
+    border-radius: 22px;
+  }
+
+  .revisionGrid {
+    grid-template-columns:
+      minmax(14rem, 2fr)
+      repeat(
+        4,
+        minmax(7rem, 0.75fr)
+      );
+  }
+
+  .revisionNotes {
+    grid-template-columns:
+      repeat(
+        2,
+        minmax(0, 1fr)
+      );
+  }
+}

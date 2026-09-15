@@ -74,6 +74,9 @@ class QuotationApiTest extends TestCase
                             'width' => '3.5',
                             'height' => '1.2',
                         ],
+
+                        'tax_rate' =>
+                            '11',
                     ],
                 ],
             ]
@@ -111,16 +114,28 @@ class QuotationApiTest extends TestCase
                 '210000.00'
             )
             ->assertJsonPath(
+                'data.current_version.tax_total',
+                '23100.00'
+            )
+            ->assertJsonPath(
                 'data.current_version.total',
-                '210000.00'
+                '233100.00'
             )
             ->assertJsonPath(
                 'data.current_version.items.0.pricing_method',
                 'AREA'
             )
             ->assertJsonPath(
+                'data.current_version.items.0.pricing_config.tax_rate',
+                '11.0000'
+            )
+            ->assertJsonPath(
+                'data.current_version.items.0.tax_amount',
+                '23100.00'
+            )
+            ->assertJsonPath(
                 'data.current_version.items.0.amount',
-                '210000.00'
+                '233100.00'
             )
             ->assertJsonMissingPath(
                 'data.tenant_id'
@@ -148,8 +163,11 @@ class QuotationApiTest extends TestCase
                 'subtotal' =>
                     210000,
 
+                'tax_total' =>
+                    23100,
+
                 'total' =>
-                    210000,
+                    233100,
             ]
         );
     }

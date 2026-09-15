@@ -10,7 +10,9 @@ import {
   FileText,
   Link2,
   Pencil,
+  Plus,
   ReceiptText,
+  Trash2,
   Send,
   UserRound,
   X,
@@ -53,11 +55,17 @@ import {
 } from "@/lib/customer/service";
 
 import {
+  listCatalogItems,
+  listCatalogUnits,
+} from "@/lib/catalog/service";
+
+import {
   getModule,
 } from "@/lib/module/registry";
 
 import {
   createInvoiceFromQuotation,
+  createQuotationRevision,
   getQuotation,
   issueQuotationPublicLink,
   quotationPdfUrl,
@@ -65,6 +73,11 @@ import {
   sendQuotation,
   updateQuotationHeader,
 } from "@/lib/quotation/service";
+
+import type {
+  CatalogItem,
+  CatalogUnit,
+} from "@/types/catalog";
 
 import type {
   Customer,
@@ -77,6 +90,38 @@ import type {
 } from "@/types/quotation";
 
 import styles from "./quotation-detail.module.css";
+
+type RevisionLine = {
+  key: string;
+  catalogItemId: string;
+  quantity: string;
+  unitPrice: string;
+  discountAmount: string;
+  taxRate: string;
+  width: string;
+  height: string;
+  depth: string;
+  length: string;
+  duration: string;
+};
+
+function revisionKey(): string {
+  return (
+    globalThis.crypto?.randomUUID?.()
+    ?? `${Date.now()}-${Math.random()}`
+  );
+}
+
+function numeric(
+  value: string,
+): number {
+  const result =
+    Number(value);
+
+  return Number.isFinite(result)
+    ? result
+    : 0;
+}
 
 function statusLabel(
   status: QuotationStatus,
@@ -260,6 +305,36 @@ export function QuotationDetail() {
     setHeaderValidUntil,
   ] = useState("");
 
+  const [
+    revisionOpen,
+    setRevisionOpen,
+  ] = useState(false);
+
+  const [
+    revisionItems,
+    setRevisionItems,
+  ] = useState<CatalogItem[]>([]);
+
+  const [
+    revisionUnits,
+    setRevisionUnits,
+  ] = useState<CatalogUnit[]>([]);
+
+  const [
+    revisionLines,
+    setRevisionLines,
+  ] = useState<RevisionLine[]>([]);
+
+  const [
+    revisionNotes,
+    setRevisionNotes,
+  ] = useState("");
+
+  const [
+    revisionTerms,
+    setRevisionTerms,
+  ] = useState("");
+
   useEffect(() => {
     if (!actionSuccess) {
       return;
@@ -319,6 +394,354 @@ export function QuotationDetail() {
   }, [
     params.id,
   ]);
+
+  async function openRevisionEditor() {
+    if (
+      !quotation ||
+      !quotation.current_version
+    ) {
+      return;
+    }
+
+    setActionError(null);
+
+    try {
+      const [
+        catalogResponse,
+        unitResponse,
+      ] = await Promise.all([
+        listCatalogItems({
+          status: "ACTIVE",
+          page: 1,
+        }),
+        listCatalogUnits(),
+      ]);
+
+      setRevisionItems(
+        catalogResponse.data,
+      );
+
+      setRevisionUnits(
+        unitResponse.data,
+      );
+
+      setRevisionNotes(
+        quotation.current_version.notes ??
+          "",
+      );
+
+      setRevisionTerms(
+        quotation.current_version.terms ??
+          "",
+      );
+
+      setRevisionLines(
+        quotation.current_version.items.map(
+          (item) => {
+            const config =
+              item.pricing_config &&
+              typeof item.pricing_config ===
+                "object"
+                ? item.pricing_config
+                : {};
+
+            return {
+              key:
+                revisionKey(),
+              catalogItemId:
+                item.catalog_item_id ??
+                "",
+              quantity:
+                String(
+                  item.quantity,
+                ),
+              unitPrice:
+                String(
+                  item.unit_price,
+                ),
+              discountAmount:
+                String(
+                  item.discount_amount,
+                ),
+              taxRate:
+                String(
+                  (
+                    config as
+                      Record<
+                        string,
+                        unknown
+                      >
+                  ).tax_rate ??
+                    0,
+                ),
+              width:
+                String(
+                  (
+                    config as
+                      Record<
+                        string,
+                        unknown
+                      >
+                  ).width ??
+                    "",
+                ),
+              height:
+                String(
+                  (
+                    config as
+                      Record<
+                        string,
+                        unknown
+                      >
+                  ).height ??
+                    "",
+                ),
+              depth:
+                String(
+                  (
+                    config as
+                      Record<
+                        string,
+                        unknown
+                      >
+                  ).depth ??
+                    "",
+                ),
+              length:
+                String(
+                  (
+                    config as
+                      Record<
+                        string,
+                        unknown
+                      >
+                  ).length ??
+                    "",
+                ),
+              duration:
+                String(
+                  (
+                    config as
+                      Record<
+                        string,
+                        unknown
+                      >
+                  ).duration ??
+                    "",
+                ),
+            };
+          },
+        ),
+      );
+
+      setRevisionOpen(true);
+    } catch (caught) {
+      setActionError(caught);
+    }
+  }
+
+  function updateRevisionLine(
+    key: string,
+    patch: Partial<RevisionLine>,
+  ) {
+    setRevisionLines(
+      (current) =>
+        current.map(
+          (line) =>
+            line.key === key
+              ? {
+                  ...line,
+                  ...patch,
+                }
+              : line,
+        ),
+    );
+  }
+
+  function addRevisionLine() {
+    setRevisionLines(
+      (current) => [
+        ...current,
+        {
+          key:
+            revisionKey(),
+          catalogItemId: "",
+          quantity: "1",
+          unitPrice: "",
+          discountAmount: "0",
+          taxRate: "0",
+          width: "",
+          height: "",
+          depth: "",
+          length: "",
+          duration: "",
+        },
+      ],
+    );
+  }
+
+  function removeRevisionLine(
+    key: string,
+  ) {
+    setRevisionLines(
+      (current) =>
+        current.length <= 1
+          ? current
+          : current.filter(
+              (line) =>
+                line.key !== key,
+            ),
+    );
+  }
+
+  async function handleRevisionSave() {
+    if (
+      !quotation ||
+      !quotation.current_version
+    ) {
+      return;
+    }
+
+    if (
+      revisionLines.length === 0 ||
+      revisionLines.some(
+        (line) =>
+          !line.catalogItemId,
+      )
+    ) {
+      setActionError(
+        new Error(
+          "Setiap baris revisi harus memilih Barang & Jasa.",
+        ),
+      );
+      return;
+    }
+
+    setActionLoading(true);
+    setActionError(null);
+
+    try {
+      const payloadItems =
+        revisionLines.map(
+          (
+            line,
+            index,
+          ) => {
+            const catalogItem =
+              revisionItems.find(
+                (item) =>
+                  item.id ===
+                  line.catalogItemId,
+              );
+
+            if (!catalogItem) {
+              throw new Error(
+                "Barang & Jasa pada revisi tidak ditemukan.",
+              );
+            }
+
+            const config:
+              Record<
+                string,
+                number
+              > = {};
+
+            const fields = [
+              "width",
+              "height",
+              "depth",
+              "length",
+              "duration",
+            ] as const;
+
+            for (
+              const field
+              of fields
+            ) {
+              const value =
+                numeric(
+                  line[field],
+                );
+
+              if (value > 0) {
+                config[field] =
+                  value;
+              }
+            }
+
+            return {
+              catalog_item_id:
+                catalogItem.id,
+              unit_id:
+                catalogItem.unit_id,
+              item_type:
+                catalogItem.type,
+              quantity:
+                numeric(
+                  line.quantity,
+                ),
+              pricing_config:
+                Object.keys(
+                  config,
+                ).length > 0
+                  ? config
+                  : null,
+              unit_price:
+                numeric(
+                  line.unitPrice,
+                ),
+              discount_amount:
+                numeric(
+                  line.discountAmount,
+                ),
+              tax_rate:
+                numeric(
+                  line.taxRate,
+                ),
+              sort_order:
+                index,
+            };
+          },
+        );
+
+      const response =
+        await createQuotationRevision(
+          quotation.id,
+          {
+            currency:
+              quotation.current_version.currency,
+            notes:
+              revisionNotes.trim() ||
+              null,
+            terms:
+              revisionTerms.trim() ||
+              null,
+            items:
+              payloadItems,
+          },
+        );
+
+      setQuotation(
+        response.data,
+      );
+
+      setRevisionOpen(false);
+
+      setActionSuccess(
+        `Revisi REV-${String(
+          response.data.current_version
+            ?.revision_no ?? "",
+        ).padStart(
+          2,
+          "0",
+        )} berhasil dibuat.`,
+      );
+    } catch (caught) {
+      setActionError(caught);
+    } finally {
+      setActionLoading(false);
+    }
+  }
 
   async function openHeaderEditor() {
     if (!quotation) {
@@ -797,6 +1220,30 @@ export function QuotationDetail() {
             styles.lifecycleActions
           }
         >
+          {quotation.status ===
+            "DRAFT" ||
+          quotation.status ===
+            "REJECTED" ? (
+            <Button
+              type="button"
+              variant="secondary"
+              disabled={
+                actionLoading
+              }
+              leadingIcon={
+                <FileText
+                  size={17}
+                />
+              }
+              onClick={
+                () =>
+                  void openRevisionEditor()
+              }
+            >
+              Buat Revisi
+            </Button>
+          ) : null}
+
           {quotation.status ===
           "DRAFT" ? (
             <Button
@@ -1277,6 +1724,470 @@ export function QuotationDetail() {
           </p>
         </section>
       </div>
+
+      {revisionOpen ? (
+        <div
+          className={
+            styles.previewBackdrop
+          }
+          role="presentation"
+        >
+          <section
+            className={
+              styles.revisionModal
+            }
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="quotation-revision-title"
+          >
+            <header
+              className={
+                styles.previewHeader
+              }
+            >
+              <div>
+                <span>
+                  REVISI PENAWARAN
+                </span>
+
+                <h2
+                  id="quotation-revision-title"
+                >
+                  Buat Revisi Baru
+                </h2>
+              </div>
+
+              <button
+                type="button"
+                className={
+                  styles.closeButton
+                }
+                disabled={
+                  actionLoading
+                }
+                onClick={
+                  () =>
+                    setRevisionOpen(
+                      false,
+                    )
+                }
+                aria-label="Tutup"
+              >
+                <X size={20} />
+              </button>
+            </header>
+
+            <div
+              className={
+                styles.revisionBody
+              }
+            >
+              <ActionFeedback
+                tone="info"
+                title="Versi lama tetap tersimpan"
+                message="Perubahan ini akan membuat revisi baru tanpa mengubah nomor Penawaran atau menghapus versi sebelumnya."
+              />
+
+              <div
+                className={
+                  styles.revisionToolbar
+                }
+              >
+                <div>
+                  <strong>
+                    Item Revisi
+                  </strong>
+                  <p>
+                    Ubah qty, harga,
+                    diskon atau dimensi
+                    sesuai kebutuhan.
+                  </p>
+                </div>
+
+                <Button
+                  type="button"
+                  variant="secondary"
+                  leadingIcon={
+                    <Plus size={16} />
+                  }
+                  onClick={
+                    addRevisionLine
+                  }
+                >
+                  Tambah Item
+                </Button>
+              </div>
+
+              <div
+                className={
+                  styles.revisionLines
+                }
+              >
+                {revisionLines.map(
+                  (
+                    line,
+                    index,
+                  ) => {
+                    const catalogItem =
+                      revisionItems.find(
+                        (item) =>
+                          item.id ===
+                          line.catalogItemId,
+                      );
+
+                    const unit =
+                      catalogItem?.unit_id
+                        ? revisionUnits.find(
+                            (item) =>
+                              item.id ===
+                              catalogItem.unit_id,
+                          )
+                        : undefined;
+
+                    return (
+                      <article
+                        key={
+                          line.key
+                        }
+                        className={
+                          styles.revisionLine
+                        }
+                      >
+                        <div
+                          className={
+                            styles.revisionLineHeader
+                          }
+                        >
+                          <strong>
+                            Item{" "}
+                            {index + 1}
+                          </strong>
+
+                          <button
+                            type="button"
+                            className={
+                              styles.removeRevisionButton
+                            }
+                            disabled={
+                              revisionLines.length <=
+                              1
+                            }
+                            onClick={
+                              () =>
+                                removeRevisionLine(
+                                  line.key,
+                                )
+                            }
+                            aria-label="Hapus item revisi"
+                          >
+                            <Trash2
+                              size={16}
+                            />
+                          </button>
+                        </div>
+
+                        <div
+                          className={
+                            styles.revisionGrid
+                          }
+                        >
+                          <label
+                            className={
+                              styles.revisionItemField
+                            }
+                          >
+                            <span>
+                              Barang & Jasa *
+                            </span>
+
+                            <select
+                              value={
+                                line.catalogItemId
+                              }
+                              onChange={
+                                (event) => {
+                                  const selected =
+                                    revisionItems.find(
+                                      (item) =>
+                                        item.id ===
+                                        event.target
+                                          .value,
+                                    );
+
+                                  updateRevisionLine(
+                                    line.key,
+                                    {
+                                      catalogItemId:
+                                        event.target
+                                          .value,
+                                      unitPrice:
+                                        selected
+                                          ? String(
+                                              selected.base_price,
+                                            )
+                                          : "",
+                                    },
+                                  );
+                                }
+                              }
+                            >
+                              <option value="">
+                                Pilih Barang & Jasa
+                              </option>
+
+                              {revisionItems.map(
+                                (item) => (
+                                  <option
+                                    key={
+                                      item.id
+                                    }
+                                    value={
+                                      item.id
+                                    }
+                                  >
+                                    {item.name}
+                                  </option>
+                                ),
+                              )}
+                            </select>
+
+                            {unit ? (
+                              <small>
+                                {unit.symbol ??
+                                  unit.name}
+                              </small>
+                            ) : null}
+                          </label>
+
+                          <label>
+                            <span>Qty</span>
+                            <input
+                              type="number"
+                              min="0.01"
+                              step="any"
+                              value={
+                                line.quantity
+                              }
+                              onChange={
+                                (event) =>
+                                  updateRevisionLine(
+                                    line.key,
+                                    {
+                                      quantity:
+                                        event.target
+                                          .value,
+                                    },
+                                  )
+                              }
+                            />
+                          </label>
+
+                          <label>
+                            <span>Harga</span>
+                            <input
+                              type="number"
+                              min="0"
+                              step="any"
+                              value={
+                                line.unitPrice
+                              }
+                              onChange={
+                                (event) =>
+                                  updateRevisionLine(
+                                    line.key,
+                                    {
+                                      unitPrice:
+                                        event.target
+                                          .value,
+                                    },
+                                  )
+                              }
+                            />
+                          </label>
+
+                          <label>
+                            <span>Diskon</span>
+                            <input
+                              type="number"
+                              min="0"
+                              step="any"
+                              value={
+                                line.discountAmount
+                              }
+                              onChange={
+                                (event) =>
+                                  updateRevisionLine(
+                                    line.key,
+                                    {
+                                      discountAmount:
+                                        event.target
+                                          .value,
+                                    },
+                                  )
+                              }
+                            />
+                          </label>
+
+                          <label>
+                            <span>Pajak %</span>
+                            <input
+                              type="number"
+                              min="0"
+                              max="100"
+                              step="any"
+                              value={
+                                line.taxRate
+                              }
+                              onChange={
+                                (event) =>
+                                  updateRevisionLine(
+                                    line.key,
+                                    {
+                                      taxRate:
+                                        event.target
+                                          .value,
+                                    },
+                                  )
+                              }
+                            />
+                          </label>
+
+                          {[
+                            ["width", "Lebar"],
+                            ["height", "Tinggi"],
+                            ["depth", "Kedalaman"],
+                            ["length", "Panjang"],
+                            ["duration", "Durasi"],
+                          ].map(
+                            ([field, label]) => (
+                              <label
+                                key={field}
+                              >
+                                <span>
+                                  {label}
+                                </span>
+
+                                <input
+                                  type="number"
+                                  min="0"
+                                  step="any"
+                                  value={
+                                    line[
+                                      field as
+                                        | "width"
+                                        | "height"
+                                        | "depth"
+                                        | "length"
+                                        | "duration"
+                                    ]
+                                  }
+                                  onChange={
+                                    (event) =>
+                                      updateRevisionLine(
+                                        line.key,
+                                        {
+                                          [field]:
+                                            event.target
+                                              .value,
+                                        },
+                                      )
+                                  }
+                                />
+                              </label>
+                            ),
+                          )}
+                        </div>
+                      </article>
+                    );
+                  },
+                )}
+              </div>
+
+              <div
+                className={
+                  styles.revisionNotes
+                }
+              >
+                <label>
+                  <span>
+                    Catatan
+                  </span>
+
+                  <textarea
+                    rows={4}
+                    value={
+                      revisionNotes
+                    }
+                    onChange={
+                      (event) =>
+                        setRevisionNotes(
+                          event.target
+                            .value,
+                        )
+                    }
+                  />
+                </label>
+
+                <label>
+                  <span>
+                    Syarat & Ketentuan
+                  </span>
+
+                  <textarea
+                    rows={4}
+                    value={
+                      revisionTerms
+                    }
+                    onChange={
+                      (event) =>
+                        setRevisionTerms(
+                          event.target
+                            .value,
+                        )
+                    }
+                  />
+                </label>
+              </div>
+            </div>
+
+            <footer
+              className={
+                styles.decisionFooter
+              }
+            >
+              <Button
+                type="button"
+                variant="secondary"
+                disabled={
+                  actionLoading
+                }
+                onClick={
+                  () =>
+                    setRevisionOpen(
+                      false,
+                    )
+                }
+              >
+                Batal
+              </Button>
+
+              <Button
+                type="button"
+                loading={
+                  actionLoading
+                }
+                loadingLabel="Membuat Revisi..."
+                onClick={
+                  () =>
+                    void handleRevisionSave()
+                }
+              >
+                Buat Revisi Baru
+              </Button>
+            </footer>
+          </section>
+        </div>
+      ) : null}
 
       {headerOpen ? (
         <div
