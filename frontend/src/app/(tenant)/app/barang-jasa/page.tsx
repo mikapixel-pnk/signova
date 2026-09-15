@@ -184,6 +184,21 @@ export default function CatalogPage() {
   >([]);
 
   const [
+    page,
+    setPage,
+  ] = useState(1);
+
+  const [
+    total,
+    setTotal,
+  ] = useState(0);
+
+  const [
+    lastPage,
+    setLastPage,
+  ] = useState(1);
+
+  const [
     loading,
     setLoading,
   ] = useState(true);
@@ -304,10 +319,19 @@ export default function CatalogPage() {
                 "ALL"
                   ? undefined
                   : typeFilter,
+              page,
             });
 
           setItems(
             response.data,
+          );
+
+          setTotal(
+            response.meta.total,
+          );
+
+          setLastPage(
+            response.meta.last_page,
           );
         } catch (caught) {
           setError(caught);
@@ -321,6 +345,7 @@ export default function CatalogPage() {
         search,
         statusFilter,
         typeFilter,
+        page,
       ],
     );
 
@@ -720,13 +745,15 @@ export default function CatalogPage() {
               value={search}
               onChange={(
                 event,
-              ) =>
+              ) => {
+                setPage(1);
+
                 setSearch(
                   event
                     .target
                     .value,
-                )
-              }
+                );
+              }}
               placeholder="Cari nama atau kode..."
               aria-label="Cari barang dan jasa"
             />
@@ -771,11 +798,13 @@ export default function CatalogPage() {
                         ? styles.filterActive
                         : styles.filter
                     }
-                    onClick={() =>
+                    onClick={() => {
+                      setPage(1);
+
                       setTypeFilter(
                         value,
-                      )
-                    }
+                      );
+                    }}
                   >
                     {label}
                   </button>
@@ -817,11 +846,13 @@ export default function CatalogPage() {
                         ? styles.filterActive
                         : styles.filter
                     }
-                    onClick={() =>
+                    onClick={() => {
+                      setPage(1);
+
                       setStatusFilter(
                         value,
-                      )
-                    }
+                      );
+                    }}
                   >
                     {label}
                   </button>
@@ -838,7 +869,7 @@ export default function CatalogPage() {
         >
           {loading
             ? "Memuat barang & jasa..."
-            : `${items.length} data pada halaman ini`}
+            : `${total} barang & jasa`}
         </div>
 
         {success ? (
@@ -1214,6 +1245,67 @@ export default function CatalogPage() {
               </table>
             </div>
           </>
+        ) : null}
+
+        {!loading &&
+        !error &&
+        lastPage > 1 ? (
+          <nav
+            className={
+              styles.pagination
+            }
+            aria-label="Navigasi halaman barang dan jasa"
+          >
+            <button
+              type="button"
+              className={
+                styles.pageButton
+              }
+              disabled={
+                page <= 1
+              }
+              onClick={() =>
+                setPage(
+                  (current) =>
+                    Math.max(
+                      1,
+                      current - 1,
+                    ),
+                )
+              }
+            >
+              Sebelumnya
+            </button>
+
+            <span
+              className={
+                styles.pageInfo
+              }
+            >
+              Halaman {page} dari {lastPage}
+            </span>
+
+            <button
+              type="button"
+              className={
+                styles.pageButton
+              }
+              disabled={
+                page >= lastPage
+              }
+              onClick={() =>
+                setPage(
+                  (current) =>
+                    Math.min(
+                      lastPage,
+                      current + 1,
+                    ),
+                )
+              }
+            >
+              Berikutnya
+            </button>
+          </nav>
         ) : null}
 
         <ModuleFooterCard

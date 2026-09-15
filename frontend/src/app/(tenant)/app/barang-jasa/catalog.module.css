@@ -1832,3 +1832,96 @@
   }
 }
 
+
+
+.pagination {
+  display: flex;
+
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+
+  border:
+    1px solid
+    var(--border);
+
+  border-radius: 16px;
+
+  padding: 10px 12px;
+
+  background:
+    var(--surface);
+}
+
+.pageButton {
+  min-height: 38px;
+
+  border:
+    1px solid
+    var(--border);
+
+  border-radius: 11px;
+
+  padding:
+    0 12px;
+
+  background:
+    var(--surface);
+
+  color:
+    var(--foreground);
+
+  font-size: 11px;
+  font-weight: 750;
+
+  cursor: pointer;
+}
+
+.pageButton:hover:not(:disabled) {
+  border-color:
+    color-mix(
+      in srgb,
+      var(--sv-cyan) 35%,
+      var(--border)
+    );
+
+  background:
+    color-mix(
+      in srgb,
+      var(--sv-cyan) 7%,
+      var(--surface)
+    );
+}
+
+.pageButton:disabled {
+  opacity: 0.42;
+  cursor: not-allowed;
+}
+
+.pageInfo {
+  color:
+    var(--foreground-muted);
+
+  font-size: 10px;
+  font-weight: 700;
+
+  text-align: center;
+}
+
+
+@media (max-width: 480px) {
+  .pagination {
+    gap: 8px;
+  }
+
+  .pageButton {
+    padding:
+      0 10px;
+
+    font-size: 10px;
+  }
+
+  .pageInfo {
+    font-size: 9px;
+  }
+}
