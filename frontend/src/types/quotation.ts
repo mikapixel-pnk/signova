@@ -331,3 +331,12 @@ export type QuotationInvoiceResponse = {
   meta: ApiMeta;
   message?: string;
 };
+
+export type QuotationHeaderUpdatePayload = {
+  customer_id?:
+    string;
+
+  valid_until?:
+    | string
+    | null;
+};

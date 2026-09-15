@@ -469,6 +469,7 @@
 }
 
 .decisionBody select,
+.decisionBody input,
 .decisionBody textarea {
   width: 100%;
   min-height: 42px;

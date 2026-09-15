@@ -8,6 +8,7 @@ import {
 
 import type {
   QuotationCreatePayload,
+  QuotationHeaderUpdatePayload,
   QuotationInvoiceResponse,
   QuotationListResponse,
   QuotationManualDecisionPayload,
@@ -186,6 +187,23 @@ export async function createInvoiceFromQuotation(
         due_at:
           dueAt ?? null,
       },
+    },
+  );
+}
+
+
+export async function updateQuotationHeader(
+  id: string,
+  payload:
+    QuotationHeaderUpdatePayload,
+): Promise<QuotationResponse> {
+  return authenticatedApiRequest<
+    QuotationResponse
+  >(
+    `/quotations/${id}`,
+    {
+      method: "PATCH",
+      body: payload,
     },
   );
 }

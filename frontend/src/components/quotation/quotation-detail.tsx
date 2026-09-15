@@ -9,6 +9,7 @@ import {
   FileDown,
   FileText,
   Link2,
+  Pencil,
   ReceiptText,
   Send,
   UserRound,
@@ -48,6 +49,10 @@ import {
 } from "@/lib/format/currency";
 
 import {
+  listCustomers,
+} from "@/lib/customer/service";
+
+import {
   getModule,
 } from "@/lib/module/registry";
 
@@ -58,7 +63,12 @@ import {
   quotationPdfUrl,
   recordQuotationManualDecision,
   sendQuotation,
+  updateQuotationHeader,
 } from "@/lib/quotation/service";
+
+import type {
+  Customer,
+} from "@/types/customer";
 
 import type {
   Quotation,
@@ -230,6 +240,26 @@ export function QuotationDetail() {
     setDecisionNote,
   ] = useState("");
 
+  const [
+    headerOpen,
+    setHeaderOpen,
+  ] = useState(false);
+
+  const [
+    headerCustomers,
+    setHeaderCustomers,
+  ] = useState<Customer[]>([]);
+
+  const [
+    headerCustomerId,
+    setHeaderCustomerId,
+  ] = useState("");
+
+  const [
+    headerValidUntil,
+    setHeaderValidUntil,
+  ] = useState("");
+
   useEffect(() => {
     if (!actionSuccess) {
       return;
@@ -289,6 +319,113 @@ export function QuotationDetail() {
   }, [
     params.id,
   ]);
+
+  async function openHeaderEditor() {
+    if (!quotation) {
+      return;
+    }
+
+    setActionError(null);
+    setHeaderCustomerId(
+      quotation.customer_id,
+    );
+    setHeaderValidUntil(
+      quotation.valid_until ?? "",
+    );
+
+    try {
+      const response =
+        await listCustomers({
+          status: "ACTIVE",
+          page: 1,
+        });
+
+      const options =
+        [...response.data];
+
+      if (
+        quotation.customer &&
+        !options.some(
+          (customer) =>
+            customer.id ===
+            quotation.customer_id,
+        )
+      ) {
+        options.unshift({
+          id:
+            quotation.customer.id,
+          type: "COMPANY",
+          code:
+            quotation.customer.code,
+          name:
+            quotation.customer.name,
+          phone: null,
+          email: null,
+          tax_id: null,
+          payment_terms_days:
+            null,
+          notes: null,
+          status: "INACTIVE",
+          created_at: null,
+          updated_at: null,
+        });
+      }
+
+      setHeaderCustomers(
+        options,
+      );
+
+      setHeaderOpen(true);
+    } catch (caught) {
+      setActionError(caught);
+    }
+  }
+
+  async function handleHeaderSave() {
+    if (!quotation) {
+      return;
+    }
+
+    if (!headerCustomerId) {
+      setActionError(
+        new Error(
+          "Pilih pelanggan terlebih dahulu.",
+        ),
+      );
+      return;
+    }
+
+    setActionLoading(true);
+    setActionError(null);
+
+    try {
+      const response =
+        await updateQuotationHeader(
+          quotation.id,
+          {
+            customer_id:
+              headerCustomerId,
+            valid_until:
+              headerValidUntil ||
+              null,
+          },
+        );
+
+      setQuotation(
+        response.data,
+      );
+
+      setHeaderOpen(false);
+
+      setActionSuccess(
+        "Informasi penawaran berhasil diperbarui.",
+      );
+    } catch (caught) {
+      setActionError(caught);
+    } finally {
+      setActionLoading(false);
+    }
+  }
 
   async function reloadQuotation() {
     const response =
@@ -660,6 +797,26 @@ export function QuotationDetail() {
             styles.lifecycleActions
           }
         >
+          {quotation.status ===
+          "DRAFT" ? (
+            <Button
+              type="button"
+              variant="secondary"
+              disabled={
+                actionLoading
+              }
+              leadingIcon={
+                <Pencil size={17} />
+              }
+              onClick={
+                () =>
+                  void openHeaderEditor()
+              }
+            >
+              Edit Informasi
+            </Button>
+          ) : null}
+
           {quotation.status ===
           "DRAFT" ? (
             <Button
@@ -1120,6 +1277,167 @@ export function QuotationDetail() {
           </p>
         </section>
       </div>
+
+      {headerOpen ? (
+        <div
+          className={
+            styles.previewBackdrop
+          }
+          role="presentation"
+        >
+          <section
+            className={
+              styles.decisionModal
+            }
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="quotation-header-title"
+          >
+            <header
+              className={
+                styles.previewHeader
+              }
+            >
+              <div>
+                <span>
+                  EDIT INFORMASI
+                </span>
+
+                <h2
+                  id="quotation-header-title"
+                >
+                  Informasi Penawaran
+                </h2>
+              </div>
+
+              <button
+                type="button"
+                className={
+                  styles.closeButton
+                }
+                disabled={
+                  actionLoading
+                }
+                onClick={
+                  () =>
+                    setHeaderOpen(
+                      false,
+                    )
+                }
+                aria-label="Tutup"
+              >
+                <X size={20} />
+              </button>
+            </header>
+
+            <div
+              className={
+                styles.decisionBody
+              }
+            >
+              <ActionFeedback
+                tone="info"
+                title="Hanya informasi utama"
+                message="Barang, harga, catatan dan syarat tidak diubah di sini. Perubahan isi harus dibuat sebagai revisi baru."
+              />
+
+              <label>
+                <span>
+                  Pelanggan *
+                </span>
+
+                <select
+                  value={
+                    headerCustomerId
+                  }
+                  onChange={
+                    (event) =>
+                      setHeaderCustomerId(
+                        event.target
+                          .value,
+                      )
+                  }
+                >
+                  <option value="">
+                    Pilih pelanggan
+                  </option>
+
+                  {headerCustomers.map(
+                    (customer) => (
+                      <option
+                        key={
+                          customer.id
+                        }
+                        value={
+                          customer.id
+                        }
+                      >
+                        {customer.name}
+                      </option>
+                    ),
+                  )}
+                </select>
+              </label>
+
+              <label>
+                <span>
+                  Berlaku Sampai
+                </span>
+
+                <input
+                  type="date"
+                  value={
+                    headerValidUntil
+                  }
+                  onChange={
+                    (event) =>
+                      setHeaderValidUntil(
+                        event.target
+                          .value,
+                      )
+                  }
+                />
+              </label>
+            </div>
+
+            <footer
+              className={
+                styles.decisionFooter
+              }
+            >
+              <Button
+                type="button"
+                variant="secondary"
+                disabled={
+                  actionLoading
+                }
+                onClick={
+                  () =>
+                    setHeaderOpen(
+                      false,
+                    )
+                }
+              >
+                Batal
+              </Button>
+
+              <Button
+                type="button"
+                loading={
+                  actionLoading
+                }
+                loadingLabel="Menyimpan..."
+                onClick={
+                  () =>
+                    void handleHeaderSave()
+                }
+              >
+                Simpan Perubahan
+              </Button>
+            </footer>
+          </section>
+        </div>
+      ) : null}
 
       {decisionOpen ? (
         <div
