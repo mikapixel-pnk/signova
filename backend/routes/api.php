@@ -204,14 +204,6 @@ Route::prefix('v1')->group(function () {
 
 
         Route::post(
-            '/quotations/{quotationId}/actions/manual-decision',
-            [QuotationController::class, 'manualDecision']
-        )->middleware(
-            'capability:quotation.issue'
-        );
-
-
-        Route::post(
             '/quotations/{quotationId}/actions/issue-public-link',
             [QuotationController::class, 'issuePublicLink']
         )->middleware(
