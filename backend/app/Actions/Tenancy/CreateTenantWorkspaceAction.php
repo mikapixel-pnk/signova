@@ -23,6 +23,7 @@ class CreateTenantWorkspaceAction
 
             $userId = (string) Str::ulid();
             $tenantId = (string) Str::ulid();
+            $businessProfileId = (string) Str::ulid();
             $roleId = (string) Str::ulid();
 
             $email = Str::lower(trim($data['email']));
@@ -54,6 +55,26 @@ class CreateTenantWorkspaceAction
                 'timezone' => $timezone,
                 'locale' => $locale,
                 'primary_owner_user_id' => $userId,
+                'created_at' => $now,
+                'updated_at' => $now,
+            ]);
+
+            DB::table('business_profiles')->insert([
+                'id' => $businessProfileId,
+                'tenant_id' => $tenantId,
+                'name' => $tenantName,
+                'legal_name' => null,
+                'address' => null,
+                'city' => null,
+                'province' => null,
+                'postal_code' => null,
+                'phone' => null,
+                'whatsapp' => null,
+                'email' => null,
+                'website' => null,
+                'tax_id' => null,
+                'is_default' => true,
+                'status' => 'ACTIVE',
                 'created_at' => $now,
                 'updated_at' => $now,
             ]);

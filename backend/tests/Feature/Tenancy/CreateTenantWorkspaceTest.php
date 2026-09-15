@@ -43,6 +43,13 @@ class CreateTenantWorkspaceTest extends TestCase
             'primary_owner_user_id' => $result['user_id'],
         ]);
 
+        $this->assertDatabaseHas('business_profiles', [
+            'tenant_id' => $result['tenant_id'],
+            'name' => 'Usaha Test',
+            'is_default' => true,
+            'status' => 'ACTIVE',
+        ]);
+
         $this->assertDatabaseHas('tenant_users', [
             'tenant_id' => $result['tenant_id'],
             'user_id' => $result['user_id'],
@@ -100,6 +107,7 @@ class CreateTenantWorkspaceTest extends TestCase
         $before = [
             'users' => DB::table('users')->count(),
             'tenants' => DB::table('tenants')->count(),
+            'business_profiles' => DB::table('business_profiles')->count(),
             'memberships' => DB::table('tenant_users')->count(),
             'roles' => DB::table('roles')->count(),
             'assignments' => DB::table('tenant_user_roles')->count(),
@@ -121,6 +129,7 @@ class CreateTenantWorkspaceTest extends TestCase
         $after = [
             'users' => DB::table('users')->count(),
             'tenants' => DB::table('tenants')->count(),
+            'business_profiles' => DB::table('business_profiles')->count(),
             'memberships' => DB::table('tenant_users')->count(),
             'roles' => DB::table('roles')->count(),
             'assignments' => DB::table('tenant_user_roles')->count(),
@@ -163,6 +172,10 @@ class CreateTenantWorkspaceTest extends TestCase
         ]);
 
         $this->assertDatabaseMissing('tenants', [
+            'name' => 'Rollback Workspace',
+        ]);
+
+        $this->assertDatabaseMissing('business_profiles', [
             'name' => 'Rollback Workspace',
         ]);
     }
