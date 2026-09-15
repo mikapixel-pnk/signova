@@ -1,0 +1,441 @@
+.page {
+  display: grid;
+  gap: 1.25rem;
+}
+
+.workspace {
+  display: grid;
+  gap: 1rem;
+  padding: 1rem;
+  border: 1px solid var(--border);
+  border-radius: 1.25rem;
+  background: var(--surface);
+}
+
+.toolbar {
+  display: grid;
+  gap: 0.85rem;
+}
+
+.search {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  min-height: 2.8rem;
+  padding: 0 0.85rem;
+  border: 1px solid var(--border);
+  border-radius: 0.9rem;
+  background: var(--surface-muted);
+}
+
+.search input {
+  width: 100%;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+}
+
+.statusFilters {
+  display: flex;
+  gap: 0.5rem;
+  overflow-x: auto;
+  padding-bottom: 0.2rem;
+}
+
+.statusButton,
+.statusActive {
+  flex: 0 0 auto;
+  min-height: 2.35rem;
+  padding: 0 0.8rem;
+  border-radius: 999px;
+  font: inherit;
+  font-size: 0.84rem;
+  cursor: pointer;
+}
+
+.statusButton {
+  border: 1px solid var(--border);
+  background: var(--surface-muted);
+  color: var(--foreground-muted);
+}
+
+.statusActive {
+  border: 1px solid transparent;
+  background: var(--accent-soft);
+  color: var(--foreground);
+  font-weight: 700;
+}
+
+.summaryRow,
+.pagination,
+.cardMeta,
+.cardTop,
+.lineHeader,
+.lineTotal,
+.modalFooter,
+.sectionHeading,
+.totalCard > div {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.summaryRow {
+  color: var(--foreground-muted);
+  font-size: 0.88rem;
+}
+
+.summaryRow > div {
+  display: flex;
+  gap: 0.35rem;
+}
+
+.emptyState {
+  display: grid;
+  justify-items: center;
+  gap: 0.7rem;
+  padding: 3.5rem 1.25rem;
+  text-align: center;
+  color: var(--foreground-muted);
+}
+
+.emptyState strong {
+  color: var(--foreground);
+}
+
+.desktopTable {
+  display: none;
+  overflow-x: auto;
+}
+
+.desktopTable table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.desktopTable th,
+.desktopTable td {
+  padding: 0.9rem 0.8rem;
+  border-bottom: 1px solid var(--border);
+  text-align: left;
+  vertical-align: middle;
+}
+
+.desktopTable th {
+  color: var(--foreground-muted);
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.desktopTable td:first-child {
+  display: grid;
+  gap: 0.18rem;
+}
+
+.desktopTable small {
+  color: var(--foreground-muted);
+}
+
+.mobileCards {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.quotationCard {
+  display: grid;
+  gap: 0.9rem;
+  padding: 1rem;
+  border: 1px solid var(--border);
+  border-radius: 1rem;
+  background: var(--surface-muted);
+}
+
+.cardTop > div {
+  display: grid;
+  gap: 0.2rem;
+}
+
+.cardTop span,
+.cardMeta {
+  color: var(--foreground-muted);
+  font-size: 0.84rem;
+}
+
+.cardTotal {
+  font-size: 1.2rem;
+}
+
+.cardMeta span {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.statusBadge {
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  padding: 0.32rem 0.6rem;
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--foreground-muted);
+  font-size: 0.76rem;
+  font-weight: 700;
+}
+
+.statusBadge[data-status="APPROVED"] {
+  background: rgba(22, 163, 74, 0.14);
+  color: rgb(22, 130, 60);
+}
+
+.statusBadge[data-status="REJECTED"],
+.statusBadge[data-status="CANCELLED"] {
+  background: rgba(220, 38, 38, 0.12);
+  color: rgb(185, 28, 28);
+}
+
+.statusBadge[data-status="SENT"],
+.statusBadge[data-status="VIEWED"] {
+  background: rgba(8, 145, 178, 0.14);
+  color: rgb(14, 116, 144);
+}
+
+.statusBadge[data-status="DRAFT"] {
+  background: rgba(100, 116, 139, 0.14);
+  color: var(--foreground-muted);
+}
+
+.pagination {
+  justify-content: flex-end;
+}
+
+.modalBackdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: grid;
+  align-items: end;
+  background: rgba(15, 23, 42, 0.56);
+  backdrop-filter: blur(4px);
+}
+
+.modal {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  width: 100%;
+  max-height: 94dvh;
+  border-radius: 1.25rem 1.25rem 0 0;
+  background: var(--surface);
+  box-shadow: 0 -20px 60px rgba(15, 23, 42, 0.2);
+}
+
+.modalHeader,
+.modalFooter {
+  padding: 1rem;
+  border-color: var(--border);
+}
+
+.modalHeader {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.modalHeader span {
+  color: var(--foreground-muted);
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.modalHeader h2 {
+  margin: 0.2rem 0;
+}
+
+.modalHeader p,
+.sectionHeading p {
+  margin: 0;
+  color: var(--foreground-muted);
+  font-size: 0.88rem;
+}
+
+.closeButton,
+.removeButton {
+  display: inline-grid;
+  place-items: center;
+  width: 2.4rem;
+  height: 2.4rem;
+  border: 1px solid var(--border);
+  border-radius: 0.75rem;
+  background: var(--surface-muted);
+  color: inherit;
+  cursor: pointer;
+}
+
+.removeButton:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.modalBody {
+  display: grid;
+  gap: 1rem;
+  overflow-y: auto;
+  padding: 1rem;
+}
+
+.headerFields,
+.notesGrid,
+.lineGrid {
+  display: grid;
+  gap: 0.85rem;
+}
+
+.headerFields label,
+.notesGrid label,
+.lineGrid label {
+  display: grid;
+  gap: 0.4rem;
+}
+
+.headerFields label > span,
+.notesGrid label > span,
+.lineGrid label > span {
+  color: var(--foreground-muted);
+  font-size: 0.82rem;
+  font-weight: 650;
+}
+
+.headerFields input,
+.headerFields select,
+.notesGrid textarea,
+.lineGrid input,
+.lineGrid select {
+  width: 100%;
+  min-height: 2.75rem;
+  padding: 0.7rem 0.8rem;
+  border: 1px solid var(--border);
+  border-radius: 0.8rem;
+  outline: 0;
+  background: var(--surface-muted);
+  color: inherit;
+  font: inherit;
+}
+
+.notesGrid textarea {
+  min-height: 7rem;
+  resize: vertical;
+}
+
+.lineSection,
+.lines {
+  display: grid;
+  gap: 0.85rem;
+}
+
+.sectionHeading {
+  align-items: flex-start;
+}
+
+.sectionHeading > div {
+  display: grid;
+  gap: 0.2rem;
+}
+
+.lineCard {
+  display: grid;
+  gap: 0.9rem;
+  padding: 1rem;
+  border: 1px solid var(--border);
+  border-radius: 1rem;
+  background: var(--surface-muted);
+}
+
+.itemField {
+  grid-column: 1 / -1;
+}
+
+.itemField small {
+  color: var(--foreground-muted);
+}
+
+.lineTotal {
+  padding-top: 0.75rem;
+  border-top: 1px dashed var(--border);
+}
+
+.lineTotal span {
+  color: var(--foreground-muted);
+}
+
+.totalCard {
+  display: grid;
+  gap: 0.65rem;
+  padding: 1rem;
+  border: 1px solid var(--border);
+  border-radius: 1rem;
+  background: var(--surface-muted);
+}
+
+.totalCard span,
+.totalCard small {
+  color: var(--foreground-muted);
+}
+
+.grandTotal {
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--border);
+  font-size: 1.08rem;
+}
+
+.modalFooter {
+  justify-content: flex-end;
+  border-top: 1px solid var(--border);
+}
+
+@media (min-width: 720px) {
+  .toolbar {
+    grid-template-columns: minmax(18rem, 0.9fr) minmax(0, 2fr);
+    align-items: center;
+  }
+
+  .headerFields,
+  .notesGrid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .lineGrid {
+    grid-template-columns: minmax(14rem, 2fr) repeat(4, minmax(7rem, 0.75fr));
+  }
+
+  .modalBackdrop {
+    align-items: center;
+    justify-items: center;
+    padding: 1.5rem;
+  }
+
+  .modal {
+    width: min(72rem, 100%);
+    max-height: 92dvh;
+    border-radius: 1.25rem;
+  }
+}
+
+@media (min-width: 900px) {
+  .desktopTable {
+    display: block;
+  }
+
+  .mobileCards {
+    display: none;
+  }
+
+  .workspace {
+    padding: 1.25rem;
+  }
+}
