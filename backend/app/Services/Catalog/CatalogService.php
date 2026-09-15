@@ -8,6 +8,7 @@ use App\Models\Unit;
 use App\Tenancy\TenantContext;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 class CatalogService
@@ -95,30 +96,120 @@ class CatalogService
     public function createItem(
         array $data
     ): CatalogItem {
-        return CatalogItem::query()->create([
-            'id' => (string) Str::ulid(),
-            'tenant_id' =>
-                $this->tenantContext->tenantId(),
-            'category_id' =>
-                $data['category_id'] ?? null,
-            'unit_id' =>
-                $data['unit_id'] ?? null,
-            'type' => $data['type'],
-            'code' => $data['code'] ?? null,
-            'name' => $data['name'],
-            'description' =>
-                $data['description'] ?? null,
-            'pricing_method' =>
-                $data['pricing_method']
-                ?? 'STANDARD',
-            'base_price' =>
-                $data['base_price'] ?? 0,
-            'currency' =>
-                $data['currency'] ?? 'IDR',
-            'pricing_config' =>
-                $data['pricing_config'] ?? null,
-            'status' => 'ACTIVE',
-        ]);
+        return DB::transaction(
+            function () use ($data): CatalogItem {
+                $tenantId =
+                    $this->tenantContext->tenantId();
+
+                $code =
+                    $data['code'] ?? null;
+
+                if (
+                    ! is_string($code)
+                    || trim($code) === ''
+                ) {
+                    $code =
+                        $this->nextItemCode(
+                            $tenantId,
+                            $data['type']
+                        );
+                }
+
+                return CatalogItem::query()->create([
+                    'id' => (string) Str::ulid(),
+                    'tenant_id' => $tenantId,
+                    'category_id' =>
+                        $data['category_id'] ?? null,
+                    'unit_id' =>
+                        $data['unit_id'] ?? null,
+                    'type' => $data['type'],
+                    'code' => $code,
+                    'name' => $data['name'],
+                    'description' =>
+                        $data['description'] ?? null,
+                    'pricing_method' =>
+                        $data['pricing_method']
+                        ?? 'STANDARD',
+                    'base_price' =>
+                        $data['base_price'] ?? 0,
+                    'currency' =>
+                        $data['currency'] ?? 'IDR',
+                    'pricing_config' =>
+                        $data['pricing_config'] ?? null,
+                    'status' => 'ACTIVE',
+                ]);
+            }
+        );
+    }
+
+    private function nextItemCode(
+        string $tenantId,
+        string $type
+    ): string {
+        $prefix =
+            $type === 'SERVICE'
+                ? 'JSA'
+                : 'BRG';
+
+        /*
+         * Serialisasi generator per tenant + tipe.
+         *
+         * PostgreSQL transaction advisory lock
+         * dilepas otomatis saat transaction selesai.
+         */
+        DB::select(
+            'SELECT pg_advisory_xact_lock('
+            . 'hashtextextended(?, 0)'
+            . ')',
+            [
+                'signova:catalog-item-code:'
+                . $tenantId
+                . ':'
+                . $prefix,
+            ]
+        );
+
+        $latestCode =
+            CatalogItem::query()
+                ->where(
+                    'tenant_id',
+                    $tenantId
+                )
+                ->where(
+                    'code',
+                    'LIKE',
+                    $prefix . '-%'
+                )
+                ->orderByRaw(
+                    'RIGHT(code, 6) DESC'
+                )
+                ->value('code');
+
+        $sequence = 1;
+
+        if (
+            is_string($latestCode)
+            && preg_match(
+                '/^'
+                . preg_quote(
+                    $prefix,
+                    '/'
+                )
+                . '-(\d{6})$/',
+                $latestCode,
+                $matches
+            ) === 1
+        ) {
+            $sequence =
+                ((int) $matches[1])
+                + 1;
+        }
+
+        return sprintf(
+            '%s-%06d',
+            $prefix,
+            $sequence
+        );
     }
 
     public function updateItem(

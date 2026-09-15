@@ -99,6 +99,96 @@ class CatalogApiTest extends TestCase
         );
     }
 
+    public function test_item_code_is_generated_when_omitted(): void
+    {
+        $workspace = $this->workspace(
+            'catalog-auto-code@example.test',
+            'Catalog Auto Code'
+        );
+
+        $this->actingAsWorkspace($workspace);
+
+        $firstProduct = $this->postJson(
+            '/api/v1/catalog/items',
+            [
+                'type' => 'PRODUCT',
+                'name' => 'Produk Pertama',
+            ]
+        );
+
+        $firstProduct
+            ->assertCreated()
+            ->assertJsonPath(
+                'data.code',
+                'BRG-000001'
+            );
+
+        $secondProduct = $this->postJson(
+            '/api/v1/catalog/items',
+            [
+                'type' => 'PRODUCT',
+                'name' => 'Produk Kedua',
+            ]
+        );
+
+        $secondProduct
+            ->assertCreated()
+            ->assertJsonPath(
+                'data.code',
+                'BRG-000002'
+            );
+
+        $firstService = $this->postJson(
+            '/api/v1/catalog/items',
+            [
+                'type' => 'SERVICE',
+                'name' => 'Jasa Pertama',
+            ]
+        );
+
+        $firstService
+            ->assertCreated()
+            ->assertJsonPath(
+                'data.code',
+                'JSA-000001'
+            );
+    }
+
+    public function test_manual_item_code_is_preserved(): void
+    {
+        $workspace = $this->workspace(
+            'catalog-manual-code@example.test',
+            'Catalog Manual Code'
+        );
+
+        $this->actingAsWorkspace($workspace);
+
+        $response = $this->postJson(
+            '/api/v1/catalog/items',
+            [
+                'type' => 'PRODUCT',
+                'code' => 'NB-ACR-001',
+                'name' => 'Neon Box Acrylic',
+            ]
+        );
+
+        $response
+            ->assertCreated()
+            ->assertJsonPath(
+                'data.code',
+                'NB-ACR-001'
+            );
+
+        $this->assertDatabaseHas(
+            'catalog_items',
+            [
+                'tenant_id' =>
+                    $workspace['tenant_id'],
+                'code' => 'NB-ACR-001',
+            ]
+        );
+    }
+
     public function test_owner_can_create_product_with_standard_pricing(): void
     {
         $workspace = $this->workspace(
