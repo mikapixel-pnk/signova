@@ -68,7 +68,7 @@ import {
   createQuotationRevision,
   getQuotation,
   issueQuotationPublicLink,
-  quotationPdfUrl,
+  getQuotationPdf,
   recordQuotationManualDecision,
   sendQuotation,
   updateQuotationHeader,
@@ -110,6 +110,72 @@ function revisionKey(): string {
     globalThis.crypto?.randomUUID?.()
     ?? `${Date.now()}-${Math.random()}`
   );
+}
+
+type RevisionMeasurementField =
+  | "width"
+  | "height"
+  | "depth"
+  | "length"
+  | "duration";
+
+function revisionPricingFields(
+  method:
+    CatalogItem["pricing_method"],
+): {
+  field:
+    RevisionMeasurementField;
+  label:
+    string;
+}[] {
+  switch (method) {
+    case "AREA":
+      return [
+        {
+          field: "width",
+          label: "Panjang",
+        },
+        {
+          field: "height",
+          label: "Lebar",
+        },
+      ];
+
+    case "LENGTH":
+      return [
+        {
+          field: "length",
+          label: "Panjang",
+        },
+      ];
+
+    case "VOLUME":
+      return [
+        {
+          field: "width",
+          label: "Panjang",
+        },
+        {
+          field: "height",
+          label: "Lebar",
+        },
+        {
+          field: "depth",
+          label: "Tinggi",
+        },
+      ];
+
+    case "TIME":
+      return [
+        {
+          field: "duration",
+          label: "Durasi",
+        },
+      ];
+
+    default:
+      return [];
+  }
 }
 
 function numeric(
@@ -646,13 +712,13 @@ export function QuotationDetail() {
                 number
               > = {};
 
-            const fields = [
-              "width",
-              "height",
-              "depth",
-              "length",
-              "duration",
-            ] as const;
+            const fields =
+              revisionPricingFields(
+                catalogItem.pricing_method,
+              ).map(
+                (measurement) =>
+                  measurement.field,
+              );
 
             for (
               const field
@@ -861,6 +927,105 @@ export function QuotationDetail() {
     );
 
     return response.data;
+  }
+
+  async function handlePdf() {
+    if (!quotation) {
+      return;
+    }
+
+    /*
+     * Buka window saat masih berada dalam
+     * user gesture agar popup blocker tidak
+     * menolak setelah fetch async selesai.
+     */
+    const pdfWindow =
+      window.open(
+        "",
+        "_blank",
+      );
+
+    if (pdfWindow) {
+      try {
+        pdfWindow.opener =
+          null;
+
+        pdfWindow.document.title =
+          "Memuat PDF...";
+      } catch {
+        // Browser boleh membatasi akses
+        // ke window yang baru dibuka.
+      }
+    }
+
+    setActionLoading(true);
+    setActionError(null);
+
+    try {
+      const blob =
+        await getQuotationPdf(
+          quotation.id,
+        );
+
+      const objectUrl =
+        URL.createObjectURL(
+          blob,
+        );
+
+      if (pdfWindow) {
+        pdfWindow.location.href =
+          objectUrl;
+      } else {
+        /*
+         * Fallback bila popup diblokir:
+         * trigger link lokal dari Blob.
+         */
+        const link =
+          document.createElement(
+            "a",
+          );
+
+        link.href =
+          objectUrl;
+
+        link.target =
+          "_blank";
+
+        link.rel =
+          "noopener noreferrer";
+
+        document.body.appendChild(
+          link,
+        );
+
+        link.click();
+        link.remove();
+      }
+
+      /*
+       * Jangan revoke langsung karena tab
+       * PDF baru masih perlu membaca Blob.
+       */
+      window.setTimeout(
+        () => {
+          URL.revokeObjectURL(
+            objectUrl,
+          );
+        },
+        60_000,
+      );
+    } catch (caught) {
+      if (
+        pdfWindow &&
+        !pdfWindow.closed
+      ) {
+        pdfWindow.close();
+      }
+
+      setActionError(caught);
+    } finally {
+      setActionLoading(false);
+    }
   }
 
   async function handleSend() {
@@ -1132,15 +1297,8 @@ export function QuotationDetail() {
               />
             }
             onClick={
-              () => {
-                window.open(
-                  quotationPdfUrl(
-                    quotation.id,
-                  ),
-                  "_blank",
-                  "noopener,noreferrer",
-                );
-              }
+              () =>
+                void handlePdf()
             }
           >
             PDF
@@ -1926,6 +2084,11 @@ export function QuotationDetail() {
                                               selected.base_price,
                                             )
                                           : "",
+                                      width: "",
+                                      height: "",
+                                      depth: "",
+                                      length: "",
+                                      duration: "",
                                     },
                                   );
                                 }
@@ -2052,14 +2215,14 @@ export function QuotationDetail() {
                             />
                           </label>
 
-                          {[
-                            ["width", "Lebar"],
-                            ["height", "Tinggi"],
-                            ["depth", "Kedalaman"],
-                            ["length", "Panjang"],
-                            ["duration", "Durasi"],
-                          ].map(
-                            ([field, label]) => (
+                          {catalogItem
+                            ? revisionPricingFields(
+                                catalogItem.pricing_method,
+                              ).map(
+                                ({
+                                  field,
+                                  label,
+                                }) => (
                               <label
                                 key={field}
                               >
@@ -2094,8 +2257,9 @@ export function QuotationDetail() {
                                   }
                                 />
                               </label>
-                            ),
-                          )}
+                              ),
+                            )
+                            : null}
                         </div>
                       </article>
                     );

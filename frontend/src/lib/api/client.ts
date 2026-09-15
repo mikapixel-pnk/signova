@@ -488,6 +488,56 @@ export async function apiRequest<
   );
 }
 
+export async function authenticatedApiBlobRequest(
+  path: string,
+): Promise<Blob> {
+  const context =
+    getSelectedContext();
+
+  const tenantId =
+    context?.type ===
+    "TENANT"
+      ? context.tenantId
+      : null;
+
+  const requestHeaders =
+    new Headers();
+
+  requestHeaders.set(
+    "Accept",
+    "application/pdf, application/octet-stream",
+  );
+
+  if (tenantId) {
+    requestHeaders.set(
+      "X-Signova-Tenant",
+      tenantId,
+    );
+  }
+
+  const response =
+    await fetch(
+      buildUrl(path),
+      {
+        method: "GET",
+        credentials:
+          "include",
+        headers:
+          requestHeaders,
+        cache:
+          "no-store",
+      },
+    );
+
+  if (!response.ok) {
+    throw await parseApiError(
+      response,
+    );
+  }
+
+  return response.blob();
+}
+
 export async function authenticatedApiRequest<
   T,
 >(

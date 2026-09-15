@@ -77,7 +77,59 @@ type CatalogFormState = {
   unitId: string;
   basePrice: string;
   description: string;
+  pricingMethod:
+    CatalogItem["pricing_method"];
 };
+
+const pricingMethodOptions: {
+  value:
+    CatalogItem["pricing_method"];
+  label: string;
+  description: string;
+}[] = [
+  {
+    value: "STANDARD",
+    label: "Harga Standar",
+    description:
+      "Harga dihitung dari jumlah × harga satuan.",
+  },
+  {
+    value: "AREA",
+    label: "Berdasarkan Luas",
+    description:
+      "Harga dihitung dari panjang × lebar × jumlah × harga.",
+  },
+  {
+    value: "LENGTH",
+    label: "Berdasarkan Panjang",
+    description:
+      "Harga dihitung dari panjang × jumlah × harga.",
+  },
+  {
+    value: "VOLUME",
+    label: "Berdasarkan Volume",
+    description:
+      "Harga dihitung dari panjang × lebar × tinggi × jumlah × harga.",
+  },
+  {
+    value: "TIME",
+    label: "Berdasarkan Waktu",
+    description:
+      "Harga dihitung dari durasi × jumlah × harga.",
+  },
+  {
+    value: "PACKAGE",
+    label: "Paket",
+    description:
+      "Harga dihitung berdasarkan jumlah paket.",
+  },
+  {
+    value: "MANUAL",
+    label: "Manual",
+    description:
+      "Harga ditentukan manual pada transaksi.",
+  },
+];
 
 const emptyForm:
   CatalogFormState = {
@@ -87,6 +139,7 @@ const emptyForm:
     name: "",
     categoryId: "",
     unitId: "",
+    pricingMethod: "STANDARD",
     basePrice: "",
     description: "",
   };
@@ -501,6 +554,8 @@ export default function CatalogPage() {
         item.category_id ?? "",
       unitId:
         item.unit_id ?? "",
+      pricingMethod:
+        item.pricing_method,
       basePrice:
         String(
           Math.round(
@@ -554,10 +609,7 @@ export default function CatalogPage() {
               .trim() ||
             null,
           pricing_method:
-            editingItem
-              ? editingItem
-                  .pricing_method
-              : "STANDARD",
+            form.pricingMethod,
           base_price:
             Number(
               form.basePrice,
@@ -1762,7 +1814,68 @@ export default function CatalogPage() {
                 </select>
               </label>
 
-              <label>
+                            <label>
+                <span
+                  className={
+                    styles.fieldLabel
+                  }
+                >
+                  Metode Harga
+                  <small>
+                    Wajib
+                  </small>
+                </span>
+
+                <select
+                  value={
+                    form.pricingMethod
+                  }
+                  onChange={(
+                    event,
+                  ) =>
+                    setForm(
+                      (
+                        current,
+                      ) => ({
+                        ...current,
+                        pricingMethod:
+                          event.target
+                            .value as
+                            CatalogItem[
+                              "pricing_method"
+                            ],
+                      }),
+                    )
+                  }
+                >
+                  {pricingMethodOptions.map(
+                    (option) => (
+                      <option
+                        key={
+                          option.value
+                        }
+                        value={
+                          option.value
+                        }
+                      >
+                        {option.label}
+                      </option>
+                    ),
+                  )}
+                </select>
+
+                <small>
+                  {
+                    pricingMethodOptions.find(
+                      (option) =>
+                        option.value ===
+                        form.pricingMethod,
+                    )?.description
+                  }
+                </small>
+              </label>
+
+<label>
                 <span
                   className={
                     styles.fieldLabel

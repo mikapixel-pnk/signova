@@ -1,10 +1,7 @@
 import {
+  authenticatedApiBlobRequest,
   authenticatedApiRequest,
 } from "@/lib/api/client";
-
-import {
-  appConfig,
-} from "@/lib/config/app";
 
 import type {
   QuotationCreatePayload,
@@ -123,12 +120,11 @@ export async function getQuotation(
   );
 }
 
-export function quotationPdfUrl(
+export async function getQuotationPdf(
   id: string,
-): string {
-  return (
-    `${appConfig.apiBaseUrl}` +
-    `/quotations/${id}/pdf`
+): Promise<Blob> {
+  return authenticatedApiBlobRequest(
+    `/quotations/${id}/pdf`,
   );
 }
 
