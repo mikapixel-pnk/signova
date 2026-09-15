@@ -106,12 +106,20 @@ class CatalogApiTest extends TestCase
             'Catalog Auto Code'
         );
 
+        $categoryId =
+            $this->insertCategory(
+                $workspace['tenant_id'],
+                'RUNNING_TEXT',
+                'Running Text'
+            );
+
         $this->actingAsWorkspace($workspace);
 
         $firstProduct = $this->postJson(
             '/api/v1/catalog/items',
             [
                 'type' => 'PRODUCT',
+                'category_id' => $categoryId,
                 'name' => 'Produk Pertama',
             ]
         );
@@ -120,13 +128,14 @@ class CatalogApiTest extends TestCase
             ->assertCreated()
             ->assertJsonPath(
                 'data.code',
-                'BRG-000001'
+                'BRG-RUN-000001'
             );
 
         $secondProduct = $this->postJson(
             '/api/v1/catalog/items',
             [
                 'type' => 'PRODUCT',
+                'category_id' => $categoryId,
                 'name' => 'Produk Kedua',
             ]
         );
@@ -135,13 +144,14 @@ class CatalogApiTest extends TestCase
             ->assertCreated()
             ->assertJsonPath(
                 'data.code',
-                'BRG-000002'
+                'BRG-RUN-000002'
             );
 
         $firstService = $this->postJson(
             '/api/v1/catalog/items',
             [
                 'type' => 'SERVICE',
+                'category_id' => $categoryId,
                 'name' => 'Jasa Pertama',
             ]
         );
@@ -150,7 +160,22 @@ class CatalogApiTest extends TestCase
             ->assertCreated()
             ->assertJsonPath(
                 'data.code',
-                'JSA-000001'
+                'JSA-RUN-000001'
+            );
+
+        $withoutCategory = $this->postJson(
+            '/api/v1/catalog/items',
+            [
+                'type' => 'PRODUCT',
+                'name' => 'Produk Umum',
+            ]
+        );
+
+        $withoutCategory
+            ->assertCreated()
+            ->assertJsonPath(
+                'data.code',
+                'BRG-GEN-000001'
             );
     }
 

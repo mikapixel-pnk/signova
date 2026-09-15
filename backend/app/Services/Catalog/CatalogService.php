@@ -111,7 +111,8 @@ class CatalogService
                     $code =
                         $this->nextItemCode(
                             $tenantId,
-                            $data['type']
+                            $data['type'],
+                            $data['category_id'] ?? null
                         );
                 }
 
@@ -144,18 +145,28 @@ class CatalogService
 
     private function nextItemCode(
         string $tenantId,
-        string $type
+        string $type,
+        ?string $categoryId = null
     ): string {
-        $prefix =
+        $typePrefix =
             $type === 'SERVICE'
                 ? 'JSA'
                 : 'BRG';
 
+        $categoryPrefix =
+            $this->itemCategoryCodePrefix(
+                $tenantId,
+                $categoryId
+            );
+
+        $prefix =
+            $typePrefix
+            . '-'
+            . $categoryPrefix;
+
         /*
-         * Serialisasi generator per tenant + tipe.
-         *
-         * PostgreSQL transaction advisory lock
-         * dilepas otomatis saat transaction selesai.
+         * Serialisasi generator per tenant,
+         * jenis, dan prefix kategori.
          */
         DB::select(
             'SELECT pg_advisory_xact_lock('
@@ -209,6 +220,56 @@ class CatalogService
             '%s-%06d',
             $prefix,
             $sequence
+        );
+    }
+
+    private function itemCategoryCodePrefix(
+        string $tenantId,
+        ?string $categoryId
+    ): string {
+        if (! $categoryId) {
+            return 'GEN';
+        }
+
+        $categoryCode =
+            CatalogCategory::query()
+                ->where(
+                    'tenant_id',
+                    $tenantId
+                )
+                ->where(
+                    'id',
+                    $categoryId
+                )
+                ->value('code');
+
+        if (
+            ! is_string($categoryCode)
+            || trim($categoryCode) === ''
+        ) {
+            return 'GEN';
+        }
+
+        $normalized =
+            preg_replace(
+                '/[^A-Z0-9]/',
+                '',
+                strtoupper(
+                    $categoryCode
+                )
+            );
+
+        if (
+            ! is_string($normalized)
+            || $normalized === ''
+        ) {
+            return 'GEN';
+        }
+
+        return substr(
+            $normalized,
+            0,
+            3
         );
     }
 
