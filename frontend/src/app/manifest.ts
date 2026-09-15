@@ -16,9 +16,16 @@ export default function manifest():
     lang: "id",
     icons: [
       {
-        src: "/brand/signova-mark.png",
-        sizes: "256x256",
+        src: "/brand/signova-192.png",
+        sizes: "192x192",
         type: "image/png",
+        purpose: "any",
+      },
+      {
+        src: "/brand/signova-512.png",
+        sizes: "512x512",
+        type: "image/png",
+        purpose: "any",
       },
     ],
   };
