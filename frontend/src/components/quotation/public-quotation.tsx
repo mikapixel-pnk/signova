@@ -9,11 +9,14 @@ import {
 import {
   AlertCircle,
   CalendarDays,
+  Check,
   CheckCircle2,
   FileText,
+  MessageSquareWarning,
   RefreshCcw,
   ShieldCheck,
   UserRound,
+  X,
 } from "lucide-react";
 
 import {
@@ -21,9 +24,11 @@ import {
 } from "next/navigation";
 
 import {
+  approvePublicQuotation,
   getPublicQuotation,
   markPublicQuotationViewed,
   PublicQuotationApiError,
+  rejectPublicQuotation,
 } from "@/lib/quotation/public-service";
 
 import type {
@@ -198,10 +203,63 @@ export function PublicQuotationView() {
     setUnavailable,
   ] = useState(false);
 
+  const [
+    decision,
+    setDecision,
+  ] = useState<
+    "APPROVE" | "REJECT" | null
+  >(null);
+
+  const [
+    rejectReason,
+    setRejectReason,
+  ] = useState("");
+
+  const [
+    actionLoading,
+    setActionLoading,
+  ] = useState(false);
+
+  const [
+    actionError,
+    setActionError,
+  ] = useState<
+    string | null
+  >(null);
+
+  const [
+    actionSuccess,
+    setActionSuccess,
+  ] = useState<
+    string | null
+  >(null);
+
   const viewedTokenRef =
     useRef<
       string | null
     >(null);
+
+  useEffect(() => {
+    if (!actionSuccess) {
+      return;
+    }
+
+    const timeoutId =
+      window.setTimeout(
+        () => {
+          setActionSuccess(null);
+        },
+        4000,
+      );
+
+    return () => {
+      window.clearTimeout(
+        timeoutId,
+      );
+    };
+  }, [
+    actionSuccess,
+  ]);
 
   async function loadQuotation() {
     if (!token) {
@@ -247,6 +305,115 @@ export function PublicQuotationView() {
       }
     } finally {
       setLoading(false);
+    }
+  }
+
+  function closeDecision() {
+    if (actionLoading) {
+      return;
+    }
+
+    setDecision(null);
+    setRejectReason("");
+    setActionError(null);
+  }
+
+  async function handleApprove() {
+    if (
+      !token ||
+      !quotation ||
+      (
+        quotation.status !==
+          "SENT" &&
+        quotation.status !==
+          "VIEWED"
+      )
+    ) {
+      return;
+    }
+
+    setActionLoading(true);
+    setActionError(null);
+
+    try {
+      const response =
+        await approvePublicQuotation(
+          token,
+        );
+
+      setQuotation(
+        response.data,
+      );
+
+      setDecision(null);
+      setRejectReason("");
+
+      setActionSuccess(
+        "Penawaran berhasil disetujui.",
+      );
+    } catch (caught) {
+      setActionError(
+        caught instanceof Error
+          ? caught.message
+          : "Persetujuan belum berhasil disimpan.",
+      );
+    } finally {
+      setActionLoading(false);
+    }
+  }
+
+  async function handleReject() {
+    if (
+      !token ||
+      !quotation ||
+      (
+        quotation.status !==
+          "SENT" &&
+        quotation.status !==
+          "VIEWED"
+      )
+    ) {
+      return;
+    }
+
+    const reason =
+      rejectReason.trim();
+
+    if (!reason) {
+      setActionError(
+        "Tuliskan perubahan yang Anda perlukan terlebih dahulu.",
+      );
+      return;
+    }
+
+    setActionLoading(true);
+    setActionError(null);
+
+    try {
+      const response =
+        await rejectPublicQuotation(
+          token,
+          reason,
+        );
+
+      setQuotation(
+        response.data,
+      );
+
+      setDecision(null);
+      setRejectReason("");
+
+      setActionSuccess(
+        "Permintaan perubahan berhasil dikirim.",
+      );
+    } catch (caught) {
+      setActionError(
+        caught instanceof Error
+          ? caught.message
+          : "Permintaan perubahan belum berhasil dikirim.",
+      );
+    } finally {
+      setActionLoading(false);
     }
   }
 
@@ -892,6 +1059,161 @@ export function PublicQuotationView() {
           </section>
         ) : null}
 
+        {actionSuccess ? (
+          <div
+            className={
+              styles.actionSuccess
+            }
+            role="status"
+          >
+            <CheckCircle2
+              size={18}
+            />
+
+            <span>
+              {actionSuccess}
+            </span>
+          </div>
+        ) : null}
+
+        {actionError &&
+        !decision ? (
+          <div
+            className={
+              styles.actionError
+            }
+            role="alert"
+          >
+            <AlertCircle
+              size={18}
+            />
+
+            <span>
+              {actionError}
+            </span>
+          </div>
+        ) : null}
+
+        {quotation.status ===
+          "SENT" ||
+        quotation.status ===
+          "VIEWED" ? (
+          <section
+            className={
+              styles.customerDecision
+            }
+          >
+            <div
+              className={
+                styles.customerDecisionCopy
+              }
+            >
+              <span>
+                KEPUTUSAN ANDA
+              </span>
+
+              <h2>
+                Apakah Penawaran ini
+                sudah sesuai?
+              </h2>
+
+              <p>
+                Anda dapat menyetujui
+                Penawaran atau
+                mengirim permintaan
+                perubahan kepada
+                pengirim.
+              </p>
+            </div>
+
+            <div
+              className={
+                styles.customerDecisionActions
+              }
+            >
+              <button
+                type="button"
+                className={
+                  styles.rejectButton
+                }
+                disabled={
+                  actionLoading
+                }
+                onClick={
+                  () => {
+                    setActionError(
+                      null,
+                    );
+                    setDecision(
+                      "REJECT",
+                    );
+                  }
+                }
+              >
+                <MessageSquareWarning
+                  size={17}
+                />
+
+                Ajukan Perubahan
+              </button>
+
+              <button
+                type="button"
+                className={
+                  styles.approveButton
+                }
+                disabled={
+                  actionLoading
+                }
+                onClick={
+                  () => {
+                    setActionError(
+                      null,
+                    );
+                    setDecision(
+                      "APPROVE",
+                    );
+                  }
+                }
+              >
+                <Check
+                  size={17}
+                />
+
+                Setujui Penawaran
+              </button>
+            </div>
+          </section>
+        ) : null}
+
+        {quotation.status ===
+        "REJECTED" ? (
+          <div
+            className={
+              styles.revisionRequestedState
+            }
+          >
+            <MessageSquareWarning
+              size={21}
+            />
+
+            <div>
+              <strong>
+                Permintaan perubahan
+                telah dikirim
+              </strong>
+
+              <p>
+                Pengirim akan
+                menyiapkan revisi
+                Penawaran. Link baru
+                dapat dikirim setelah
+                revisi selesai.
+              </p>
+            </div>
+          </div>
+        ) : null}
+
         {quotation.status ===
         "APPROVED" ? (
           <div
@@ -919,6 +1241,219 @@ export function PublicQuotationView() {
           </div>
         ) : null}
       </section>
+
+      {decision ? (
+        <div
+          className={
+            styles.decisionBackdrop
+          }
+          role="presentation"
+        >
+          <section
+            className={
+              styles.decisionDialog
+            }
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="quotation-decision-title"
+          >
+            <header
+              className={
+                styles.decisionHeader
+              }
+            >
+              <div>
+                <span>
+                  {decision ===
+                  "APPROVE"
+                    ? "SETUJUI PENAWARAN"
+                    : "AJUKAN PERUBAHAN"}
+                </span>
+
+                <h2
+                  id="quotation-decision-title"
+                >
+                  {decision ===
+                  "APPROVE"
+                    ? "Konfirmasi Persetujuan"
+                    : "Apa yang perlu diubah?"}
+                </h2>
+              </div>
+
+              <button
+                type="button"
+                className={
+                  styles.dialogClose
+                }
+                disabled={
+                  actionLoading
+                }
+                onClick={
+                  closeDecision
+                }
+                aria-label="Tutup"
+              >
+                <X size={20} />
+              </button>
+            </header>
+
+            <div
+              className={
+                styles.decisionContent
+              }
+            >
+              {decision ===
+              "APPROVE" ? (
+                <div
+                  className={
+                    styles.approveConfirmation
+                  }
+                >
+                  <span
+                    className={
+                      styles.approveConfirmationIcon
+                    }
+                  >
+                    <CheckCircle2
+                      size={26}
+                    />
+                  </span>
+
+                  <p>
+                    Dengan menyetujui
+                    Penawaran{" "}
+                    <strong>
+                      {
+                        quotation.quotation_number
+                      }
+                    </strong>
+                    , Anda menyatakan
+                    bahwa rincian dan
+                    nilai Penawaran
+                    ini telah sesuai.
+                  </p>
+                </div>
+              ) : (
+                <label
+                  className={
+                    styles.reasonField
+                  }
+                >
+                  <span>
+                    Permintaan
+                    Perubahan *
+                  </span>
+
+                  <textarea
+                    rows={5}
+                    maxLength={1000}
+                    value={
+                      rejectReason
+                    }
+                    disabled={
+                      actionLoading
+                    }
+                    placeholder="Contoh: Mohon ubah jumlah item, ukuran, harga, jadwal, atau detail lainnya."
+                    onChange={
+                      (event) => {
+                        setRejectReason(
+                          event.target
+                            .value,
+                        );
+
+                        if (
+                          actionError
+                        ) {
+                          setActionError(
+                            null,
+                          );
+                        }
+                      }
+                    }
+                  />
+
+                  <small>
+                    {
+                      rejectReason.length
+                    }
+                    /1000
+                  </small>
+                </label>
+              )}
+
+              {actionError ? (
+                <div
+                  className={
+                    styles.dialogError
+                  }
+                  role="alert"
+                >
+                  <AlertCircle
+                    size={17}
+                  />
+
+                  <span>
+                    {actionError}
+                  </span>
+                </div>
+              ) : null}
+            </div>
+
+            <footer
+              className={
+                styles.decisionFooter
+              }
+            >
+              <button
+                type="button"
+                className={
+                  styles.dialogSecondaryButton
+                }
+                disabled={
+                  actionLoading
+                }
+                onClick={
+                  closeDecision
+                }
+              >
+                Kembali
+              </button>
+
+              <button
+                type="button"
+                className={
+                  decision ===
+                  "APPROVE"
+                    ? styles.approveButton
+                    : styles.rejectSubmitButton
+                }
+                disabled={
+                  actionLoading
+                }
+                onClick={
+                  () => {
+                    if (
+                      decision ===
+                      "APPROVE"
+                    ) {
+                      void handleApprove();
+                    } else {
+                      void handleReject();
+                    }
+                  }
+                }
+              >
+                {actionLoading
+                  ? "Menyimpan..."
+                  : decision ===
+                      "APPROVE"
+                    ? "Ya, Setujui"
+                    : "Kirim Permintaan"}
+              </button>
+            </footer>
+          </section>
+        </div>
+      ) : null}
 
       <footer
         className={

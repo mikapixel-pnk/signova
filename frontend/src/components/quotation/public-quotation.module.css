@@ -601,3 +601,361 @@
       );
   }
 }
+
+.customerDecision {
+  display: grid;
+  gap: 14px;
+  padding: 16px;
+  border: 1px solid
+    color-mix(
+      in srgb,
+      var(--sv-teal) 25%,
+      var(--border)
+    );
+  border-radius: 18px;
+  background:
+    color-mix(
+      in srgb,
+      var(--sv-teal) 5%,
+      var(--surface)
+    );
+}
+
+.customerDecisionCopy {
+  display: grid;
+  gap: 5px;
+}
+
+.customerDecisionCopy > span {
+  color: var(--sv-teal);
+  font-size: 8px;
+  font-weight: 800;
+  letter-spacing: 0.13em;
+}
+
+.customerDecisionCopy h2 {
+  margin: 0;
+  font-size: 14px;
+}
+
+.customerDecisionCopy p {
+  margin: 0;
+  color: var(--foreground-muted);
+  font-size: 9px;
+  line-height: 1.55;
+}
+
+.customerDecisionActions {
+  display: grid;
+  gap: 8px;
+}
+
+.approveButton,
+.rejectButton,
+.rejectSubmitButton,
+.dialogSecondaryButton {
+  display: inline-flex;
+  min-height: 42px;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: 9px 13px;
+  border-radius: 12px;
+  font: inherit;
+  font-size: 10px;
+  font-weight: 750;
+  cursor: pointer;
+}
+
+.approveButton {
+  border: 1px solid var(--sv-teal);
+  background: var(--sv-teal);
+  color: white;
+}
+
+.rejectButton {
+  border: 1px solid
+    color-mix(
+      in srgb,
+      rgb(217 119 6) 32%,
+      var(--border)
+    );
+  background:
+    color-mix(
+      in srgb,
+      rgb(217 119 6) 7%,
+      var(--surface)
+    );
+  color: rgb(180 83 9);
+}
+
+.rejectSubmitButton {
+  border: 1px solid rgb(217 119 6);
+  background: rgb(217 119 6);
+  color: white;
+}
+
+.dialogSecondaryButton {
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--foreground);
+}
+
+.approveButton:disabled,
+.rejectButton:disabled,
+.rejectSubmitButton:disabled,
+.dialogSecondaryButton:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.actionSuccess,
+.actionError {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 11px 12px;
+  border-radius: 13px;
+  font-size: 9px;
+  line-height: 1.5;
+}
+
+.actionSuccess {
+  border: 1px solid
+    rgb(22 163 74 / 0.26);
+  background:
+    rgb(22 163 74 / 0.08);
+  color: rgb(22 163 74);
+}
+
+.actionError {
+  border: 1px solid
+    rgb(220 38 38 / 0.25);
+  background:
+    rgb(220 38 38 / 0.08);
+  color: rgb(185 28 28);
+}
+
+.revisionRequestedState {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 13px;
+  border: 1px solid
+    rgb(217 119 6 / 0.24);
+  border-radius: 14px;
+  background:
+    rgb(217 119 6 / 0.08);
+  color: rgb(180 83 9);
+}
+
+.revisionRequestedState div {
+  display: grid;
+  gap: 3px;
+}
+
+.revisionRequestedState strong {
+  font-size: 10px;
+}
+
+.revisionRequestedState p {
+  margin: 0;
+  font-size: 9px;
+  line-height: 1.5;
+}
+
+.decisionBackdrop {
+  position: fixed;
+  z-index: 80;
+  inset: 0;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding-top: 24px;
+  background: rgb(0 0 0 / 0.52);
+  backdrop-filter: blur(4px);
+}
+
+.decisionDialog {
+  display: grid;
+  width: 100%;
+  max-height: 92dvh;
+  grid-template-rows:
+    auto
+    minmax(0, 1fr)
+    auto;
+  border-radius: 22px 22px 0 0;
+  background: var(--surface);
+  box-shadow:
+    0 -16px 60px
+    rgb(0 0 0 / 0.18);
+}
+
+.decisionHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 17px 18px;
+  border-bottom: 1px solid var(--border);
+}
+
+.decisionHeader > div {
+  display: grid;
+  gap: 4px;
+}
+
+.decisionHeader span {
+  color: var(--sv-teal);
+  font-size: 8px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+}
+
+.decisionHeader h2 {
+  margin: 0;
+  font-size: 16px;
+}
+
+.dialogClose {
+  display: grid;
+  width: 36px;
+  height: 36px;
+  flex: 0 0 auto;
+  place-items: center;
+  border: 1px solid var(--border);
+  border-radius: 11px;
+  background: var(--surface);
+  color: var(--foreground);
+  cursor: pointer;
+}
+
+.dialogClose:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.decisionContent {
+  display: grid;
+  gap: 14px;
+  overflow-y: auto;
+  padding: 18px;
+}
+
+.approveConfirmation {
+  display: grid;
+  justify-items: center;
+  gap: 12px;
+  padding: 18px 12px;
+  text-align: center;
+}
+
+.approveConfirmationIcon {
+  display: grid;
+  width: 54px;
+  height: 54px;
+  place-items: center;
+  border-radius: 17px;
+  background:
+    rgb(22 163 74 / 0.1);
+  color: rgb(22 163 74);
+}
+
+.approveConfirmation p {
+  max-width: 34rem;
+  margin: 0;
+  color: var(--foreground-muted);
+  font-size: 10px;
+  line-height: 1.65;
+}
+
+.reasonField {
+  display: grid;
+  gap: 6px;
+}
+
+.reasonField > span {
+  color: var(--foreground-muted);
+  font-size: 9px;
+  font-weight: 700;
+}
+
+.reasonField textarea {
+  width: 100%;
+  min-height: 130px;
+  padding: 11px 12px;
+  border: 1px solid var(--border);
+  border-radius: 13px;
+  outline: 0;
+  background: var(--surface-soft);
+  color: var(--foreground);
+  font: inherit;
+  font-size: 10px;
+  line-height: 1.55;
+  resize: vertical;
+}
+
+.reasonField textarea:focus {
+  border-color: var(--sv-teal);
+}
+
+.reasonField small {
+  justify-self: end;
+  color: var(--foreground-muted);
+  font-size: 8px;
+}
+
+.dialogError {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 10px 11px;
+  border: 1px solid
+    rgb(220 38 38 / 0.25);
+  border-radius: 12px;
+  background:
+    rgb(220 38 38 / 0.08);
+  color: rgb(185 28 28);
+  font-size: 9px;
+  line-height: 1.5;
+}
+
+.decisionFooter {
+  display: grid;
+  grid-template-columns:
+    repeat(
+      2,
+      minmax(0, 1fr)
+    );
+  gap: 8px;
+  padding: 14px 18px;
+  border-top: 1px solid var(--border);
+}
+
+@media (min-width: 680px) {
+  .customerDecision {
+    grid-template-columns:
+      minmax(0, 1fr)
+      auto;
+    align-items: center;
+  }
+
+  .customerDecisionActions {
+    grid-template-columns:
+      auto
+      auto;
+  }
+
+  .decisionBackdrop {
+    align-items: center;
+    padding: 24px;
+  }
+
+  .decisionDialog {
+    width: min(
+      100%,
+      540px
+    );
+    border-radius: 22px;
+  }
+}

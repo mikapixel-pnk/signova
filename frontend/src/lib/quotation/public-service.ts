@@ -119,3 +119,44 @@ export async function markPublicQuotationViewed(
     },
   );
 }
+
+export async function approvePublicQuotation(
+  token: string,
+): Promise<PublicQuotationResponse> {
+  return publicRequest<
+    PublicQuotationResponse
+  >(
+    `/quotations/${encodeURIComponent(
+      token,
+    )}/approve`,
+    {
+      method: "POST",
+    },
+  );
+}
+
+export async function rejectPublicQuotation(
+  token: string,
+  reason: string,
+): Promise<PublicQuotationResponse> {
+  return publicRequest<
+    PublicQuotationResponse
+  >(
+    `/quotations/${encodeURIComponent(
+      token,
+    )}/reject`,
+    {
+      method: "POST",
+
+      headers: {
+        "Content-Type":
+          "application/json",
+      },
+
+      body:
+        JSON.stringify({
+          reason,
+        }),
+    },
+  );
+}
