@@ -2,6 +2,10 @@ import {
   authenticatedApiRequest,
 } from "@/lib/api/client";
 
+import {
+  appConfig,
+} from "@/lib/config/app";
+
 import type {
   QuotationCreatePayload,
   QuotationListResponse,
@@ -96,5 +100,29 @@ export async function createQuotation(
       method: "POST",
       body: payload,
     },
+  );
+}
+
+
+export async function getQuotation(
+  id: string,
+): Promise<QuotationResponse> {
+  return authenticatedApiRequest<
+    QuotationResponse
+  >(
+    `/quotations/${id}`,
+    {
+      method: "GET",
+      cache: "no-store",
+    },
+  );
+}
+
+export function quotationPdfUrl(
+  id: string,
+): string {
+  return (
+    `${appConfig.apiBaseUrl}` +
+    `/quotations/${id}/pdf`
   );
 }

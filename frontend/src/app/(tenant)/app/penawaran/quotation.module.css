@@ -439,3 +439,15 @@
     padding: 1.25rem;
   }
 }
+
+.quotationLink {
+  color: var(--foreground);
+  font-weight: 750;
+  text-decoration: none;
+}
+
+.quotationLink:hover {
+  color: var(--sv-teal);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}

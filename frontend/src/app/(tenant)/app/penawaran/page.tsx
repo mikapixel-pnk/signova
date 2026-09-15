@@ -11,6 +11,8 @@ import {
   X,
 } from "lucide-react";
 
+import Link from "next/link";
+
 import {
   useCallback,
   useEffect,
@@ -1122,11 +1124,14 @@ export default function QuotationsPage() {
                           }
                         >
                           <td>
-                            <strong>
+                            <Link
+                              href={`/app/penawaran/${quotation.id}`}
+                              className={styles.quotationLink}
+                            >
                               {
                                 quotation.quotation_number
                               }
-                            </strong>
+                            </Link>
 
                             <small>
                               REV-
@@ -1215,11 +1220,14 @@ export default function QuotationsPage() {
                         }
                       >
                         <div>
-                          <strong>
+                          <Link
+                            href={`/app/penawaran/${quotation.id}`}
+                            className={styles.quotationLink}
+                          >
                             {
                               quotation.quotation_number
                             }
-                          </strong>
+                          </Link>
 
                           <span>
                             {
