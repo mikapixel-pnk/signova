@@ -122,7 +122,7 @@ export const modules:
     group: "master-data",
     label: "Satuan",
     href:
-      "/app/barang-jasa?bagian=satuan",
+      "/app/satuan",
     tone: "teal",
     icon: Ruler,
     plan: "starter",
