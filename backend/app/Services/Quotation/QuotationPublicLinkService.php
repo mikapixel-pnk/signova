@@ -24,6 +24,86 @@ class QuotationPublicLinkService
     ) {
     }
 
+    public function issueForQuotation(
+        string $quotationId,
+        ?\DateTimeInterface $expiresAt = null
+    ): array {
+        return DB::transaction(
+            function () use (
+                $quotationId,
+                $expiresAt
+            ): array {
+                $quotation =
+                    Quotation::query()
+                        ->where(
+                            'tenant_id',
+                            $this->tenantContext
+                                ->tenantId()
+                        )
+                        ->where(
+                            'id',
+                            $quotationId
+                        )
+                        ->lockForUpdate()
+                        ->firstOrFail();
+
+                if (
+                    $quotation->current_version_id
+                    === null
+                ) {
+                    throw new RuntimeException(
+                        'Penawaran tidak memiliki versi aktif.'
+                    );
+                }
+
+                if (
+                    ! in_array(
+                        $quotation->status,
+                        [
+                            'SENT',
+                            'VIEWED',
+                        ],
+                        true
+                    )
+                ) {
+                    throw new InvalidQuotationTransitionException(
+                        $quotation->status,
+                        'PUBLIC_LINK'
+                    );
+                }
+
+                QuotationPublicLink::query()
+                    ->where(
+                        'tenant_id',
+                        $quotation->tenant_id
+                    )
+                    ->where(
+                        'quotation_id',
+                        $quotation->id
+                    )
+                    ->where(
+                        'quotation_version_id',
+                        $quotation->current_version_id
+                    )
+                    ->whereNull(
+                        'revoked_at'
+                    )
+                    ->update([
+                        'revoked_at' =>
+                            now(),
+
+                        'updated_at' =>
+                            now(),
+                    ]);
+
+                return $this->createForQuotation(
+                    $quotation->id,
+                    $expiresAt
+                );
+            }
+        );
+    }
+
     public function createForQuotation(
         string $quotationId,
         ?\DateTimeInterface $expiresAt = null

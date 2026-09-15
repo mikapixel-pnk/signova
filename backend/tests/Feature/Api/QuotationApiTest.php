@@ -2352,6 +2352,151 @@ class QuotationApiTest extends TestCase
     }
 
 
+    public function test_owner_can_issue_and_rotate_public_link(): void
+    {
+        $workspace = $this->workspace(
+            'quotation-public-link@example.test',
+            'Quotation Public Link'
+        );
+
+        $this->actingAsWorkspace(
+            $workspace
+        );
+
+        $customerId =
+            $this->insertCustomer(
+                $workspace['tenant_id'],
+                'CUST-PUB-LINK',
+                'Pelanggan Public Link'
+            );
+
+        $quotationId =
+            $this->insertQuotation(
+                $workspace,
+                $customerId,
+                'Q-PUBLIC-LINK',
+                'SENT'
+            );
+
+        $first = $this->postJson(
+            "/api/v1/quotations/{$quotationId}/actions/issue-public-link"
+        );
+
+        $first
+            ->assertCreated()
+            ->assertJsonPath(
+                'success',
+                true
+            )
+            ->assertJsonPath(
+                'data.quotation_id',
+                $quotationId
+            );
+
+        $firstUrl =
+            $first->json(
+                'data.public_url'
+            );
+
+        $this->assertIsString(
+            $firstUrl
+        );
+
+        $this->assertNotSame(
+            '',
+            $firstUrl
+        );
+
+        $second = $this->postJson(
+            "/api/v1/quotations/{$quotationId}/actions/issue-public-link"
+        );
+
+        $second
+            ->assertCreated();
+
+        $secondUrl =
+            $second->json(
+                'data.public_url'
+            );
+
+        $this->assertNotSame(
+            $firstUrl,
+            $secondUrl
+        );
+
+        $this->assertDatabaseCount(
+            'quotation_public_links',
+            2
+        );
+
+        $this->assertSame(
+            1,
+            \App\Models\QuotationPublicLink::query()
+                ->where(
+                    'tenant_id',
+                    $workspace['tenant_id']
+                )
+                ->where(
+                    'quotation_id',
+                    $quotationId
+                )
+                ->whereNull(
+                    'revoked_at'
+                )
+                ->count()
+        );
+
+        $this->assertSame(
+            1,
+            \App\Models\QuotationPublicLink::query()
+                ->where(
+                    'tenant_id',
+                    $workspace['tenant_id']
+                )
+                ->where(
+                    'quotation_id',
+                    $quotationId
+                )
+                ->whereNotNull(
+                    'revoked_at'
+                )
+                ->count()
+        );
+    }
+
+    public function test_draft_quotation_cannot_issue_public_link(): void
+    {
+        $workspace = $this->workspace(
+            'quotation-public-link-draft@example.test',
+            'Quotation Public Link Draft'
+        );
+
+        $this->actingAsWorkspace(
+            $workspace
+        );
+
+        $customerId =
+            $this->insertCustomer(
+                $workspace['tenant_id'],
+                'CUST-PUB-DRAFT',
+                'Pelanggan Public Draft'
+            );
+
+        $quotationId =
+            $this->insertQuotation(
+                $workspace,
+                $customerId,
+                'Q-PUBLIC-DRAFT',
+                'DRAFT'
+            );
+
+        $this->postJson(
+            "/api/v1/quotations/{$quotationId}/actions/issue-public-link"
+        )
+            ->assertConflict();
+    }
+
+
     private function workspace(
         string $email,
         string $businessName

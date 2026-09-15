@@ -7,6 +7,7 @@ use App\Http\Requests\Quotation\CancelQuotationRequest;
 use App\Http\Requests\Quotation\CreateInvoiceFromQuotationRequest;
 use App\Http\Requests\Quotation\CreateQuotationRevisionRequest;
 use App\Http\Requests\Quotation\ListQuotationsRequest;
+use App\Http\Requests\Quotation\IssueQuotationPublicLinkRequest;
 use App\Http\Requests\Quotation\ManualQuotationDecisionRequest;
 use App\Http\Requests\Quotation\StoreQuotationRequest;
 use App\Http\Requests\Quotation\UpdateQuotationRequest;
@@ -14,6 +15,7 @@ use App\Http\Resources\Invoice\InvoiceResource;
 use App\Http\Resources\Quotation\QuotationResource;
 use App\Services\Invoice\QuotationToInvoiceService;
 use App\Services\Quotation\QuotationPdfService;
+use App\Services\Quotation\QuotationPublicLinkService;
 use App\Services\Quotation\QuotationService;
 use App\Support\Api\ApiResponse;
 use Illuminate\Http\JsonResponse;
@@ -106,6 +108,48 @@ class QuotationController extends Controller
             ))->resolve($request),
             201,
             'Penawaran berhasil dibuat.'
+        );
+    }
+
+    public function issuePublicLink(
+        IssueQuotationPublicLinkRequest $request,
+        string $quotationId,
+        QuotationPublicLinkService $service
+    ): JsonResponse {
+        $data =
+            $request->validated();
+
+        $result =
+            $service->issueForQuotation(
+                $quotationId,
+                isset($data['expires_at'])
+                    ? new \DateTimeImmutable(
+                        $data['expires_at']
+                    )
+                    : null
+            );
+
+        return ApiResponse::success(
+            $request,
+            [
+                'quotation_id' =>
+                    $result['link']
+                        ->quotation_id,
+
+                'quotation_version_id' =>
+                    $result['link']
+                        ->quotation_version_id,
+
+                'public_url' =>
+                    $result['public_url'],
+
+                'expires_at' =>
+                    $result['link']
+                        ->expires_at
+                        ?->toISOString(),
+            ],
+            201,
+            'Link pelanggan berhasil dibuat.'
         );
     }
 
