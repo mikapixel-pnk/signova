@@ -19,7 +19,6 @@ class StoreQuotationRequest extends FormRequest
 
         foreach (
             [
-                'quotation_number',
                 'currency',
                 'terms',
                 'notes',
@@ -53,19 +52,7 @@ class StoreQuotationRequest extends FormRequest
 
         return [
             'quotation_number' => [
-                'required',
-                'string',
-                'max:80',
-                Rule::unique(
-                    'quotations',
-                    'quotation_number'
-                )->where(
-                    fn ($query) =>
-                        $query->where(
-                            'tenant_id',
-                            $tenantId
-                        )
-                ),
+                'prohibited',
             ],
 
             'customer_id' => [

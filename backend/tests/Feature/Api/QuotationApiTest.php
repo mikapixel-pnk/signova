@@ -51,8 +51,6 @@ class QuotationApiTest extends TestCase
         $response = $this->postJson(
             '/api/v1/quotations',
             [
-                'quotation_number' =>
-                    'Q-API-001',
 
                 'customer_id' =>
                     $customerId,
@@ -89,7 +87,12 @@ class QuotationApiTest extends TestCase
             )
             ->assertJsonPath(
                 'data.quotation_number',
-                'Q-API-001'
+                fn ($value) =>
+                    is_string($value)
+                    && preg_match(
+                        '/^PEN-\\d{4}-\\d{6}$/',
+                        $value
+                    ) === 1
             )
             ->assertJsonPath(
                 'data.status',
@@ -130,7 +133,9 @@ class QuotationApiTest extends TestCase
                     $workspace['tenant_id'],
 
                 'quotation_number' =>
-                    'Q-API-001',
+                    $response->json(
+                        'data.quotation_number'
+                    ),
 
                 'status' =>
                     'DRAFT',
@@ -176,8 +181,6 @@ class QuotationApiTest extends TestCase
         $response = $this->postJson(
             '/api/v1/quotations',
             [
-                'quotation_number' =>
-                    'Q-AREA-INVALID',
 
                 'customer_id' =>
                     $customerId,
@@ -1185,8 +1188,6 @@ class QuotationApiTest extends TestCase
         $response = $this->postJson(
             '/api/v1/quotations',
             [
-                'quotation_number' =>
-                    'Q-FORGED',
 
                 'customer_id' =>
                     $customerId,
@@ -1313,8 +1314,8 @@ class QuotationApiTest extends TestCase
                 'data'
             )
             ->assertJsonPath(
-                'data.0.quotation_number',
-                'Q-ALPHA'
+                'data.0.customer.name',
+                'Alpha Reklame'
             )
             ->assertJsonPath(
                 'meta.total',
@@ -1383,8 +1384,6 @@ class QuotationApiTest extends TestCase
         $this->postJson(
             '/api/v1/quotations',
             [
-                'quotation_number' =>
-                    'Q-CROSS-CUSTOMER',
 
                 'customer_id' =>
                     $foreignCustomerId,
@@ -1451,8 +1450,6 @@ class QuotationApiTest extends TestCase
         $this->postJson(
             '/api/v1/quotations',
             [
-                'quotation_number' =>
-                    'Q-CROSS-CATALOG',
 
                 'customer_id' =>
                     $customerId,
@@ -1593,8 +1590,8 @@ class QuotationApiTest extends TestCase
             $contentDisposition
         );
 
-        $this->assertStringContainsString(
-            'Penawaran-Q-PDF-DOWNLOAD.pdf',
+        $this->assertMatchesRegularExpression(
+            '/attachment; filename="Penawaran-PEN-\d{4}-\d{6}\.pdf"/',
             $contentDisposition
         );
     }
@@ -1994,6 +1991,366 @@ class QuotationApiTest extends TestCase
                 'VALIDATION_FAILED'
             );
     }
+
+    public function test_quotation_number_is_generated_by_backend_and_increments_per_tenant_period(): void
+    {
+        $workspace = $this->workspace(
+            'quotation-number@example.test',
+            'Quotation Numbering'
+        );
+
+        $this->actingAsWorkspace(
+            $workspace
+        );
+
+        $customerId =
+            $this->insertCustomer(
+                $workspace['tenant_id'],
+                'CUST-NUM',
+                'Pelanggan Numbering'
+            );
+
+        $first = $this->postJson(
+            '/api/v1/quotations',
+            [
+                'customer_id' =>
+                    $customerId,
+
+                'items' => [
+                    [
+                        'name' =>
+                            'Item Pertama',
+
+                        'quantity' =>
+                            1,
+
+                        'pricing_method' =>
+                            'STANDARD',
+
+                        'unit_price' =>
+                            100000,
+                    ],
+                ],
+            ]
+        );
+
+        $second = $this->postJson(
+            '/api/v1/quotations',
+            [
+                'customer_id' =>
+                    $customerId,
+
+                'items' => [
+                    [
+                        'name' =>
+                            'Item Kedua',
+
+                        'quantity' =>
+                            1,
+
+                        'pricing_method' =>
+                            'STANDARD',
+
+                        'unit_price' =>
+                            200000,
+                    ],
+                ],
+            ]
+        );
+
+        $first->assertCreated();
+        $second->assertCreated();
+
+        $period =
+            now()->format('ym');
+
+        $first->assertJsonPath(
+            'data.quotation_number',
+            'PEN-' . $period . '-000001'
+        );
+
+        $second->assertJsonPath(
+            'data.quotation_number',
+            'PEN-' . $period . '-000002'
+        );
+    }
+
+    public function test_client_cannot_supply_quotation_number(): void
+    {
+        $workspace = $this->workspace(
+            'quotation-number-owned@example.test',
+            'Quotation Number Backend Owned'
+        );
+
+        $this->actingAsWorkspace(
+            $workspace
+        );
+
+        $customerId =
+            $this->insertCustomer(
+                $workspace['tenant_id'],
+                'CUST-NUM-OWNED',
+                'Pelanggan Backend Owned'
+            );
+
+        $this->postJson(
+            '/api/v1/quotations',
+            [
+                'quotation_number' =>
+                    'CUSTOM-001',
+
+                'customer_id' =>
+                    $customerId,
+
+                'items' => [
+                    [
+                        'name' =>
+                            'Item',
+
+                        'quantity' =>
+                            1,
+
+                        'pricing_method' =>
+                            'STANDARD',
+
+                        'unit_price' =>
+                            100000,
+                    ],
+                ],
+            ]
+        )
+            ->assertUnprocessable()
+            ->assertJsonPath(
+                'error.code',
+                'VALIDATION_FAILED'
+            )
+            ->assertJsonStructure([
+                'error' => [
+                    'details' => [
+                        'fields' => [
+                            'quotation_number',
+                        ],
+                    ],
+                ],
+            ]);
+    }
+
+    public function test_owner_can_record_manual_approval(): void
+    {
+        $workspace = $this->workspace(
+            'quotation-manual-approve@example.test',
+            'Quotation Manual Approve'
+        );
+
+        $this->actingAsWorkspace(
+            $workspace
+        );
+
+        $customerId =
+            $this->insertCustomer(
+                $workspace['tenant_id'],
+                'CUST-MAN-APP',
+                'Pelanggan Manual Approve'
+            );
+
+        $quotationId =
+            $this->insertQuotation(
+                $workspace,
+                $customerId,
+                'Q-MAN-APPROVE',
+                'SENT'
+            );
+
+        $response = $this->postJson(
+            "/api/v1/quotations/{$quotationId}/actions/manual-decision",
+            [
+                'decision' =>
+                    'APPROVE',
+
+                'method' =>
+                    'SIGNATURE',
+
+                'note' =>
+                    'Ditandatangani pelanggan.',
+            ]
+        );
+
+        $response
+            ->assertOk()
+            ->assertJsonPath(
+                'data.status',
+                'APPROVED'
+            );
+
+        $this->assertDatabaseHas(
+            'quotation_actions',
+            [
+                'quotation_id' =>
+                    $quotationId,
+
+                'action' =>
+                    'APPROVE',
+
+                'actor_type' =>
+                    'USER',
+
+                'public_link_id' =>
+                    null,
+            ]
+        );
+
+        $this->assertDatabaseHas(
+            'quotation_status_history',
+            [
+                'quotation_id' =>
+                    $quotationId,
+
+                'from_state' =>
+                    'SENT',
+
+                'to_state' =>
+                    'APPROVED',
+
+                'source' =>
+                    'USER',
+            ]
+        );
+    }
+
+    public function test_manual_reject_requires_reason(): void
+    {
+        $workspace = $this->workspace(
+            'quotation-manual-reject@example.test',
+            'Quotation Manual Reject'
+        );
+
+        $this->actingAsWorkspace(
+            $workspace
+        );
+
+        $customerId =
+            $this->insertCustomer(
+                $workspace['tenant_id'],
+                'CUST-MAN-REJ',
+                'Pelanggan Manual Reject'
+            );
+
+        $quotationId =
+            $this->insertQuotation(
+                $workspace,
+                $customerId,
+                'Q-MAN-REJECT',
+                'SENT'
+            );
+
+        $this->postJson(
+            "/api/v1/quotations/{$quotationId}/actions/manual-decision",
+            [
+                'decision' =>
+                    'REJECT',
+
+                'method' =>
+                    'WHATSAPP',
+            ]
+        )
+            ->assertUnprocessable()
+            ->assertJsonPath(
+                'error.code',
+                'VALIDATION_FAILED'
+            )
+            ->assertJsonStructure([
+                'error' => [
+                    'details' => [
+                        'fields' => [
+                            'reason',
+                        ],
+                    ],
+                ],
+            ]);
+    }
+
+    public function test_rejected_quotation_can_create_new_revision_and_returns_to_draft(): void
+    {
+        $workspace = $this->workspace(
+            'quotation-rejected-revision@example.test',
+            'Quotation Rejected Revision'
+        );
+
+        $this->actingAsWorkspace(
+            $workspace
+        );
+
+        $customerId =
+            $this->insertCustomer(
+                $workspace['tenant_id'],
+                'CUST-REV-REJ',
+                'Pelanggan Revisi'
+            );
+
+        $quotationId =
+            $this->insertQuotation(
+                $workspace,
+                $customerId,
+                'Q-REV-REJECTED',
+                'REJECTED'
+            );
+
+        $response = $this->postJson(
+            "/api/v1/quotations/{$quotationId}/versions",
+            [
+                'currency' =>
+                    'IDR',
+
+                'notes' =>
+                    'Revisi setelah permintaan pelanggan.',
+
+                'items' => [
+                    [
+                        'name' =>
+                            'Item Revisi',
+
+                        'quantity' =>
+                            1,
+
+                        'pricing_method' =>
+                            'STANDARD',
+
+                        'unit_price' =>
+                            150000,
+                    ],
+                ],
+            ]
+        );
+
+        $response
+            ->assertCreated()
+            ->assertJsonPath(
+                'data.status',
+                'DRAFT'
+            )
+            ->assertJsonPath(
+                'data.current_version.revision_no',
+                2
+            );
+
+        $this->assertDatabaseHas(
+            'quotation_status_history',
+            [
+                'quotation_id' =>
+                    $quotationId,
+
+                'from_state' =>
+                    'REJECTED',
+
+                'to_state' =>
+                    'DRAFT',
+
+                'source' =>
+                    'USER',
+            ]
+        );
+    }
+
 
     private function workspace(
         string $email,

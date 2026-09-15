@@ -7,6 +7,7 @@ use App\Http\Requests\Quotation\CancelQuotationRequest;
 use App\Http\Requests\Quotation\CreateInvoiceFromQuotationRequest;
 use App\Http\Requests\Quotation\CreateQuotationRevisionRequest;
 use App\Http\Requests\Quotation\ListQuotationsRequest;
+use App\Http\Requests\Quotation\ManualQuotationDecisionRequest;
 use App\Http\Requests\Quotation\StoreQuotationRequest;
 use App\Http\Requests\Quotation\UpdateQuotationRequest;
 use App\Http\Resources\Invoice\InvoiceResource;
@@ -75,9 +76,6 @@ class QuotationController extends Controller
 
         $quotation = $service->createDraft(
             [
-                'quotation_number' =>
-                    $data['quotation_number'],
-
                 'customer_id' =>
                     $data['customer_id'],
 
@@ -156,6 +154,36 @@ class QuotationController extends Controller
             ))->resolve($request),
             200,
             'Penawaran berhasil dikirim.'
+        );
+    }
+
+    public function manualDecision(
+        ManualQuotationDecisionRequest $request,
+        string $quotationId,
+        QuotationService $service
+    ): JsonResponse {
+        $data =
+            $request->validated();
+
+        $quotation =
+            $service->recordManualDecision(
+                $quotationId,
+                $data['decision'],
+                $data['method'],
+                $data['reason'] ?? null,
+                $data['note'] ?? null,
+                $data['decided_at'] ?? null
+            );
+
+        return ApiResponse::success(
+            $request,
+            (new QuotationResource(
+                $quotation
+            ))->resolve($request),
+            200,
+            $data['decision'] === 'APPROVE'
+                ? 'Persetujuan manual berhasil dicatat.'
+                : 'Permintaan revisi manual berhasil dicatat.'
         );
     }
 

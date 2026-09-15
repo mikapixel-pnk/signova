@@ -5,6 +5,7 @@ namespace App\Services\Quotation;
 use App\Models\CatalogItem;
 use App\Models\Customer;
 use App\Models\Quotation;
+use App\Models\QuotationAction;
 use App\Models\QuotationItem;
 use App\Models\QuotationStatusHistory;
 use App\Models\QuotationVersion;
@@ -132,11 +133,16 @@ class QuotationService
                 );
             }
 
+            $quotationNumber =
+                $this->nextQuotationNumber(
+                    $tenantId
+                );
+
             $quotation = Quotation::query()->create([
                 'id' => (string) Str::ulid(),
                 'tenant_id' => $tenantId,
                 'quotation_number' =>
-                    $header['quotation_number'],
+                    $quotationNumber,
                 'customer_id' =>
                     $header['customer_id'],
                 'current_version_id' => null,
@@ -255,11 +261,23 @@ class QuotationService
                 ->lockForUpdate()
                 ->firstOrFail();
 
-            if ($quotation->status !== 'DRAFT') {
+            if (
+                ! in_array(
+                    $quotation->status,
+                    [
+                        'DRAFT',
+                        'REJECTED',
+                    ],
+                    true
+                )
+            ) {
                 throw new QuotationNotEditableException(
-                    'Penawaran hanya dapat diubah saat masih berstatus Draf.'
+                    'Revisi hanya dapat dibuat dari Penawaran Draf atau yang memerlukan revisi.'
                 );
             }
+
+            $previousStatus =
+                $quotation->status;
 
             $latestRevision = QuotationVersion::query()
                 ->where(
@@ -292,7 +310,63 @@ class QuotationService
             $quotation->current_version_id =
                 $newVersion->id;
 
+            if (
+                $previousStatus ===
+                'REJECTED'
+            ) {
+                $quotation->status =
+                    'DRAFT';
+
+                $quotation->rejected_at =
+                    null;
+            }
+
             $quotation->save();
+
+            if (
+                $previousStatus ===
+                'REJECTED'
+            ) {
+                QuotationStatusHistory::query()
+                    ->create([
+                        'id' =>
+                            (string) Str::ulid(),
+
+                        'tenant_id' =>
+                            $this->tenantContext
+                                ->tenantId(),
+
+                        'quotation_id' =>
+                            $quotation->id,
+
+                        'from_state' =>
+                            'REJECTED',
+
+                        'to_state' =>
+                            'DRAFT',
+
+                        'actor_user_id' =>
+                            $this->tenantContext
+                                ->userId(),
+
+                        'reason' =>
+                            'Revisi penawaran dibuat.',
+
+                        'source' =>
+                            'USER',
+
+                        'context' => [
+                            'revision_no' =>
+                                $nextRevision,
+
+                            'quotation_version_id' =>
+                                $newVersion->id,
+                        ],
+
+                        'occurred_at' =>
+                            now(),
+                    ]);
+            }
 
             return $this->findOrFail(
                 $quotation->id
@@ -313,6 +387,196 @@ class QuotationService
             ]
         );
     }
+
+    public function recordManualDecision(
+        string $quotationId,
+        string $decision,
+        string $method,
+        ?string $reason = null,
+        ?string $note = null,
+        ?string $decidedAt = null
+    ): Quotation {
+        return DB::transaction(
+            function () use (
+                $quotationId,
+                $decision,
+                $method,
+                $reason,
+                $note,
+                $decidedAt
+            ): Quotation {
+                $quotation =
+                    $this->baseQuery()
+                        ->where(
+                            'id',
+                            $quotationId
+                        )
+                        ->lockForUpdate()
+                        ->firstOrFail();
+
+                if (
+                    ! in_array(
+                        $quotation->status,
+                        [
+                            'SENT',
+                            'VIEWED',
+                        ],
+                        true
+                    )
+                ) {
+                    throw new InvalidQuotationTransitionException(
+                        $quotation->status,
+                        $decision === 'APPROVE'
+                            ? 'APPROVED'
+                            : 'REJECTED'
+                    );
+                }
+
+                if (
+                    $quotation->current_version_id
+                    === null
+                ) {
+                    throw new RuntimeException(
+                        'Penawaran tidak memiliki versi aktif.'
+                    );
+                }
+
+                $fromState =
+                    $quotation->status;
+
+                $toState =
+                    $decision === 'APPROVE'
+                        ? 'APPROVED'
+                        : 'REJECTED';
+
+                $occurredAt =
+                    $decidedAt
+                        ? \Illuminate\Support\Carbon::parse(
+                            $decidedAt
+                        )
+                        : now();
+
+                $quotation->status =
+                    $toState;
+
+                if ($toState === 'APPROVED') {
+                    $quotation->approved_at =
+                        $occurredAt;
+
+                    $quotation->rejected_at =
+                        null;
+                } else {
+                    $quotation->rejected_at =
+                        $occurredAt;
+
+                    $quotation->approved_at =
+                        null;
+                }
+
+                $quotation->save();
+
+                QuotationAction::query()->create([
+                    'id' =>
+                        (string) Str::ulid(),
+
+                    'tenant_id' =>
+                        $this->tenantContext
+                            ->tenantId(),
+
+                    'quotation_id' =>
+                        $quotation->id,
+
+                    'quotation_version_id' =>
+                        $quotation
+                            ->current_version_id,
+
+                    'public_link_id' =>
+                        null,
+
+                    'action' =>
+                        $decision,
+
+                    'actor_type' =>
+                        'USER',
+
+                    'actor_user_id' =>
+                        $this->tenantContext
+                            ->userId(),
+
+                    'note' =>
+                        $note
+                        ?? $reason,
+
+                    'context' => [
+                        'decision_source' =>
+                            'MANUAL',
+
+                        'method' =>
+                            $method,
+
+                        'reason' =>
+                            $reason,
+
+                        'decided_at' =>
+                            $occurredAt
+                                ->toISOString(),
+                    ],
+
+                    'occurred_at' =>
+                        $occurredAt,
+                ]);
+
+                QuotationStatusHistory::query()
+                    ->create([
+                        'id' =>
+                            (string) Str::ulid(),
+
+                        'tenant_id' =>
+                            $this->tenantContext
+                                ->tenantId(),
+
+                        'quotation_id' =>
+                            $quotation->id,
+
+                        'from_state' =>
+                            $fromState,
+
+                        'to_state' =>
+                            $toState,
+
+                        'actor_user_id' =>
+                            $this->tenantContext
+                                ->userId(),
+
+                        'reason' =>
+                            $reason,
+
+                        'source' =>
+                            'USER',
+
+                        'context' => [
+                            'decision_source' =>
+                                'MANUAL',
+
+                            'method' =>
+                                $method,
+
+                            'quotation_version_id' =>
+                                $quotation
+                                    ->current_version_id,
+                        ],
+
+                        'occurred_at' =>
+                            $occurredAt,
+                    ]);
+
+                return $this->findOrFail(
+                    $quotation->id
+                );
+            }
+        );
+    }
+
 
     public function cancel(
         string $quotationId,
@@ -421,6 +685,113 @@ class QuotationService
                 $quotation->id
             );
         });
+    }
+
+    private function nextQuotationNumber(
+        string $tenantId
+    ): string {
+        $prefix =
+            strtoupper(
+                trim(
+                    (string) config(
+                        'signova_documents.quotation.prefix',
+                        'PEN'
+                    )
+                )
+            );
+
+        if ($prefix === '') {
+            $prefix = 'PEN';
+        }
+
+        $period =
+            now()->format(
+                (string) config(
+                    'signova_documents.quotation.period_format',
+                    'ym'
+                )
+            );
+
+        $sequenceDigits =
+            (int) config(
+                'signova_documents.quotation.sequence_digits',
+                6
+            );
+
+        $base =
+            $prefix
+            . '-'
+            . $period;
+
+        DB::select(
+            'SELECT pg_advisory_xact_lock('
+            . 'hashtextextended(?, 0)'
+            . ')',
+            [
+                'signova:quotation-number:'
+                . $tenantId
+                . ':'
+                . $base,
+            ]
+        );
+
+        $pattern =
+            '^'
+            . preg_quote(
+                $base,
+                '/'
+            )
+            . '-[0-9]{'
+            . $sequenceDigits
+            . '}$';
+
+        $latestNumber =
+            Quotation::query()
+                ->where(
+                    'tenant_id',
+                    $tenantId
+                )
+                ->where(
+                    'quotation_number',
+                    'LIKE',
+                    $base . '-%'
+                )
+                ->whereRaw(
+                    'quotation_number ~ ?',
+                    [$pattern]
+                )
+                ->orderByRaw(
+                    'CAST(RIGHT(quotation_number, ?) AS INTEGER) DESC',
+                    [$sequenceDigits]
+                )
+                ->value(
+                    'quotation_number'
+                );
+
+        $sequence = 1;
+
+        if (
+            is_string($latestNumber)
+            && preg_match(
+                '/-([0-9]{'
+                . $sequenceDigits
+                . '})$/',
+                $latestNumber,
+                $matches
+            ) === 1
+        ) {
+            $sequence =
+                ((int) $matches[1])
+                + 1;
+        }
+
+        return sprintf(
+            '%s-%0'
+            . $sequenceDigits
+            . 'd',
+            $base,
+            $sequence
+        );
     }
 
     private function createVersionRecord(
