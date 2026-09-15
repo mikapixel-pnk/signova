@@ -98,7 +98,7 @@ export const modules:
     group: "master-data",
     label: "Kategori",
     href:
-      "/app/barang-jasa?bagian=kategori",
+      "/app/kategori",
     tone: "amber",
     icon: Tags,
     plan: "starter",
