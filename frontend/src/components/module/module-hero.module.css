@@ -1,3 +1,9 @@
+
+.hero[data-tone="amber"] {
+  --sv-accent:
+    var(--sv-amber);
+}
+
 .hero {
   --sv-accent: var(--sv-cyan);
 

@@ -25,7 +25,8 @@ type ModuleHeroProps = {
     | "teal"
     | "green"
     | "violet"
-    | "rose";
+    | "rose"
+    | "amber";
 
   insightTitle?: string;
   insightDescription?: string;
