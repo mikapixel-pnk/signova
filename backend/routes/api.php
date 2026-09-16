@@ -709,23 +709,26 @@ Route::prefix('v1')->group(function () {
         Route::get(
             '/catalog/categories',
             [CatalogCategoryController::class, 'index']
-        )->middleware(
-            'capability:catalog.view'
-        );
+        )->middleware([
+            'business.context',
+            'capability:catalog.view',
+        ]);
 
         Route::post(
             '/catalog/categories',
             [CatalogCategoryController::class, 'store']
-        )->middleware(
-            'capability:catalog.manage'
-        );
+        )->middleware([
+            'business.context',
+            'capability:catalog.manage',
+        ]);
 
         Route::patch(
             '/catalog/categories/{categoryId}',
             [CatalogCategoryController::class, 'update']
-        )->middleware(
-            'capability:catalog.manage'
-        );
+        )->middleware([
+            'business.context',
+            'capability:catalog.manage',
+        ]);
 
         /*
         |--------------------------------------------------------------------------

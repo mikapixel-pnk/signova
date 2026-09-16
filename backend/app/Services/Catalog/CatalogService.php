@@ -308,6 +308,8 @@ class CatalogService
             'id' => (string) Str::ulid(),
             'tenant_id' =>
                 $this->tenantContext->tenantId(),
+            'business_id' =>
+                $this->businessContext->businessId(),
             'code' => $data['code'] ?? null,
             'name' => $data['name'],
             'description' =>
@@ -398,6 +400,10 @@ class CatalogService
             ->where(
                 'tenant_id',
                 $this->tenantContext->tenantId()
+            )
+            ->where(
+                'business_id',
+                $this->businessContext->businessId()
             );
     }
 

@@ -109,6 +109,7 @@ class CatalogApiTest extends TestCase
         $categoryId =
             $this->insertCategory(
                 $workspace['tenant_id'],
+                $workspace['business_id'],
                 'RUNNING_TEXT',
                 'Running Text'
             );
@@ -422,6 +423,7 @@ class CatalogApiTest extends TestCase
         $foreignCategoryId =
             $this->insertCategory(
                 $second['tenant_id'],
+                $second['business_id'],
                 'FOREIGN-CAT',
                 'Kategori Asing'
             );
@@ -1128,7 +1130,78 @@ class CatalogApiTest extends TestCase
             );
     }
 
-    public function test_duplicate_category_code_is_rejected_within_same_tenant(): void
+    public function test_categories_are_isolated_between_businesses_in_same_tenant(): void
+    {
+        $workspace = $this->workspace(
+            'category-business-isolation@example.test',
+            'Category Business Isolation'
+        );
+
+        $secondBusinessId = (string) Str::ulid();
+
+        DB::table('business_profiles')->insert([
+            'id' => $secondBusinessId,
+            'tenant_id' => $workspace['tenant_id'],
+            'name' => 'Usaha Kedua',
+            'is_default' => false,
+            'status' => 'ACTIVE',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $foreignCategoryId =
+            $this->insertCategory(
+                $workspace['tenant_id'],
+                $secondBusinessId,
+                'SECOND-BUSINESS-CAT',
+                'Kategori Usaha Kedua'
+            );
+
+        $this->actingAsWorkspace($workspace);
+
+        $response = $this->getJson(
+            '/api/v1/catalog/categories'
+        );
+
+        $response->assertOk();
+
+        $this->assertFalse(
+            collect($response->json('data'))
+                ->contains(
+                    fn (array $category) =>
+                        $category['id']
+                        === $foreignCategoryId
+                )
+        );
+
+        $this->patchJson(
+            "/api/v1/catalog/categories/{$foreignCategoryId}",
+            [
+                'name' =>
+                    'Tidak Boleh Diubah',
+            ]
+        )
+            ->assertNotFound()
+            ->assertJsonPath(
+                'error.code',
+                'RESOURCE_NOT_FOUND'
+            );
+
+        $this->assertDatabaseHas(
+            'catalog_categories',
+            [
+                'id' => $foreignCategoryId,
+                'tenant_id' =>
+                    $workspace['tenant_id'],
+                'business_id' =>
+                    $secondBusinessId,
+                'name' =>
+                    'Kategori Usaha Kedua',
+            ]
+        );
+    }
+
+    public function test_duplicate_category_code_is_rejected_within_same_business(): void
     {
         $workspace = $this->workspace(
             'category-duplicate@example.test',
@@ -1137,6 +1210,7 @@ class CatalogApiTest extends TestCase
 
         $this->insertCategory(
             $workspace['tenant_id'],
+            $workspace['business_id'],
             'DUP-CAT',
             'Kategori Pertama'
         );
@@ -1155,6 +1229,81 @@ class CatalogApiTest extends TestCase
                 'error.code',
                 'VALIDATION_FAILED'
             );
+    }
+
+    public function test_same_category_code_is_allowed_in_different_businesses(): void
+    {
+        $workspace = $this->workspace(
+            'category-cross-business-code@example.test',
+            'Category Cross Business Code'
+        );
+
+        $this->insertCategory(
+            $workspace['tenant_id'],
+            $workspace['business_id'],
+            'SHARED-CAT',
+            'Kategori Business Utama'
+        );
+
+        $secondBusinessId = (string) Str::ulid();
+
+        DB::table('business_profiles')->insert([
+            'id' => $secondBusinessId,
+            'tenant_id' => $workspace['tenant_id'],
+            'name' => 'Usaha Kedua',
+            'is_default' => false,
+            'status' => 'ACTIVE',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $this->insertCategory(
+            $workspace['tenant_id'],
+            $secondBusinessId,
+            'SHARED-CAT',
+            'Kategori Business Kedua'
+        );
+
+        $this->assertSame(
+            2,
+            DB::table('catalog_categories')
+                ->where(
+                    'tenant_id',
+                    $workspace['tenant_id']
+                )
+                ->where('code', 'SHARED-CAT')
+                ->count()
+        );
+
+        $this->assertSame(
+            1,
+            DB::table('catalog_categories')
+                ->where(
+                    'tenant_id',
+                    $workspace['tenant_id']
+                )
+                ->where(
+                    'business_id',
+                    $workspace['business_id']
+                )
+                ->where('code', 'SHARED-CAT')
+                ->count()
+        );
+
+        $this->assertSame(
+            1,
+            DB::table('catalog_categories')
+                ->where(
+                    'tenant_id',
+                    $workspace['tenant_id']
+                )
+                ->where(
+                    'business_id',
+                    $secondBusinessId
+                )
+                ->where('code', 'SHARED-CAT')
+                ->count()
+        );
     }
 
     public function test_invalid_catalog_type_is_rejected(): void
@@ -1299,6 +1448,7 @@ class CatalogApiTest extends TestCase
 
     private function insertCategory(
         string $tenantId,
+        string $businessId,
         string $code,
         string $name
     ): string {
@@ -1309,6 +1459,7 @@ class CatalogApiTest extends TestCase
         )->insert([
             'id' => $id,
             'tenant_id' => $tenantId,
+            'business_id' => $businessId,
             'code' => $code,
             'name' => $name,
             'description' => null,

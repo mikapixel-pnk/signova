@@ -11,6 +11,7 @@ class CatalogCategory extends Model
 
     protected $fillable = [
         'tenant_id',
+        'business_id',
         'code',
         'name',
         'description',
