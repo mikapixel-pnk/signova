@@ -38,6 +38,7 @@ class CommercialMasterDataIsolationTest extends TestCase
         DB::table('customers')->insert([
             'id' => $customerId,
             'tenant_id' => $tenantA['tenant_id'],
+            'business_id' => $tenantA['business_id'],
             'type' => 'COMPANY',
             'name' => 'Customer Tenant A',
             'payment_terms_days' => 0,
@@ -51,6 +52,7 @@ class CommercialMasterDataIsolationTest extends TestCase
         DB::table('customer_contacts')->insert([
             'id' => (string) Str::ulid(),
             'tenant_id' => $tenantB['tenant_id'],
+            'business_id' => $tenantB['business_id'],
             'customer_id' => $customerId,
             'name' => 'Cross Tenant Contact',
             'is_primary' => true,
@@ -77,6 +79,7 @@ class CommercialMasterDataIsolationTest extends TestCase
         DB::table('units')->insert([
             'id' => $unitId,
             'tenant_id' => $tenantA['tenant_id'],
+            'business_id' => $tenantA['business_id'],
             'code' => 'CROSS_TENANT_TEST_UNIT',
             'name' => 'Cross Tenant Test Unit',
             'symbol' => 'ctu',
@@ -92,6 +95,7 @@ class CommercialMasterDataIsolationTest extends TestCase
         DB::table('catalog_items')->insert([
             'id' => (string) Str::ulid(),
             'tenant_id' => $tenantB['tenant_id'],
+            'business_id' => $tenantB['business_id'],
             'unit_id' => $unitId,
             'type' => 'GOODS',
             'name' => 'Cross Tenant Item',

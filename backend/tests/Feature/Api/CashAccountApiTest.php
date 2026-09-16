@@ -1118,6 +1118,8 @@ class CashAccountApiTest extends TestCase
             'id' => $id,
             'tenant_id' =>
                 $workspace['tenant_id'],
+            'business_id' =>
+                $workspace['business_id'],
             'type' =>
                 'COMPANY',
             'code' =>

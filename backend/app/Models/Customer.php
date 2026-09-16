@@ -2,8 +2,9 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class Customer extends Model
 {
@@ -11,6 +12,7 @@ class Customer extends Model
 
     protected $fillable = [
         'tenant_id',
+        'business_id',
         'type',
         'code',
         'name',
@@ -25,4 +27,15 @@ class Customer extends Model
     protected $casts = [
         'payment_terms_days' => 'integer',
     ];
+
+    public function primaryBillingAddress(): HasOne
+    {
+        return $this->hasOne(
+            CustomerAddress::class,
+            'customer_id'
+        )
+            ->where('type', 'BILLING')
+            ->where('is_primary', true)
+            ->where('status', 'ACTIVE');
+    }
 }

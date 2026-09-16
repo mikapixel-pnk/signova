@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Customer;
 
+use App\Tenancy\BusinessContext;
 use App\Tenancy\TenantContext;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -24,6 +25,9 @@ class UpdateCustomerRequest extends FormRequest
                 'name',
                 'phone',
                 'tax_id',
+                'address',
+                'city',
+                'province',
                 'notes',
                 'status',
             ] as $field
@@ -50,6 +54,10 @@ class UpdateCustomerRequest extends FormRequest
             TenantContext::class
         )->tenantId();
 
+        $businessId = app(
+            BusinessContext::class
+        )->businessId();
+
         return [
             'type' => [
                 'sometimes',
@@ -66,10 +74,15 @@ class UpdateCustomerRequest extends FormRequest
                 )
                     ->where(
                         fn ($query) =>
-                            $query->where(
-                                'tenant_id',
-                                $tenantId
-                            )
+                            $query
+                                ->where(
+                                    'tenant_id',
+                                    $tenantId
+                                )
+                                ->where(
+                                    'business_id',
+                                    $businessId
+                                )
                     )
                     ->ignore(
                         $this->route('customerId'),
@@ -99,6 +112,23 @@ class UpdateCustomerRequest extends FormRequest
                 'nullable',
                 'string',
                 'max:100',
+            ],
+            'address' => [
+                'sometimes',
+                'nullable',
+                'string',
+            ],
+            'city' => [
+                'sometimes',
+                'nullable',
+                'string',
+                'max:120',
+            ],
+            'province' => [
+                'sometimes',
+                'nullable',
+                'string',
+                'max:120',
             ],
             'payment_terms_days' => [
                 'sometimes',

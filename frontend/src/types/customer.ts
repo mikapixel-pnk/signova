@@ -18,6 +18,9 @@ export type Customer = {
   phone: string | null;
   email: string | null;
   tax_id: string | null;
+  address: string | null;
+  city: string | null;
+  province: string | null;
   payment_terms_days: number | null;
   notes: string | null;
   status: CustomerStatus;
@@ -50,6 +53,9 @@ export type CustomerPayload = {
   phone?: string | null;
   email?: string | null;
   tax_id?: string | null;
+  address?: string | null;
+  city?: string | null;
+  province?: string | null;
   payment_terms_days?: number;
   notes?: string | null;
   status?: CustomerStatus;

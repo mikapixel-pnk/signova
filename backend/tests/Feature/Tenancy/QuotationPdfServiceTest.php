@@ -182,6 +182,8 @@ class QuotationPdfServiceTest extends TestCase
                 $customerId,
             'tenant_id' =>
                 $workspace['tenant_id'],
+            'business_id' =>
+                $workspace['business_id'],
             'type' =>
                 'COMPANY',
             'code' =>

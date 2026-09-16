@@ -851,6 +851,9 @@ export function QuotationDetail() {
           phone: null,
           email: null,
           tax_id: null,
+          address: null,
+          city: null,
+          province: null,
           payment_terms_days:
             null,
           notes: null,

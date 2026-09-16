@@ -5,6 +5,7 @@ import {
   Building2,
   CalendarDays,
   Mail,
+  MapPin,
   Pencil,
   Phone,
   ReceiptText,
@@ -434,6 +435,74 @@ export function CustomerDetail() {
 
                 {textOrDash(
                   customer.email,
+                )}
+              </dd>
+            </div>
+          </dl>
+        </section>
+
+        <section
+          className={
+            styles.card
+          }
+        >
+          <header
+            className={
+              styles.cardHeader
+            }
+          >
+            <MapPin
+              size={20}
+            />
+
+            <div>
+              <h2>
+                Alamat Pelanggan
+              </h2>
+
+              <p>
+                Lokasi utama pelanggan.
+              </p>
+            </div>
+          </header>
+
+          <dl
+            className={
+              styles.detailList
+            }
+          >
+            <div>
+              <dt>
+                Alamat
+              </dt>
+
+              <dd>
+                {textOrDash(
+                  customer.address,
+                )}
+              </dd>
+            </div>
+
+            <div>
+              <dt>
+                Kota
+              </dt>
+
+              <dd>
+                {textOrDash(
+                  customer.city,
+                )}
+              </dd>
+            </div>
+
+            <div>
+              <dt>
+                Provinsi
+              </dt>
+
+              <dd>
+                {textOrDash(
+                  customer.province,
                 )}
               </dd>
             </div>

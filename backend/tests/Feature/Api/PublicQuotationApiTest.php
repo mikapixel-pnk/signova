@@ -916,6 +916,8 @@ class PublicQuotationApiTest extends TestCase
                 $customerId,
             'tenant_id' =>
                 $tenantId,
+            'business_id' =>
+                $workspace['business_id'],
             'type' =>
                 'COMPANY',
             'code' =>

@@ -614,6 +614,36 @@ class PaymentFoundationIsolationTest extends TestCase
         ];
     }
 
+    private function businessIdForTenant(
+        string $tenantId
+    ): string {
+        $businessId = DB::table(
+            'business_profiles'
+        )
+            ->where(
+                'tenant_id',
+                $tenantId
+            )
+            ->where(
+                'is_default',
+                true
+            )
+            ->where(
+                'status',
+                'ACTIVE'
+            )
+            ->value('id');
+
+        if (!$businessId) {
+            throw new \RuntimeException(
+                'Active default business not found '
+                . 'for tenant ' . $tenantId
+            );
+        }
+
+        return (string) $businessId;
+    }
+
     private function customer(
         string $tenantId,
         string $code
@@ -623,6 +653,10 @@ class PaymentFoundationIsolationTest extends TestCase
         DB::table('customers')->insert([
             'id' => $id,
             'tenant_id' => $tenantId,
+            'business_id' =>
+                $this->businessIdForTenant(
+                    $tenantId
+                ),
             'type' => 'COMPANY',
             'code' => $code,
             'name' => $code,

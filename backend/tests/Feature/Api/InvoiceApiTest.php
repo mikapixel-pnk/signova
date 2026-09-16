@@ -2209,6 +2209,9 @@ class InvoiceApiTest extends TestCase
             'tenant_id' =>
                 $workspace['tenant_id'],
 
+            'business_id' =>
+                $workspace['business_id'],
+
             'category_id' =>
                 null,
 
@@ -2532,6 +2535,9 @@ class InvoiceApiTest extends TestCase
             'tenant_id' =>
                 $workspace['tenant_id'],
 
+            'business_id' =>
+                $workspace['business_id'],
+
             'user' =>
                 User::query()->findOrFail(
                     $workspace['user_id']
@@ -2553,6 +2559,36 @@ class InvoiceApiTest extends TestCase
         );
     }
 
+    private function businessIdForTenant(
+        string $tenantId
+    ): string {
+        $businessId = DB::table(
+            'business_profiles'
+        )
+            ->where(
+                'tenant_id',
+                $tenantId
+            )
+            ->where(
+                'is_default',
+                true
+            )
+            ->where(
+                'status',
+                'ACTIVE'
+            )
+            ->value('id');
+
+        if (!$businessId) {
+            throw new \RuntimeException(
+                'Active default business not found '
+                . 'for tenant ' . $tenantId
+            );
+        }
+
+        return (string) $businessId;
+    }
+
     private function insertCustomer(
         string $tenantId,
         string $code,
@@ -2563,6 +2599,10 @@ class InvoiceApiTest extends TestCase
         DB::table('customers')->insert([
             'id' => $id,
             'tenant_id' => $tenantId,
+            'business_id' =>
+                $this->businessIdForTenant(
+                    $tenantId
+                ),
             'type' => 'COMPANY',
             'code' => $code,
             'name' => $name,

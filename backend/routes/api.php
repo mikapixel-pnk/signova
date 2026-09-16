@@ -112,30 +112,34 @@ Route::prefix('v1')->group(function () {
         Route::get(
             '/customers',
             [CustomerController::class, 'index']
-        )->middleware(
-            'capability:customer.view'
-        );
+        )->middleware([
+            'business.context',
+            'capability:customer.view',
+        ]);
 
         Route::post(
             '/customers',
             [CustomerController::class, 'store']
-        )->middleware(
-            'capability:customer.create'
-        );
+        )->middleware([
+            'business.context',
+            'capability:customer.create',
+        ]);
 
         Route::get(
             '/customers/{customerId}',
             [CustomerController::class, 'show']
-        )->middleware(
-            'capability:customer.view'
-        );
+        )->middleware([
+            'business.context',
+            'capability:customer.view',
+        ]);
 
         Route::patch(
             '/customers/{customerId}',
             [CustomerController::class, 'update']
-        )->middleware(
-            'capability:customer.update'
-        );
+        )->middleware([
+            'business.context',
+            'capability:customer.update',
+        ]);
 
 
         /*

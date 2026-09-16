@@ -56,6 +56,9 @@ type FormState = {
   phone: string;
   email: string;
   taxId: string;
+  address: string;
+  city: string;
+  province: string;
   paymentTermsDays: string;
   notes: string;
   status: CustomerStatus;
@@ -75,6 +78,9 @@ const initialForm:
   phone: "",
   email: "",
   taxId: "",
+  address: "",
+  city: "",
+  province: "",
   paymentTermsDays: "30",
   notes: "",
   status: "ACTIVE",
@@ -90,6 +96,9 @@ function formFromCustomer(
     phone: customer.phone ?? "",
     email: customer.email ?? "",
     taxId: customer.tax_id ?? "",
+    address: customer.address ?? "",
+    city: customer.city ?? "",
+    province: customer.province ?? "",
     paymentTermsDays:
       String(
         customer.payment_terms_days ??
@@ -338,6 +347,21 @@ export function CustomerForm({
           form.taxId,
         ),
 
+      address:
+        nullableText(
+          form.address,
+        ),
+
+      city:
+        nullableText(
+          form.city,
+        ),
+
+      province:
+        nullableText(
+          form.province,
+        ),
+
       payment_terms_days:
         form.paymentTermsDays
           .trim()
@@ -462,6 +486,24 @@ export function CustomerForm({
     firstFieldError(
       fieldErrors,
       "tax_id",
+    );
+
+  const addressError =
+    firstFieldError(
+      fieldErrors,
+      "address",
+    );
+
+  const cityError =
+    firstFieldError(
+      fieldErrors,
+      "city",
+    );
+
+  const provinceError =
+    firstFieldError(
+      fieldErrors,
+      "province",
     );
 
   const paymentTermsError =
@@ -821,6 +863,158 @@ export function CustomerForm({
                   }
                 >
                   {emailError}
+                </small>
+              ) : null}
+            </label>
+          </div>
+        </section>
+
+        <section
+          className={
+            styles.card
+          }
+        >
+          <div
+            className={
+              styles.sectionHeading
+            }
+          >
+            <div>
+              <p
+                className={
+                  styles.sectionEyebrow
+                }
+              >
+                Alamat Pelanggan
+              </p>
+
+              <h2>
+                Lokasi pelanggan
+              </h2>
+
+              <p>
+                Simpan alamat utama pelanggan
+                untuk kebutuhan dokumen dan
+                transaksi.
+              </p>
+            </div>
+          </div>
+
+          <div
+            className={
+              styles.fields
+            }
+          >
+            <label
+              className={
+                styles.fieldWide
+              }
+            >
+              <span>
+                Alamat
+              </span>
+
+              <textarea
+                value={
+                  form.address
+                }
+                onChange={
+                  (event) =>
+                    updateField(
+                      "address",
+                      event.target
+                        .value,
+                    )
+                }
+                rows={3}
+                placeholder="Contoh: Jl. Ahmad Yani No. 10"
+                aria-invalid={
+                  Boolean(
+                    addressError,
+                  )
+                }
+              />
+
+              <small
+                className={
+                  addressError
+                    ? styles.fieldError
+                    : styles.help
+                }
+              >
+                {addressError ??
+                  "Alamat utama pelanggan, jika tersedia."}
+              </small>
+            </label>
+
+            <label>
+              <span>
+                Kota
+              </span>
+
+              <input
+                value={
+                  form.city
+                }
+                onChange={
+                  (event) =>
+                    updateField(
+                      "city",
+                      event.target
+                        .value,
+                    )
+                }
+                placeholder="Contoh: Pontianak"
+                aria-invalid={
+                  Boolean(
+                    cityError,
+                  )
+                }
+              />
+
+              {cityError ? (
+                <small
+                  className={
+                    styles.fieldError
+                  }
+                >
+                  {cityError}
+                </small>
+              ) : null}
+            </label>
+
+            <label>
+              <span>
+                Provinsi
+              </span>
+
+              <input
+                value={
+                  form.province
+                }
+                onChange={
+                  (event) =>
+                    updateField(
+                      "province",
+                      event.target
+                        .value,
+                    )
+                }
+                placeholder="Contoh: Kalimantan Barat"
+                aria-invalid={
+                  Boolean(
+                    provinceError,
+                  )
+                }
+              />
+
+              {provinceError ? (
+                <small
+                  className={
+                    styles.fieldError
+                  }
+                >
+                  {provinceError}
                 </small>
               ) : null}
             </label>

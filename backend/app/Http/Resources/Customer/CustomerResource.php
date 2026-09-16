@@ -18,6 +18,15 @@ class CustomerResource extends JsonResource
             'phone' => $this->phone,
             'email' => $this->email,
             'tax_id' => $this->tax_id,
+            'address' =>
+                $this->primaryBillingAddress
+                    ?->address_line_1,
+            'city' =>
+                $this->primaryBillingAddress
+                    ?->city,
+            'province' =>
+                $this->primaryBillingAddress
+                    ?->province,
             'payment_terms_days' =>
                 $this->payment_terms_days,
             'notes' => $this->notes,
