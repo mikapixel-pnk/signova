@@ -151,7 +151,8 @@ export default function RegisterPage() {
         });
 
       if (
-        !response.data.tenant
+        !response.data.tenant ||
+        !response.data.business
       ) {
         setError(
           "Akun berhasil dibuat, tetapi usaha aktif belum dapat disiapkan.",
@@ -164,6 +165,8 @@ export default function RegisterPage() {
         type: "TENANT",
         tenantId:
           response.data.tenant.id,
+        businessId:
+          response.data.business.id,
       });
 
       router.replace("/app");

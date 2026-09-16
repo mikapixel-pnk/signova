@@ -23,13 +23,22 @@ export function apiErrorMessage(
       return "Sesi Anda sudah tidak tersedia. Silakan masuk kembali.";
 
     case "TENANT_SELECTION_REQUIRED":
-      return "Pilih usaha yang ingin digunakan terlebih dahulu.";
+      return "Pilih workspace yang ingin digunakan terlebih dahulu.";
 
     case "TENANT_ACCESS_DENIED":
-      return "Usaha ini sudah tidak dapat diakses oleh akun Anda.";
+      return "Workspace ini sudah tidak dapat diakses oleh akun Anda.";
 
     case "ACTIVE_TENANT_REQUIRED":
-      return "Akun belum memiliki usaha aktif.";
+      return "Akun belum memiliki workspace aktif.";
+
+    case "BUSINESS_SELECTION_REQUIRED":
+      return "Pilih usaha yang ingin digunakan terlebih dahulu.";
+
+    case "BUSINESS_ACCESS_DENIED":
+      return "Usaha ini sudah tidak dapat diakses.";
+
+    case "ACTIVE_BUSINESS_REQUIRED":
+      return "Workspace ini belum memiliki usaha aktif.";
 
     case "FORBIDDEN_CAPABILITY":
       return "Anda belum memiliki izin untuk melakukan tindakan ini.";

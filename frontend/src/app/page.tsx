@@ -54,7 +54,12 @@ export default function Home() {
               data.access.tenants.some(
                 (tenant) =>
                   tenant.id ===
-                  stored.tenantId,
+                    stored.tenantId &&
+                  tenant.businesses.some(
+                    (business) =>
+                      business.id ===
+                      stored.businessId,
+                  ),
               )
             ) {
               router.replace(
@@ -87,6 +92,9 @@ export default function Home() {
                 tenantId:
                   data.default_context
                     .tenant_id,
+                businessId:
+                  data.default_context
+                    .business_id,
               });
 
               router.replace(
@@ -104,6 +112,7 @@ export default function Home() {
               setSelectedContext({
                 type: "PLATFORM",
                 tenantId: null,
+                businessId: null,
               });
 
               router.replace(

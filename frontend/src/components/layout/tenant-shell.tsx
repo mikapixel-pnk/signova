@@ -344,8 +344,8 @@ export function TenantShell({
   ] = useState(false);
 
   const [
-    activeTenantName,
-    setActiveTenantName,
+    activeBusinessName,
+    setActiveBusinessName,
   ] = useState(
     "Memuat usaha...",
   );
@@ -537,7 +537,7 @@ export function TenantShell({
                 styles.headerBusiness
               }
             >
-              {activeTenantName}
+              {activeBusinessName}
             </strong>
           </div>
 
@@ -607,8 +607,8 @@ export function TenantShell({
           }
         >
           <TenantSessionGate
-            onTenantResolved={
-              setActiveTenantName
+            onBusinessResolved={
+              setActiveBusinessName
             }
           >
             {children}

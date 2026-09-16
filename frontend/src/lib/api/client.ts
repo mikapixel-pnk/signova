@@ -31,6 +31,10 @@ type ApiRequestOptions =
     tenantId?:
       | string
       | null;
+
+    businessId?:
+      | string
+      | null;
   };
 
 function buildUrl(
@@ -338,6 +342,7 @@ async function performRequest<
   const {
     accessToken,
     tenantId,
+    businessId,
     body,
     headers,
     ...requestOptions
@@ -387,6 +392,13 @@ async function performRequest<
     requestHeaders.set(
       "X-Signova-Tenant",
       tenantId,
+    );
+  }
+
+  if (businessId) {
+    requestHeaders.set(
+      "X-Signova-Business",
+      businessId,
     );
   }
 
@@ -500,6 +512,12 @@ export async function authenticatedApiBlobRequest(
       ? context.tenantId
       : null;
 
+  const businessId =
+    context?.type ===
+    "TENANT"
+      ? context.businessId
+      : null;
+
   const requestHeaders =
     new Headers();
 
@@ -512,6 +530,13 @@ export async function authenticatedApiBlobRequest(
     requestHeaders.set(
       "X-Signova-Tenant",
       tenantId,
+    );
+  }
+
+  if (businessId) {
+    requestHeaders.set(
+      "X-Signova-Business",
+      businessId,
     );
   }
 
@@ -547,6 +572,7 @@ export async function authenticatedApiRequest<
       ApiRequestOptions,
       | "accessToken"
       | "tenantId"
+      | "businessId"
     > = {},
 ): Promise<T> {
   const context =
@@ -558,6 +584,12 @@ export async function authenticatedApiRequest<
       ? context.tenantId
       : null;
 
+  const businessId =
+    context?.type ===
+    "TENANT"
+      ? context.businessId
+      : null;
+
   /*
    * Authentication berasal dari
    * HttpOnly Laravel session cookie.
@@ -567,6 +599,7 @@ export async function authenticatedApiRequest<
     {
       ...options,
       tenantId,
+      businessId,
     },
   );
 }

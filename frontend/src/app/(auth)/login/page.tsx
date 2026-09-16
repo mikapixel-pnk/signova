@@ -131,6 +131,7 @@ export default function LoginPage() {
         setSelectedContext({
           type: "PLATFORM",
           tenantId: null,
+          businessId: null,
         });
 
         router.replace(
@@ -151,6 +152,10 @@ export default function LoginPage() {
             response.data
               .default_context
               .tenant_id,
+          businessId:
+            response.data
+              .default_context
+              .business_id,
         });
 
         router.replace(

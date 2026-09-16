@@ -47,14 +47,14 @@ import styles from "./tenant-session-gate.module.css";
 type TenantSessionGateProps = {
   children: ReactNode;
 
-  onTenantResolved?: (
-    tenantName: string,
+  onBusinessResolved?: (
+    businessName: string,
   ) => void;
 };
 
 export function TenantSessionGate({
   children,
-  onTenantResolved,
+  onBusinessResolved,
 }: TenantSessionGateProps) {
   const router =
     useRouter();
@@ -100,26 +100,27 @@ export function TenantSessionGate({
             stored?.type ===
               "TENANT"
           ) {
-            const allowed =
-              data.access.tenants.some(
-                (tenant) =>
-                  tenant.id ===
+            const tenant =
+              data.access.tenants.find(
+                (item) =>
+                  item.id ===
                   stored.tenantId,
               );
 
-            if (allowed) {
-              const tenant =
-                data.access.tenants.find(
-                  (item) =>
-                    item.id ===
-                    stored.tenantId,
-                );
+            const business =
+              tenant?.businesses.find(
+                (item) =>
+                  item.id ===
+                  stored.businessId,
+              );
 
-              if (tenant) {
-                onTenantResolved?.(
-                  tenant.name,
-                );
-              }
+            if (
+              tenant &&
+              business
+            ) {
+              onBusinessResolved?.(
+                business.name,
+              );
 
               setReady(true);
 
@@ -147,24 +148,34 @@ export function TenantSessionGate({
               ?.type ===
             "TENANT"
           ) {
+            const defaultContext =
+              data.default_context;
+
             setSelectedContext({
               type: "TENANT",
               tenantId:
-                data.default_context
-                  .tenant_id,
+                defaultContext.tenant_id,
+              businessId:
+                defaultContext.business_id,
             });
 
             const tenant =
               data.access.tenants.find(
                 (item) =>
                   item.id ===
-                  data.default_context
-                    ?.tenant_id,
+                  defaultContext.tenant_id,
               );
 
-            if (tenant) {
-              onTenantResolved?.(
-                tenant.name,
+            const business =
+              tenant?.businesses.find(
+                (item) =>
+                  item.id ===
+                  defaultContext.business_id,
+              );
+
+            if (business) {
+              onBusinessResolved?.(
+                business.name,
               );
             }
 
@@ -181,6 +192,7 @@ export function TenantSessionGate({
             setSelectedContext({
               type: "PLATFORM",
               tenantId: null,
+              businessId: null,
             });
 
             router.replace(
@@ -228,7 +240,7 @@ export function TenantSessionGate({
         }
       },
       [
-        onTenantResolved,
+        onBusinessResolved,
         router,
       ],
     );

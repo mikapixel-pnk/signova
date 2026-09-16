@@ -2,13 +2,18 @@ export type SelectedAccessContext =
   | {
       type: "PLATFORM";
       tenantId: null;
+      businessId: null;
     }
   | {
       type: "TENANT";
       tenantId: string;
+      businessId: string;
     };
 
 const STORAGE_KEY =
+  "signova.active-context.v2";
+
+const LEGACY_STORAGE_KEY =
   "signova.active-context.v1";
 
 let selectedContext:
@@ -29,6 +34,7 @@ function isValidContext(
     value as {
       type?: unknown;
       tenantId?: unknown;
+      businessId?: unknown;
     };
 
   if (
@@ -37,7 +43,9 @@ function isValidContext(
   ) {
     return (
       candidate.tenantId ===
-      null
+        null &&
+      candidate.businessId ===
+        null
     );
   }
 
@@ -49,6 +57,10 @@ function isValidContext(
       typeof candidate.tenantId ===
         "string" &&
       candidate.tenantId.length >
+        0 &&
+      typeof candidate.businessId ===
+        "string" &&
+      candidate.businessId.length >
         0
     );
   }
@@ -105,6 +117,10 @@ export function setSelectedContext(
         value,
       ),
     );
+
+    window.localStorage.removeItem(
+      LEGACY_STORAGE_KEY,
+    );
   }
 }
 
@@ -131,6 +147,10 @@ export function clearSelectedContext(): void {
   ) {
     window.localStorage.removeItem(
       STORAGE_KEY,
+    );
+
+    window.localStorage.removeItem(
+      LEGACY_STORAGE_KEY,
     );
   }
 }

@@ -97,6 +97,7 @@ export default function SelectContextPage() {
     setSelectedContext({
       type: "PLATFORM",
       tenantId: null,
+      businessId: null,
     });
 
     clearPendingAccessSelection();
@@ -106,19 +107,14 @@ export default function SelectContextPage() {
     );
   }
 
-  function openTenant(
+  function openBusiness(
     tenantId: string,
+    businessId: string,
   ) {
-    /*
-     * Tenant aktif belum disimpan
-     * permanen di tahap ini.
-     *
-     * A.2.9 akan mengikat tenantId
-     * ke bootstrap/session context.
-     */
     setSelectedContext({
       type: "TENANT",
       tenantId,
+      businessId,
     });
 
     clearPendingAccessSelection();
@@ -181,8 +177,8 @@ export default function SelectContextPage() {
               styles.description
             }
           >
-            Pilih bagian yang ingin
-            Anda buka.
+            Pilih usaha atau akses
+            SIGNOVA yang ingin Anda buka.
           </p>
         </header>
 
@@ -200,64 +196,66 @@ export default function SelectContextPage() {
               Usaha Anda
             </h2>
 
-            {access.tenants.map(
-              (tenant) => (
-                <button
-                  key={tenant.id}
-                  type="button"
-                  className={
-                    styles.option
-                  }
-                  onClick={() =>
-                    openTenant(
-                      tenant.id,
-                    )
-                  }
-                >
-                  <span
-                    className={
-                      styles.icon
-                    }
-                  >
-                    <Building2
-                      size={21}
-                    />
-                  </span>
-
-                  <span
-                    className={
-                      styles.body
-                    }
-                  >
-                    <span
+            {access.tenants.flatMap(
+              (tenant) =>
+                tenant.businesses.map(
+                  (business) => (
+                    <button
+                      key={
+                        `${tenant.id}-${business.id}`
+                      }
+                      type="button"
                       className={
-                        styles.name
+                        styles.option
+                      }
+                      onClick={() =>
+                        openBusiness(
+                          tenant.id,
+                          business.id,
+                        )
                       }
                     >
-                      {tenant.name}
-                    </span>
+                      <span
+                        className={
+                          styles.icon
+                        }
+                      >
+                        <Building2
+                          size={21}
+                        />
+                      </span>
 
-                    <span
-                      className={
-                        styles.detail
-                      }
-                    >
-                      Kelola pelanggan,
-                      tagihan,
-                      pembayaran,
-                      dan kegiatan
-                      usaha.
-                    </span>
-                  </span>
+                      <span
+                        className={
+                          styles.body
+                        }
+                      >
+                        <span
+                          className={
+                            styles.name
+                          }
+                        >
+                          {business.name}
+                        </span>
 
-                  <ChevronRight
-                    size={19}
-                    className={
-                      styles.chevron
-                    }
-                  />
-                </button>
-              ),
+                        <span
+                          className={
+                            styles.detail
+                          }
+                        >
+                          {tenant.name}
+                        </span>
+                      </span>
+
+                      <ChevronRight
+                        size={19}
+                        className={
+                          styles.chevron
+                        }
+                      />
+                    </button>
+                  ),
+                ),
             )}
           </section>
         ) : null}
