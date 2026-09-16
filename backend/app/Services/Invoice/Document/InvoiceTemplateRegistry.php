@@ -12,179 +12,15 @@ class InvoiceTemplateRegistry
     public const DEFAULT_PALETTE_KEY =
         'blue';
 
-    private const TEMPLATES = [
-        'classic_blue' => [
-            'key' =>
-                'classic_blue',
-
-            'name' =>
-                'Classic Blue',
-
-            'tier' =>
-                'STARTER',
-
-            'layout' =>
-                'classic',
-
-            'version' =>
-                1,
-
-            'default_palette' =>
-                'blue',
-
-            'palettes' => [
-                'blue',
-            ],
-        ],
-
-        'modern_emerald' => [
-            'key' =>
-                'modern_emerald',
-
-            'name' =>
-                'Modern Emerald',
-
-            'tier' =>
-                'STARTER',
-
-            'layout' =>
-                'modern',
-
-            'version' =>
-                1,
-
-            'default_palette' =>
-                'emerald',
-
-            'palettes' => [
-                'emerald',
-            ],
-        ],
-
-        'minimal_slate' => [
-            'key' =>
-                'minimal_slate',
-
-            'name' =>
-                'Minimal Slate',
-
-            'tier' =>
-                'STARTER',
-
-            'layout' =>
-                'minimal',
-
-            'version' =>
-                1,
-
-            'default_palette' =>
-                'slate',
-
-            'palettes' => [
-                'slate',
-            ],
-        ],
-    ];
-
-    private const PALETTES = [
-        'blue' => [
-            'key' =>
-                'blue',
-
-            'name' =>
-                'Blue',
-
-            'tokens' => [
-                'primary' =>
-                    '#2563EB',
-
-                'primary_dark' =>
-                    '#1E40AF',
-
-                'accent' =>
-                    '#DBEAFE',
-
-                'text' =>
-                    '#1F2937',
-
-                'muted' =>
-                    '#6B7280',
-
-                'border' =>
-                    '#D1D5DB',
-
-                'surface' =>
-                    '#F8FAFC',
-            ],
-        ],
-
-        'emerald' => [
-            'key' =>
-                'emerald',
-
-            'name' =>
-                'Emerald',
-
-            'tokens' => [
-                'primary' =>
-                    '#059669',
-
-                'primary_dark' =>
-                    '#047857',
-
-                'accent' =>
-                    '#D1FAE5',
-
-                'text' =>
-                    '#1F2937',
-
-                'muted' =>
-                    '#6B7280',
-
-                'border' =>
-                    '#D1D5DB',
-
-                'surface' =>
-                    '#F8FAFC',
-            ],
-        ],
-
-        'slate' => [
-            'key' =>
-                'slate',
-
-            'name' =>
-                'Slate',
-
-            'tokens' => [
-                'primary' =>
-                    '#475569',
-
-                'primary_dark' =>
-                    '#334155',
-
-                'accent' =>
-                    '#E2E8F0',
-
-                'text' =>
-                    '#0F172A',
-
-                'muted' =>
-                    '#64748B',
-
-                'border' =>
-                    '#CBD5E1',
-
-                'surface' =>
-                    '#F8FAFC',
-            ],
-        ],
-    ];
+    public function __construct(
+        private readonly ?InvoiceTemplateLoader $loader = null
+    ) {
+    }
 
     public function all(): array
     {
         return array_values(
-            self::TEMPLATES
+            $this->templates()
         );
     }
 
@@ -192,7 +28,7 @@ class InvoiceTemplateRegistry
     {
         return array_values(
             array_filter(
-                self::TEMPLATES,
+                $this->templates(),
                 fn (array $template): bool =>
                     $template['tier']
                     === 'STARTER'
@@ -211,7 +47,7 @@ class InvoiceTemplateRegistry
         string $templateKey
     ): array {
         $template =
-            self::TEMPLATES[
+            $this->templates()[
                 $templateKey
             ] ?? null;
 
@@ -228,7 +64,7 @@ class InvoiceTemplateRegistry
         string $templateKey
     ): bool {
         return isset(
-            self::TEMPLATES[
+            $this->templates()[
                 $templateKey
             ]
         );
@@ -238,7 +74,7 @@ class InvoiceTemplateRegistry
         string $paletteKey
     ): array {
         $palette =
-            self::PALETTES[
+            $this->palettes()[
                 $paletteKey
             ] ?? null;
 
@@ -303,5 +139,23 @@ class InvoiceTemplateRegistry
                     $resolvedPaletteKey
                 ),
         ];
+    }
+
+    private function templates(): array
+    {
+        return $this->templateLoader()
+            ->templates();
+    }
+
+    private function palettes(): array
+    {
+        return $this->templateLoader()
+            ->palettes();
+    }
+
+    private function templateLoader(): InvoiceTemplateLoader
+    {
+        return $this->loader
+            ?? new InvoiceTemplateLoader();
     }
 }
