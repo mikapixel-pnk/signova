@@ -3,6 +3,7 @@
 use App\Exceptions\Quotation\InvalidQuotationTransitionException;
 use App\Exceptions\Quotation\QuotationNotEditableException;
 use App\Exceptions\Quotation\QuotationPricingValidationException;
+use App\Http\Middleware\ResolveBusinessContext;
 use App\Http\Middleware\ResolveTenantContext;
 use App\Http\Middleware\RequireCapability;
 use App\Http\Middleware\RequirePlatformCapability;
@@ -42,6 +43,7 @@ return Application::configure(basePath: dirname(__DIR__))
 
         $middleware->alias([
             'tenant.context' => ResolveTenantContext::class,
+            'business.context' => ResolveBusinessContext::class,
             'capability' => RequireCapability::class,
             'platform.capability' => RequirePlatformCapability::class,
         ]);

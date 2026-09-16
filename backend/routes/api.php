@@ -98,6 +98,8 @@ Route::prefix('v1')->group(function () {
                 Route::get(
                     '/me',
                     [AuthController::class, 'me']
+                )->middleware(
+                    'business.context'
                 );
             });
         });

@@ -249,7 +249,8 @@ class AuthController extends Controller
 
     public function me(
         Request $request,
-        TenantContext $tenantContext
+        TenantContext $tenantContext,
+        \App\Tenancy\BusinessContext $businessContext
     ): JsonResponse {
         /** @var User $user */
         $user = $request->user();
@@ -259,6 +260,10 @@ class AuthController extends Controller
                 'user' => $this->userPayload($user),
                 'tenant' => $this->tenantPayload(
                     $tenantContext->tenantId()
+                ),
+                'business' => $this->businessPayload(
+                    $tenantContext->tenantId(),
+                    $businessContext->businessId()
                 ),
             ],
         ]);
@@ -325,6 +330,28 @@ class AuthController extends Controller
             'email' => $user->email,
             'phone' => $user->phone,
             'auth_status' => $user->auth_status,
+        ];
+    }
+
+    private function businessPayload(
+        string $tenantId,
+        string $businessId
+    ): ?array {
+        $business = DB::table('business_profiles')
+            ->where('tenant_id', $tenantId)
+            ->where('id', $businessId)
+            ->first();
+
+        if (! $business) {
+            return null;
+        }
+
+        return [
+            'id' => $business->id,
+            'tenant_id' => $business->tenant_id,
+            'name' => $business->name,
+            'is_default' => (bool) $business->is_default,
+            'status' => $business->status,
         ];
     }
 

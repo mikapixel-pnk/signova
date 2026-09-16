@@ -4,6 +4,7 @@ namespace App\Providers;
 
 use App\Contracts\Messaging\WhatsAppDelivery;
 use App\Services\Messaging\AnaWhatsAppGatewayAdapter;
+use App\Tenancy\BusinessContext;
 use App\Tenancy\TenantContext;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
@@ -20,6 +21,11 @@ class AppServiceProvider extends ServiceProvider
         $this->app->scoped(
             TenantContext::class,
             fn () => new TenantContext()
+        );
+
+        $this->app->scoped(
+            BusinessContext::class,
+            fn () => new BusinessContext()
         );
 
         $this->app->bind(
