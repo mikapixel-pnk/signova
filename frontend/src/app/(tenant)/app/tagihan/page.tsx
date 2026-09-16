@@ -10,6 +10,8 @@ import {
   X,
 } from "lucide-react";
 
+import Link from "next/link";
+
 import {
   useCallback,
   useEffect,
@@ -1303,11 +1305,16 @@ export default function InvoicePage() {
                           }
                         >
                           <td>
-                            <strong>
+                            <Link
+                              href={`/app/tagihan/${invoice.id}`}
+                              className={
+                                styles.detailLink
+                              }
+                            >
                               {
                                 invoice.invoice_number
                               }
-                            </strong>
+                            </Link>
 
                             <small>
                               Dibuat{" "}
@@ -1383,11 +1390,16 @@ export default function InvoicePage() {
                         }
                       >
                         <div>
-                          <strong>
+                          <Link
+                            href={`/app/tagihan/${invoice.id}`}
+                            className={
+                              styles.detailLink
+                            }
+                          >
                             {
                               invoice.invoice_number
                             }
-                          </strong>
+                          </Link>
 
                           <span>
                             {

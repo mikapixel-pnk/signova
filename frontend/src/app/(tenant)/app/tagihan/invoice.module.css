@@ -503,3 +503,14 @@
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 }
+
+.detailLink {
+  color: inherit;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.detailLink:hover {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}

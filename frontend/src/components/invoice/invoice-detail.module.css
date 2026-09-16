@@ -1,0 +1,439 @@
+.page {
+  display: grid;
+  gap: 18px;
+  padding-bottom: 36px;
+}
+
+.topBar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.backLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  width: fit-content;
+  color: inherit;
+  font-weight: 650;
+  text-decoration: none;
+}
+
+.loadingCard,
+.card,
+.actionCard,
+.infoCard {
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  background: var(--surface);
+}
+
+.loadingCard {
+  padding: 28px;
+  color: var(--muted-foreground);
+  text-align: center;
+}
+
+.actionCard {
+  display: grid;
+  gap: 15px;
+  padding: 17px;
+}
+
+.actionCard > div:first-child {
+  display: grid;
+  gap: 5px;
+}
+
+.actionCard p {
+  margin: 0;
+  color: var(--muted-foreground);
+  line-height: 1.55;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.infoGrid {
+  display: grid;
+  gap: 10px;
+}
+
+.infoCard {
+  display: flex;
+  gap: 12px;
+  padding: 15px;
+}
+
+.infoIcon {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  flex: 0 0 auto;
+  border-radius: 11px;
+  background: var(--muted);
+}
+
+.infoCard > div {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.infoCard span,
+.infoCard small {
+  color: var(--muted-foreground);
+  font-size: 0.78rem;
+}
+
+.infoCard strong {
+  overflow-wrap: anywhere;
+}
+
+.card {
+  overflow: hidden;
+}
+
+.cardHeader {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 17px;
+  border-bottom: 1px solid var(--border);
+}
+
+.cardHeader > div {
+  display: grid;
+  gap: 3px;
+}
+
+.cardHeader span {
+  color: var(--muted-foreground);
+  font-size: 0.8rem;
+}
+
+.itemList {
+  display: grid;
+}
+
+.item {
+  display: grid;
+  gap: 15px;
+  padding: 16px;
+  border-bottom: 1px solid var(--border);
+}
+
+.itemMain {
+  display: flex;
+  align-items: flex-start;
+  gap: 11px;
+}
+
+.itemNumber {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  flex: 0 0 auto;
+  border-radius: 9px;
+  background: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.itemMain > div:last-child {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.itemMain span {
+  color: var(--muted-foreground);
+  font-size: 0.78rem;
+}
+
+.itemMain p {
+  margin: 4px 0 0;
+  color: var(--muted-foreground);
+  font-size: 0.82rem;
+  line-height: 1.5;
+}
+
+.itemValues {
+  display: grid;
+  grid-template-columns:
+    repeat(
+      2,
+      minmax(0, 1fr)
+    );
+  gap: 10px;
+}
+
+.itemValues > span {
+  display: grid;
+  gap: 3px;
+  color: var(--muted-foreground);
+  font-size: 0.75rem;
+}
+
+.itemValues strong {
+  color: var(--foreground);
+  font-size: 0.85rem;
+}
+
+.itemAmount {
+  grid-column: 1 / -1;
+  padding-top: 9px;
+  border-top: 1px dashed var(--border);
+}
+
+.summary {
+  display: grid;
+  gap: 9px;
+  padding: 17px;
+}
+
+.summary > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 18px;
+}
+
+.summary span {
+  color: var(--muted-foreground);
+}
+
+.grandTotal,
+.outstanding {
+  padding-top: 11px;
+  border-top: 1px solid var(--border);
+  font-size: 1.03rem;
+}
+
+.outstanding strong {
+  font-size: 1.08rem;
+}
+
+.notes {
+  margin: 0;
+  padding: 17px;
+  white-space: pre-wrap;
+  line-height: 1.65;
+}
+
+.timeline {
+  display: grid;
+  padding: 17px;
+}
+
+.timelineItem {
+  position: relative;
+  display: grid;
+  grid-template-columns: 18px 1fr;
+  gap: 10px;
+  min-height: 66px;
+}
+
+.timelineItem:not(:last-child)::before {
+  content: "";
+  position: absolute;
+  top: 17px;
+  bottom: -3px;
+  left: 6px;
+  width: 1px;
+  background: var(--border);
+}
+
+.timelineDot {
+  position: relative;
+  z-index: 1;
+  width: 13px;
+  height: 13px;
+  margin-top: 3px;
+  border: 3px solid var(--surface);
+  border-radius: 999px;
+  background: currentColor;
+  box-shadow:
+    0 0 0 1px
+    var(--border);
+}
+
+.timelineItem > div {
+  display: grid;
+  align-content: start;
+  gap: 3px;
+  padding-bottom: 15px;
+}
+
+.timelineItem span {
+  color: var(--muted-foreground);
+  font-size: 0.76rem;
+}
+
+.timelineItem p {
+  margin: 4px 0 0;
+  color: var(--muted-foreground);
+  font-size: 0.82rem;
+  line-height: 1.5;
+}
+
+.emptyTimeline {
+  margin: 0;
+  color: var(--muted-foreground);
+}
+
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background: rgb(0 0 0 / 48%);
+}
+
+.dialog {
+  width: min(100%, 520px);
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  background: var(--background);
+  box-shadow: 0 22px 60px rgb(0 0 0 / 25%);
+}
+
+.dialogHeader {
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 18px;
+  border-bottom: 1px solid var(--border);
+}
+
+.dialogHeader > div {
+  display: grid;
+  gap: 4px;
+}
+
+.dialogHeader span {
+  color: var(--muted-foreground);
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.dialogHeader h2,
+.dialogHeader p {
+  margin: 0;
+}
+
+.dialogHeader p {
+  color: var(--muted-foreground);
+  font-size: 0.84rem;
+  line-height: 1.5;
+}
+
+.close {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  flex: 0 0 auto;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+}
+
+.close:hover {
+  background: var(--muted);
+}
+
+.dialogBody {
+  padding: 18px;
+}
+
+.field {
+  display: grid;
+  gap: 7px;
+}
+
+.field > span {
+  font-size: 0.82rem;
+  font-weight: 650;
+}
+
+.field textarea {
+  width: 100%;
+  padding: 11px 12px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  outline: 0;
+  resize: vertical;
+  background: var(--surface);
+  color: inherit;
+  font: inherit;
+}
+
+.field small {
+  justify-self: end;
+  color: var(--muted-foreground);
+}
+
+.dialogFooter {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 14px 18px 18px;
+}
+
+@media (min-width: 680px) {
+  .actionCard {
+    grid-template-columns:
+      minmax(0, 1fr)
+      auto;
+    align-items: center;
+  }
+
+  .infoGrid {
+    grid-template-columns:
+      repeat(
+        3,
+        minmax(0, 1fr)
+      );
+  }
+
+  .item {
+    grid-template-columns:
+      minmax(0, 1fr)
+      minmax(320px, 0.9fr);
+    align-items: center;
+  }
+
+  .itemValues {
+    grid-template-columns:
+      repeat(
+        5,
+        minmax(0, 1fr)
+      );
+    text-align: right;
+  }
+
+  .itemAmount {
+    grid-column: auto;
+    padding-top: 0;
+    border-top: 0;
+  }
+
+  .summary {
+    width: min(100%, 430px);
+    margin-left: auto;
+  }
+}
