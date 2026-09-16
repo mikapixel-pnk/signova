@@ -14,6 +14,7 @@ class QuotationStatusHistory extends Model
 
     protected $fillable = [
         'tenant_id',
+        'business_id',
         'quotation_id',
         'from_state',
         'to_state',

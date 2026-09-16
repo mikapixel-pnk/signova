@@ -47,6 +47,10 @@ class QuotationFoundationIsolationTest extends TestCase
         DB::table('quotations')->insert([
             'id' => (string) Str::ulid(),
             'tenant_id' => $first['tenant_id'],
+            'business_id' =>
+                $this->businessIdForTenant(
+                    $first['tenant_id']
+                ),
             'quotation_number' => 'Q-001',
             'customer_id' => $customerId,
             'status' => 'DRAFT',
@@ -82,6 +86,10 @@ class QuotationFoundationIsolationTest extends TestCase
                 'id' => (string) Str::ulid(),
                 'tenant_id' =>
                     $first['tenant_id'],
+                'business_id' =>
+                    $this->businessIdForTenant(
+                        $first['tenant_id']
+                    ),
                 'quotation_id' =>
                     $quotationId,
                 'revision_no' => 1,
@@ -132,6 +140,10 @@ class QuotationFoundationIsolationTest extends TestCase
                 'id' => (string) Str::ulid(),
                 'tenant_id' =>
                     $first['tenant_id'],
+                'business_id' =>
+                    $this->businessIdForTenant(
+                        $first['tenant_id']
+                    ),
                 'quotation_version_id' =>
                     $versionId,
                 'catalog_item_id' =>
@@ -243,6 +255,10 @@ class QuotationFoundationIsolationTest extends TestCase
                 'id' => (string) Str::ulid(),
                 'tenant_id' =>
                     $workspace['tenant_id'],
+                'business_id' =>
+                    $this->businessIdForTenant(
+                        $workspace['tenant_id']
+                    ),
                 'quotation_version_id' =>
                     $versionId,
                 'catalog_item_id' => null,
@@ -371,6 +387,10 @@ class QuotationFoundationIsolationTest extends TestCase
         DB::table('quotations')->insert([
             'id' => $id,
             'tenant_id' => $tenantId,
+            'business_id' =>
+                $this->businessIdForTenant(
+                    $tenantId
+                ),
             'quotation_number' => $number,
             'customer_id' => $customerId,
             'status' => 'DRAFT',
@@ -393,6 +413,10 @@ class QuotationFoundationIsolationTest extends TestCase
             ->insert([
                 'id' => $id,
                 'tenant_id' => $tenantId,
+                'business_id' =>
+                    $this->businessIdForTenant(
+                        $tenantId
+                    ),
                 'quotation_id' =>
                     $quotationId,
                 'revision_no' =>

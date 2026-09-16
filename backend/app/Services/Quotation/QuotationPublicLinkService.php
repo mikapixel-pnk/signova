@@ -7,6 +7,7 @@ use App\Models\Quotation;
 use App\Models\QuotationAction;
 use App\Models\QuotationPublicLink;
 use App\Models\QuotationStatusHistory;
+use App\Tenancy\BusinessContext;
 use App\Tenancy\TenantContext;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -20,7 +21,8 @@ class QuotationPublicLinkService
 
 
     public function __construct(
-        private readonly TenantContext $tenantContext
+        private readonly TenantContext $tenantContext,
+        private readonly BusinessContext $businessContext
     ) {
     }
 
@@ -39,6 +41,11 @@ class QuotationPublicLinkService
                             'tenant_id',
                             $this->tenantContext
                                 ->tenantId()
+                        )
+                        ->where(
+                            'business_id',
+                            $this->businessContext
+                                ->businessId()
                         )
                         ->where(
                             'id',
@@ -76,6 +83,10 @@ class QuotationPublicLinkService
                     ->where(
                         'tenant_id',
                         $quotation->tenant_id
+                    )
+                    ->where(
+                        'business_id',
+                        $quotation->business_id
                     )
                     ->where(
                         'quotation_id',
@@ -117,6 +128,10 @@ class QuotationPublicLinkService
                     'tenant_id',
                     $this->tenantContext->tenantId()
                 )
+                ->where(
+                    'business_id',
+                    $this->businessContext->businessId()
+                )
                 ->where('id', $quotationId)
                 ->lockForUpdate()
                 ->firstOrFail();
@@ -150,6 +165,8 @@ class QuotationPublicLinkService
                 'id' => (string) Str::ulid(),
                 'tenant_id' =>
                     $this->tenantContext->tenantId(),
+                'business_id' =>
+                    $quotation->business_id,
                 'quotation_id' =>
                     $quotation->id,
                 'quotation_version_id' =>
@@ -243,6 +260,10 @@ class QuotationPublicLinkService
                         $link->tenant_id
                     )
                     ->where(
+                        'business_id',
+                        $link->business_id
+                    )
+                    ->where(
                         'id',
                         $link->quotation_id
                     )
@@ -260,6 +281,14 @@ class QuotationPublicLinkService
 
                 $alreadyRecorded =
                     QuotationAction::query()
+                        ->where(
+                            'tenant_id',
+                            $link->tenant_id
+                        )
+                        ->where(
+                            'business_id',
+                            $link->business_id
+                        )
                         ->where(
                             'public_link_id',
                             $link->id
@@ -295,6 +324,9 @@ class QuotationPublicLinkService
 
                         'tenant_id' =>
                             $link->tenant_id,
+
+                        'business_id' =>
+                            $link->business_id,
 
                         'quotation_id' =>
                             $quotation->id,
@@ -340,6 +372,9 @@ class QuotationPublicLinkService
 
                     'tenant_id' =>
                         $link->tenant_id,
+
+                    'business_id' =>
+                        $link->business_id,
 
                     'quotation_id' =>
                         $link->quotation_id,
@@ -443,6 +478,10 @@ class QuotationPublicLinkService
                         $link->tenant_id
                     )
                     ->where(
+                        'business_id',
+                        $link->business_id
+                    )
+                    ->where(
                         'id',
                         $link->quotation_id
                     )
@@ -460,6 +499,14 @@ class QuotationPublicLinkService
 
                 $alreadyRecorded =
                     QuotationAction::query()
+                        ->where(
+                            'tenant_id',
+                            $link->tenant_id
+                        )
+                        ->where(
+                            'business_id',
+                            $link->business_id
+                        )
                         ->where(
                             'public_link_id',
                             $link->id
@@ -521,6 +568,9 @@ class QuotationPublicLinkService
                     'tenant_id' =>
                         $link->tenant_id,
 
+                    'business_id' =>
+                        $link->business_id,
+
                     'quotation_id' =>
                         $quotation->id,
 
@@ -557,6 +607,9 @@ class QuotationPublicLinkService
 
                     'tenant_id' =>
                         $link->tenant_id,
+
+                    'business_id' =>
+                        $link->business_id,
 
                     'quotation_id' =>
                         $link->quotation_id,

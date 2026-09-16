@@ -13,6 +13,7 @@ class Quotation extends Model
 
     protected $fillable = [
         'tenant_id',
+        'business_id',
         'quotation_number',
         'customer_id',
         'current_version_id',

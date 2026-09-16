@@ -12,6 +12,7 @@ class QuotationAction extends Model
 
     protected $fillable = [
         'tenant_id',
+        'business_id',
         'quotation_id',
         'quotation_version_id',
         'public_link_id',

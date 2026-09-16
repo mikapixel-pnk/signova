@@ -13,6 +13,7 @@ class QuotationPublicLink extends Model
 
     protected $fillable = [
         'tenant_id',
+        'business_id',
         'quotation_id',
         'quotation_version_id',
         'token_hash',

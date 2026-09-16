@@ -376,6 +376,14 @@ class QuotationPublicLinkServiceTest extends TestCase
             $workspace['tenant_id'],
             $workspace['user_id']
         );
+
+        app(
+            \App\Tenancy\BusinessContext::class
+        )->set(
+            $workspace['tenant_id'],
+            $workspace['business_id'],
+            $workspace['user_id']
+        );
     }
 
     private function insertQuotationWithVersion(
@@ -407,6 +415,10 @@ class QuotationPublicLinkServiceTest extends TestCase
         DB::table('quotations')->insert([
             'id' => $quotationId,
             'tenant_id' => $tenantId,
+            'business_id' =>
+                $this->businessIdForTenant(
+                    $tenantId
+                ),
             'quotation_number' => $number,
             'customer_id' => $customerId,
             'status' => 'SENT',
@@ -423,6 +435,10 @@ class QuotationPublicLinkServiceTest extends TestCase
             ->insert([
                 'id' => $versionId,
                 'tenant_id' => $tenantId,
+                'business_id' =>
+                    $this->businessIdForTenant(
+                        $tenantId
+                    ),
                 'quotation_id' =>
                     $quotationId,
                 'revision_no' => 1,

@@ -59,6 +59,10 @@ class QuotationPublicAccessIsolationTest extends TestCase
                 'id' => (string) Str::ulid(),
                 'tenant_id' =>
                     $first['tenant_id'],
+                'business_id' =>
+                    $this->businessIdForTenant(
+                        $first['tenant_id']
+                    ),
                 'quotation_id' =>
                     $quotationId,
                 'quotation_version_id' =>
@@ -165,6 +169,10 @@ class QuotationPublicAccessIsolationTest extends TestCase
                 'id' => (string) Str::ulid(),
                 'tenant_id' =>
                     $first['tenant_id'],
+                'business_id' =>
+                    $this->businessIdForTenant(
+                        $first['tenant_id']
+                    ),
                 'quotation_id' =>
                     $quotationId,
                 'quotation_version_id' =>
@@ -314,6 +322,10 @@ class QuotationPublicAccessIsolationTest extends TestCase
         DB::table('quotations')->insert([
             'id' => $id,
             'tenant_id' => $tenantId,
+            'business_id' =>
+                $this->businessIdForTenant(
+                    $tenantId
+                ),
             'quotation_number' => $number,
             'customer_id' => $customerId,
             'status' => 'DRAFT',
@@ -335,6 +347,10 @@ class QuotationPublicAccessIsolationTest extends TestCase
             ->insert([
                 'id' => $id,
                 'tenant_id' => $tenantId,
+                'business_id' =>
+                    $this->businessIdForTenant(
+                        $tenantId
+                    ),
                 'quotation_id' => $quotationId,
                 'revision_no' => 1,
                 'subtotal' => 0,
@@ -368,6 +384,10 @@ class QuotationPublicAccessIsolationTest extends TestCase
             ->insert([
                 'id' => $id,
                 'tenant_id' => $tenantId,
+                'business_id' =>
+                    $this->businessIdForTenant(
+                        $tenantId
+                    ),
                 'quotation_id' => $quotationId,
                 'quotation_version_id' => $versionId,
                 'token_hash' => $tokenHash,
@@ -389,6 +409,10 @@ class QuotationPublicAccessIsolationTest extends TestCase
             ->insert([
                 'id' => (string) Str::ulid(),
                 'tenant_id' => $tenantId,
+                'business_id' =>
+                    $this->businessIdForTenant(
+                        $tenantId
+                    ),
                 'quotation_id' => $quotationId,
                 'quotation_version_id' =>
                     $versionId,

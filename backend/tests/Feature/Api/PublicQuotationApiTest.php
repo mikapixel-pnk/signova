@@ -942,6 +942,8 @@ class PublicQuotationApiTest extends TestCase
                 $quotationId,
             'tenant_id' =>
                 $tenantId,
+            'business_id' =>
+                $workspace['business_id'],
             'quotation_number' =>
                 $quotationNumber,
             'customer_id' =>
@@ -967,6 +969,8 @@ class PublicQuotationApiTest extends TestCase
                     $versionId,
                 'tenant_id' =>
                     $tenantId,
+                'business_id' =>
+                    $workspace['business_id'],
                 'quotation_id' =>
                     $quotationId,
                 'revision_no' =>
@@ -997,6 +1001,8 @@ class PublicQuotationApiTest extends TestCase
                     (string) Str::ulid(),
                 'tenant_id' =>
                     $tenantId,
+                'business_id' =>
+                    $workspace['business_id'],
                 'quotation_version_id' =>
                     $versionId,
                 'catalog_item_id' =>
@@ -1058,6 +1064,14 @@ class PublicQuotationApiTest extends TestCase
             $workspace['user_id']
         );
 
+        app(
+            \App\Tenancy\BusinessContext::class
+        )->set(
+            $tenantId,
+            $workspace['business_id'],
+            $workspace['user_id']
+        );
+
         $created = app(
             QuotationPublicLinkService::class
         )->createForQuotation(
@@ -1067,6 +1081,10 @@ class PublicQuotationApiTest extends TestCase
 
         app(
             TenantContext::class
+        )->clear();
+
+        app(
+            \App\Tenancy\BusinessContext::class
         )->clear();
 
         return [

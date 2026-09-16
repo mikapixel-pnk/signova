@@ -2516,6 +2516,357 @@ class QuotationApiTest extends TestCase
     }
 
 
+    public function test_quotation_is_hidden_from_other_business_in_same_tenant(): void
+    {
+        $workspace = $this->workspace(
+            'quotation-business-visibility@example.test',
+            'Quotation Business Visibility'
+        );
+
+        $secondBusinessId = $this->createBusiness(
+            $workspace['tenant_id'],
+            'Usaha Kedua'
+        );
+
+        $secondWorkspace = $workspace;
+        $secondWorkspace['business_id'] =
+            $secondBusinessId;
+
+        $customerId = $this->insertCustomer(
+            $workspace['tenant_id'],
+            'CUST-BIZ-B',
+            'Pelanggan Usaha B',
+            $secondBusinessId
+        );
+
+        $quotationId = $this->insertQuotation(
+            $secondWorkspace,
+            $customerId,
+            'IGNORED-BY-BACKEND',
+            'SENT'
+        );
+
+        $this->actingAsWorkspace($workspace);
+
+        $list = $this->getJson(
+            '/api/v1/quotations'
+        );
+
+        $list->assertOk();
+
+        $this->assertFalse(
+            collect($list->json('data'))
+                ->contains(
+                    fn (array $quotation) =>
+                        $quotation['id']
+                        === $quotationId
+                )
+        );
+
+        $this->getJson(
+            "/api/v1/quotations/{$quotationId}"
+        )->assertNotFound();
+    }
+
+    public function test_create_rejects_customer_from_other_business_in_same_tenant(): void
+    {
+        $workspace = $this->workspace(
+            'quotation-business-customer@example.test',
+            'Quotation Business Customer'
+        );
+
+        $secondBusinessId = $this->createBusiness(
+            $workspace['tenant_id'],
+            'Usaha Kedua'
+        );
+
+        $foreignCustomerId =
+            $this->insertCustomer(
+                $workspace['tenant_id'],
+                'CUST-BIZ-FOREIGN',
+                'Pelanggan Usaha Kedua',
+                $secondBusinessId
+            );
+
+        $this->actingAsWorkspace($workspace);
+
+        $this->postJson(
+            '/api/v1/quotations',
+            [
+                'customer_id' =>
+                    $foreignCustomerId,
+
+                'items' => [
+                    [
+                        'name' =>
+                            'Item Manual',
+
+                        'pricing_method' =>
+                            'MANUAL',
+
+                        'quantity' =>
+                            1,
+
+                        'unit_price' =>
+                            10000,
+                    ],
+                ],
+            ]
+        )->assertNotFound();
+    }
+
+    public function test_create_rejects_catalog_item_from_other_business_in_same_tenant(): void
+    {
+        $workspace = $this->workspace(
+            'quotation-business-catalog@example.test',
+            'Quotation Business Catalog'
+        );
+
+        $secondBusinessId = $this->createBusiness(
+            $workspace['tenant_id'],
+            'Usaha Kedua'
+        );
+
+        $customerId = $this->insertCustomer(
+            $workspace['tenant_id'],
+            'CUST-BIZ-A',
+            'Pelanggan Usaha Pertama'
+        );
+
+        $foreignCatalogId =
+            $this->insertCatalogItem(
+                $workspace['tenant_id'],
+                'CAT-BIZ-B',
+                'Produk Usaha Kedua',
+                'PRODUCT',
+                'STANDARD',
+                '25000',
+                $secondBusinessId
+            );
+
+        $this->actingAsWorkspace($workspace);
+
+        $this->postJson(
+            '/api/v1/quotations',
+            [
+                'customer_id' =>
+                    $customerId,
+
+                'items' => [
+                    [
+                        'catalog_item_id' =>
+                            $foreignCatalogId,
+
+                        'quantity' =>
+                            1,
+                    ],
+                ],
+            ]
+        )->assertNotFound();
+    }
+
+    public function test_cannot_issue_public_link_for_other_business_quotation_in_same_tenant(): void
+    {
+        $workspace = $this->workspace(
+            'quotation-business-public-link@example.test',
+            'Quotation Business Public Link'
+        );
+
+        $secondBusinessId = $this->createBusiness(
+            $workspace['tenant_id'],
+            'Usaha Kedua'
+        );
+
+        $secondWorkspace = $workspace;
+        $secondWorkspace['business_id'] =
+            $secondBusinessId;
+
+        $customerId = $this->insertCustomer(
+            $workspace['tenant_id'],
+            'CUST-PUB-BIZ-B',
+            'Pelanggan Usaha Kedua',
+            $secondBusinessId
+        );
+
+        $quotationId = $this->insertQuotation(
+            $secondWorkspace,
+            $customerId,
+            'IGNORED-BY-BACKEND',
+            'SENT'
+        );
+
+        $this->actingAsWorkspace($workspace);
+
+        $this->postJson(
+            "/api/v1/quotations/{$quotationId}/actions/issue-public-link"
+        )->assertNotFound();
+    }
+
+
+    public function test_create_rejects_unit_from_other_business_in_same_tenant(): void
+    {
+        $workspace = $this->workspace(
+            'quotation-business-unit@example.test',
+            'Quotation Business Unit'
+        );
+
+        $secondBusinessId = $this->createBusiness(
+            $workspace['tenant_id'],
+            'Usaha Kedua'
+        );
+
+        $customerId = $this->insertCustomer(
+            $workspace['tenant_id'],
+            'CUST-UNIT-BIZ-A',
+            'Pelanggan Usaha Pertama'
+        );
+
+        $foreignUnitId = $this->insertUnit(
+            $workspace['tenant_id'],
+            'OTHER-BUSINESS-UNIT',
+            'Satuan Usaha Kedua',
+            'OBU',
+            $secondBusinessId
+        );
+
+        $this->actingAsWorkspace($workspace);
+
+        $this->postJson(
+            '/api/v1/quotations',
+            [
+                'customer_id' =>
+                    $customerId,
+
+                'items' => [
+                    [
+                        'name' =>
+                            'Item Manual',
+
+                        'unit_id' =>
+                            $foreignUnitId,
+
+                        'pricing_method' =>
+                            'MANUAL',
+
+                        'quantity' =>
+                            1,
+
+                        'unit_price' =>
+                            10000,
+                    ],
+                ],
+            ]
+        )->assertNotFound();
+    }
+
+    public function test_quotation_number_sequence_is_independent_per_business(): void
+    {
+        $workspace = $this->workspace(
+            'quotation-business-number@example.test',
+            'Quotation Business Number'
+        );
+
+        $secondBusinessId = $this->createBusiness(
+            $workspace['tenant_id'],
+            'Usaha Kedua'
+        );
+
+        $secondWorkspace = $workspace;
+        $secondWorkspace['business_id'] =
+            $secondBusinessId;
+
+        $firstCustomerId = $this->insertCustomer(
+            $workspace['tenant_id'],
+            'CUST-NUM-A',
+            'Pelanggan Usaha A',
+            $workspace['business_id']
+        );
+
+        $secondCustomerId = $this->insertCustomer(
+            $workspace['tenant_id'],
+            'CUST-NUM-B',
+            'Pelanggan Usaha B',
+            $secondBusinessId
+        );
+
+        $this->setTenantContext($workspace);
+
+        $firstQuotation = app(
+            \App\Services\Quotation\QuotationService::class
+        )->createDraft(
+            [
+                'customer_id' =>
+                    $firstCustomerId,
+            ],
+            [],
+            [
+                [
+                    'name' =>
+                        'Item Usaha A',
+
+                    'pricing_method' =>
+                        'MANUAL',
+
+                    'quantity' =>
+                        1,
+
+                    'unit_price' =>
+                        10000,
+                ],
+            ]
+        );
+
+        $this->setTenantContext(
+            $secondWorkspace
+        );
+
+        $secondQuotation = app(
+            \App\Services\Quotation\QuotationService::class
+        )->createDraft(
+            [
+                'customer_id' =>
+                    $secondCustomerId,
+            ],
+            [],
+            [
+                [
+                    'name' =>
+                        'Item Usaha B',
+
+                    'pricing_method' =>
+                        'MANUAL',
+
+                    'quantity' =>
+                        1,
+
+                    'unit_price' =>
+                        10000,
+                ],
+            ]
+        );
+
+        $this->assertMatchesRegularExpression(
+            '/^PNW-\d{6}-0001$/',
+            $firstQuotation->quotation_number
+        );
+
+        $this->assertMatchesRegularExpression(
+            '/^PNW-\d{6}-0001$/',
+            $secondQuotation->quotation_number
+        );
+
+        $this->assertSame(
+            $firstQuotation->quotation_number,
+            $secondQuotation->quotation_number
+        );
+
+        $this->assertNotSame(
+            $firstQuotation->business_id,
+            $secondQuotation->business_id
+        );
+    }
+
+
     private function workspace(
         string $email,
         string $businessName
@@ -2560,6 +2911,11 @@ class QuotationApiTest extends TestCase
             $workspace['tenant_id']
         );
 
+        $this->withHeader(
+            'X-Signova-Business',
+            $workspace['business_id']
+        );
+
         app(
             TenantContext::class
         )->set(
@@ -2575,6 +2931,26 @@ class QuotationApiTest extends TestCase
             $workspace['user_id']
         );
     }
+    private function createBusiness(
+        string $tenantId,
+        string $name
+    ): string {
+        $businessId =
+            (string) Str::ulid();
+
+        DB::table('business_profiles')->insert([
+            'id' => $businessId,
+            'tenant_id' => $tenantId,
+            'name' => $name,
+            'is_default' => false,
+            'status' => 'ACTIVE',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        return $businessId;
+    }
+
 
     private function businessIdForTenant(
         string $tenantId
@@ -2609,7 +2985,8 @@ class QuotationApiTest extends TestCase
     private function insertCustomer(
         string $tenantId,
         string $code,
-        string $name
+        string $name,
+        ?string $businessId = null
     ): string {
         $id = (string) Str::ulid();
 
@@ -2617,7 +2994,8 @@ class QuotationApiTest extends TestCase
             'id' => $id,
             'tenant_id' => $tenantId,
             'business_id' =>
-                $this->businessIdForTenant(
+                $businessId
+                ?? $this->businessIdForTenant(
                     $tenantId
                 ),
             'type' => 'COMPANY',
@@ -2638,7 +3016,8 @@ class QuotationApiTest extends TestCase
         string $name,
         string $type,
         string $pricingMethod,
-        string $basePrice
+        string $basePrice,
+        ?string $businessId = null
     ): string {
         $id = (string) Str::ulid();
 
@@ -2646,7 +3025,8 @@ class QuotationApiTest extends TestCase
             'id' => $id,
             'tenant_id' => $tenantId,
             'business_id' =>
-                $this->businessIdForTenant(
+                $businessId
+                ?? $this->businessIdForTenant(
                     $tenantId
                 ),
             'category_id' => null,
@@ -2667,6 +3047,36 @@ class QuotationApiTest extends TestCase
 
         return $id;
     }
+    private function insertUnit(
+        string $tenantId,
+        string $code,
+        string $name,
+        string $symbol,
+        ?string $businessId = null
+    ): string {
+        $id = (string) Str::ulid();
+
+        DB::table('units')->insert([
+            'id' => $id,
+            'tenant_id' => $tenantId,
+            'business_id' =>
+                $businessId
+                ?? $this->businessIdForTenant(
+                    $tenantId
+                ),
+            'code' => $code,
+            'name' => $name,
+            'symbol' => $symbol,
+            'unit_type' => 'OTHER',
+            'decimal_precision' => 2,
+            'status' => 'ACTIVE',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        return $id;
+    }
+
 
     private function insertQuotation(
         array $workspace,

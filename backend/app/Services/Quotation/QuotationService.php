@@ -13,6 +13,7 @@ use App\Exceptions\Quotation\InvalidQuotationTransitionException;
 use App\Exceptions\Quotation\QuotationNotEditableException;
 use App\Models\Unit;
 use App\Services\Document\DocumentNumberService;
+use App\Tenancy\BusinessContext;
 use App\Tenancy\TenantContext;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
@@ -25,6 +26,7 @@ class QuotationService
 {
     public function __construct(
         private readonly TenantContext $tenantContext,
+        private readonly BusinessContext $businessContext,
         private readonly QuotationPricingCalculator $pricingCalculator,
         private readonly DocumentNumberService $documentNumberService,
     ) {
@@ -122,6 +124,9 @@ class QuotationService
             $tenantId =
                 $this->tenantContext->tenantId();
 
+            $businessId =
+                $this->businessContext->businessId();
+
             $userId =
                 $this->tenantContext->userId();
 
@@ -142,6 +147,7 @@ class QuotationService
             $quotation = Quotation::query()->create([
                 'id' => (string) Str::ulid(),
                 'tenant_id' => $tenantId,
+                'business_id' => $businessId,
                 'quotation_number' =>
                     $quotationNumber,
                 'customer_id' =>
@@ -171,6 +177,7 @@ class QuotationService
             QuotationStatusHistory::query()->create([
                 'id' => (string) Str::ulid(),
                 'tenant_id' => $tenantId,
+                'business_id' => $businessId,
                 'quotation_id' =>
                     $quotation->id,
                 'from_state' => null,
@@ -286,6 +293,10 @@ class QuotationService
                     $this->tenantContext->tenantId()
                 )
                 ->where(
+                    'business_id',
+                    $this->businessContext->businessId()
+                )
+                ->where(
                     'quotation_id',
                     $quotation->id
                 )
@@ -336,6 +347,10 @@ class QuotationService
                         'tenant_id' =>
                             $this->tenantContext
                                 ->tenantId(),
+
+                        'business_id' =>
+                            $this->businessContext
+                                ->businessId(),
 
                         'quotation_id' =>
                             $quotation->id,
@@ -484,6 +499,10 @@ class QuotationService
                         $this->tenantContext
                             ->tenantId(),
 
+                    'business_id' =>
+                        $this->businessContext
+                            ->businessId(),
+
                     'quotation_id' =>
                         $quotation->id,
 
@@ -535,6 +554,10 @@ class QuotationService
                         'tenant_id' =>
                             $this->tenantContext
                                 ->tenantId(),
+
+                        'business_id' =>
+                            $this->businessContext
+                                ->businessId(),
 
                         'quotation_id' =>
                             $quotation->id,
@@ -605,9 +628,14 @@ class QuotationService
         $tenantId =
             $this->tenantContext->tenantId();
 
+        $businessId =
+            $this->businessContext->businessId();
+
         if (
             $quotation->tenant_id !== $tenantId
+            || $quotation->business_id !== $businessId
             || $version->tenant_id !== $tenantId
+            || $version->business_id !== $businessId
             || $version->quotation_id !== $quotation->id
         ) {
             throw new RuntimeException(
@@ -665,6 +693,8 @@ class QuotationService
                 'id' => (string) Str::ulid(),
                 'tenant_id' =>
                     $this->tenantContext->tenantId(),
+                'business_id' =>
+                    $this->businessContext->businessId(),
                 'quotation_id' =>
                     $quotation->id,
                 'from_state' =>
@@ -696,6 +726,9 @@ class QuotationService
     ): QuotationVersion {
         $tenantId =
             $this->tenantContext->tenantId();
+
+        $businessId =
+            $this->businessContext->businessId();
 
         $userId =
             $this->tenantContext->userId();
@@ -777,6 +810,7 @@ class QuotationService
             QuotationVersion::query()->create([
                 'id' => (string) Str::ulid(),
                 'tenant_id' => $tenantId,
+                'business_id' => $businessId,
                 'quotation_id' =>
                     $quotation->id,
                 'revision_no' => $revisionNo,
@@ -815,6 +849,7 @@ class QuotationService
             QuotationItem::query()->create([
                 'id' => (string) Str::ulid(),
                 'tenant_id' => $tenantId,
+                'business_id' => $businessId,
 
                 'quotation_version_id' =>
                     $quotationVersion->id,
@@ -900,6 +935,10 @@ class QuotationService
                     $this->tenantContext->tenantId()
                 )
                 ->where(
+                    'business_id',
+                    $this->businessContext->businessId()
+                )
+                ->where(
                     'id',
                     $item['catalog_item_id']
                 )
@@ -915,6 +954,10 @@ class QuotationService
                 ->where(
                     'tenant_id',
                     $this->tenantContext->tenantId()
+                )
+                ->where(
+                    'business_id',
+                    $this->businessContext->businessId()
                 )
                 ->where('id', $unitId)
                 ->firstOrFail();
@@ -985,6 +1028,10 @@ class QuotationService
                 'tenant_id',
                 $this->tenantContext->tenantId()
             )
+            ->where(
+                'business_id',
+                $this->businessContext->businessId()
+            )
             ->where('id', $customerId)
             ->firstOrFail();
     }
@@ -995,6 +1042,10 @@ class QuotationService
             ->where(
                 'tenant_id',
                 $this->tenantContext->tenantId()
+            )
+            ->where(
+                'business_id',
+                $this->businessContext->businessId()
             );
     }
 }
