@@ -99,6 +99,21 @@ return [
             'sslmode' => env('DB_SSLMODE', 'prefer'),
         ],
 
+        'pgsql_migration' => [
+            'driver' => 'pgsql',
+            'host' => env('MIGRATION_DB_HOST', '127.0.0.1'),
+            'port' => env('MIGRATION_DB_PORT', '5432'),
+            'database' => env('MIGRATION_DB_DATABASE'),
+            'username' => env('MIGRATION_DB_USERNAME'),
+            'password' => env('MIGRATION_DB_PASSWORD'),
+            'charset' => 'utf8',
+            'prefix' => '',
+            'prefix_indexes' => true,
+            'search_path' => 'public',
+            'sslmode' => env('MIGRATION_DB_SSLMODE', 'prefer'),
+            'application_name' => 'signova-migration-runner',
+        ],
+
         'sqlsrv' => [
             'driver' => 'sqlsrv',
             'url' => env('DB_URL'),
