@@ -44,11 +44,17 @@ class CreateTenantWorkspaceTest extends TestCase
         ]);
 
         $this->assertDatabaseHas('business_profiles', [
+            'id' => $result['business_id'],
             'tenant_id' => $result['tenant_id'],
             'name' => 'Usaha Test',
             'is_default' => true,
             'status' => 'ACTIVE',
         ]);
+
+        $this->assertNotSame(
+            $result['tenant_id'],
+            $result['business_id']
+        );
 
         $this->assertDatabaseHas('tenant_users', [
             'tenant_id' => $result['tenant_id'],

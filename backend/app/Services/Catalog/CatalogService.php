@@ -5,6 +5,7 @@ namespace App\Services\Catalog;
 use App\Models\CatalogCategory;
 use App\Models\CatalogItem;
 use App\Models\Unit;
+use App\Tenancy\BusinessContext;
 use App\Tenancy\TenantContext;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
@@ -15,6 +16,7 @@ class CatalogService
 {
     public function __construct(
         private readonly TenantContext $tenantContext,
+        private readonly BusinessContext $businessContext,
     ) {
     }
 
@@ -341,6 +343,9 @@ class CatalogService
             'tenant_id' =>
                 $this->tenantContext->tenantId(),
 
+            'business_id' =>
+                $this->businessContext->businessId(),
+
             'code' => $data['code'],
 
             'name' => $data['name'],
@@ -402,6 +407,10 @@ class CatalogService
             ->where(
                 'tenant_id',
                 $this->tenantContext->tenantId()
+            )
+            ->where(
+                'business_id',
+                $this->businessContext->businessId()
             );
     }
 }

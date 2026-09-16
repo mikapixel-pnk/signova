@@ -736,22 +736,25 @@ Route::prefix('v1')->group(function () {
         Route::get(
             '/units',
             [UnitController::class, 'index']
-        )->middleware(
-            'capability:catalog.view'
-        );
+        )->middleware([
+            'business.context',
+            'capability:catalog.view',
+        ]);
 
         Route::post(
             '/units',
             [UnitController::class, 'store']
-        )->middleware(
-            'capability:catalog.manage'
-        );
+        )->middleware([
+            'business.context',
+            'capability:catalog.manage',
+        ]);
 
         Route::patch(
             '/units/{unitId}',
             [UnitController::class, 'update']
-        )->middleware(
-            'capability:catalog.manage'
-        );
+        )->middleware([
+            'business.context',
+            'capability:catalog.manage',
+        ]);
     });
 });

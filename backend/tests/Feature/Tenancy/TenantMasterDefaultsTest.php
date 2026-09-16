@@ -36,6 +36,10 @@ class TenantMasterDefaultsTest extends TestCase
                 'tenant_id',
                 $workspace['tenant_id']
             )
+            ->where(
+                'business_id',
+                $workspace['business_id']
+            )
             ->orderBy('code')
             ->pluck('symbol', 'code');
 
@@ -61,7 +65,8 @@ class TenantMasterDefaultsTest extends TestCase
         app(
             SeedTenantMasterDataAction::class
         )->execute(
-            $workspace['tenant_id']
+            $workspace['tenant_id'],
+            $workspace['business_id']
         );
 
         $this->assertSame(
@@ -70,6 +75,10 @@ class TenantMasterDefaultsTest extends TestCase
                 ->where(
                     'tenant_id',
                     $workspace['tenant_id']
+                )
+                ->where(
+                    'business_id',
+                    $workspace['business_id']
                 )
                 ->count()
         );

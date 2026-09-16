@@ -7,12 +7,20 @@ use Illuminate\Support\Str;
 
 class SeedTenantMasterDataAction
 {
-    public function execute(string $tenantId): void
-    {
-        $this->seedUnits($tenantId);
+    public function execute(
+        string $tenantId,
+        string $businessId
+    ): void {
+        $this->seedUnits(
+            $tenantId,
+            $businessId
+        );
     }
 
-    private function seedUnits(string $tenantId): void
+    private function seedUnits(
+        string $tenantId,
+        string $businessId
+    ): void
     {
         $units = [
             [
@@ -83,6 +91,7 @@ class SeedTenantMasterDataAction
         foreach ($units as $unit) {
             $existing = DB::table('units')
                 ->where('tenant_id', $tenantId)
+                ->where('business_id', $businessId)
                 ->where('code', $unit['code'])
                 ->first();
 
@@ -93,6 +102,7 @@ class SeedTenantMasterDataAction
             DB::table('units')->insert([
                 'id' => (string) Str::ulid(),
                 'tenant_id' => $tenantId,
+                'business_id' => $businessId,
                 ...$unit,
                 'status' => 'ACTIVE',
                 'created_at' => now(),

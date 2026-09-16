@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Catalog;
 
+use App\Tenancy\BusinessContext;
 use App\Tenancy\TenantContext;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -53,6 +54,10 @@ class StoreUnitRequest extends FormRequest
             TenantContext::class
         )->tenantId();
 
+        $businessId = app(
+            BusinessContext::class
+        )->businessId();
+
         return [
             'code' => [
                 'required',
@@ -63,10 +68,15 @@ class StoreUnitRequest extends FormRequest
                     'code'
                 )->where(
                     fn ($query) =>
-                        $query->where(
-                            'tenant_id',
-                            $tenantId
-                        )
+                        $query
+                            ->where(
+                                'tenant_id',
+                                $tenantId
+                            )
+                            ->where(
+                                'business_id',
+                                $businessId
+                            )
                 ),
             ],
 

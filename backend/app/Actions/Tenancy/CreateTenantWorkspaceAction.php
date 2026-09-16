@@ -147,12 +147,14 @@ class CreateTenantWorkspaceAction
             ]);
 
             $this->seedTenantMasterData->execute(
-                $tenantId
+                $tenantId,
+                $businessProfileId
             );
 
             return [
                 'user_id' => $userId,
                 'tenant_id' => $tenantId,
+                'business_id' => $businessProfileId,
                 'owner_role_id' => $roleId,
                 'tenant_slug' => $tenantSlug,
             ];

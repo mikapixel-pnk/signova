@@ -704,7 +704,7 @@ class CatalogApiTest extends TestCase
         );
     }
 
-    public function test_unit_code_is_unique_per_tenant(): void
+    public function test_unit_code_is_unique_per_business(): void
     {
         $workspace = $this->workspace(
             'unit-duplicate@example.test',
@@ -742,6 +742,81 @@ class CatalogApiTest extends TestCase
         $this->assertSame(
             1,
             $duplicateCount
+        );
+    }
+
+    public function test_same_unit_code_is_allowed_in_different_businesses(): void
+    {
+        $workspace = $this->workspace(
+            'unit-cross-business-code@example.test',
+            'Unit Cross Business Code'
+        );
+
+        $secondBusinessId = (string) Str::ulid();
+
+        DB::table('business_profiles')->insert([
+            'id' => $secondBusinessId,
+            'tenant_id' => $workspace['tenant_id'],
+            'name' => 'Usaha Kedua',
+            'is_default' => false,
+            'status' => 'ACTIVE',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        DB::table('units')->insert([
+            'id' => (string) Str::ulid(),
+            'tenant_id' => $workspace['tenant_id'],
+            'business_id' => $secondBusinessId,
+            'code' => 'PCS',
+            'name' => 'Pieces Usaha Kedua',
+            'symbol' => 'pcs',
+            'unit_type' => 'COUNT',
+            'decimal_precision' => 0,
+            'status' => 'ACTIVE',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $this->assertSame(
+            2,
+            DB::table('units')
+                ->where(
+                    'tenant_id',
+                    $workspace['tenant_id']
+                )
+                ->where('code', 'PCS')
+                ->count()
+        );
+
+        $this->assertSame(
+            1,
+            DB::table('units')
+                ->where(
+                    'tenant_id',
+                    $workspace['tenant_id']
+                )
+                ->where(
+                    'business_id',
+                    $workspace['business_id']
+                )
+                ->where('code', 'PCS')
+                ->count()
+        );
+
+        $this->assertSame(
+            1,
+            DB::table('units')
+                ->where(
+                    'tenant_id',
+                    $workspace['tenant_id']
+                )
+                ->where(
+                    'business_id',
+                    $secondBusinessId
+                )
+                ->where('code', 'PCS')
+                ->count()
         );
     }
 
@@ -791,6 +866,82 @@ class CatalogApiTest extends TestCase
                 'tenant_id' =>
                     $second['tenant_id'],
                 'name' => 'Tidak Boleh Diubah',
+            ]
+        );
+    }
+
+    public function test_units_are_isolated_between_businesses_in_same_tenant(): void
+    {
+        $workspace = $this->workspace(
+            'unit-business-isolation@example.test',
+            'Unit Business Isolation'
+        );
+
+        $secondBusinessId = (string) Str::ulid();
+
+        DB::table('business_profiles')->insert([
+            'id' => $secondBusinessId,
+            'tenant_id' => $workspace['tenant_id'],
+            'name' => 'Usaha Kedua',
+            'is_default' => false,
+            'status' => 'ACTIVE',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $foreignUnitId = (string) Str::ulid();
+
+        DB::table('units')->insert([
+            'id' => $foreignUnitId,
+            'tenant_id' => $workspace['tenant_id'],
+            'business_id' => $secondBusinessId,
+            'code' => 'SECOND-BUSINESS-ONLY',
+            'name' => 'Satuan Usaha Kedua',
+            'symbol' => 'u2',
+            'unit_type' => 'OTHER',
+            'decimal_precision' => 2,
+            'status' => 'ACTIVE',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $this->actingAsWorkspace($workspace);
+
+        $response = $this->getJson(
+            '/api/v1/units'
+        );
+
+        $response->assertOk();
+
+        $this->assertFalse(
+            collect($response->json('data'))
+                ->contains(
+                    fn (array $unit) =>
+                        $unit['id'] === $foreignUnitId
+                )
+        );
+
+        $this->patchJson(
+            "/api/v1/units/{$foreignUnitId}",
+            [
+                'name' => 'Tidak Boleh Diubah',
+            ]
+        )
+            ->assertNotFound()
+            ->assertJsonPath(
+                'error.code',
+                'RESOURCE_NOT_FOUND'
+            );
+
+        $this->assertDatabaseHas(
+            'units',
+            [
+                'id' => $foreignUnitId,
+                'tenant_id' =>
+                    $workspace['tenant_id'],
+                'business_id' =>
+                    $secondBusinessId,
+                'name' => 'Satuan Usaha Kedua',
             ]
         );
     }
@@ -1062,10 +1213,12 @@ class CatalogApiTest extends TestCase
             )
         );
 
-        $this->withHeader(
-            'X-Signova-Tenant',
-            $workspace['tenant_id']
-        );
+        $this->withHeaders([
+            'X-Signova-Tenant' =>
+                $workspace['tenant_id'],
+            'X-Signova-Business' =>
+                $workspace['business_id'],
+        ]);
     }
 
     private function revokeOwnerCapability(
