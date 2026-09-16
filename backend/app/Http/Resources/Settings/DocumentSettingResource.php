@@ -10,24 +10,60 @@ class DocumentSettingResource extends JsonResource
     public function toArray(
         Request $request
     ): array {
+        $business =
+            $this->business;
+
         return [
             'business_name' =>
-                $this->business_name,
+                $business?->name,
+
+            'legal_name' =>
+                $business?->legal_name,
 
             'address' =>
-                $this->address,
+                $business?->address,
+
+            'city' =>
+                $business?->city,
+
+            'province' =>
+                $business?->province,
+
+            'postal_code' =>
+                $business?->postal_code,
 
             'phone' =>
-                $this->phone,
+                $business?->phone,
+
+            'whatsapp' =>
+                $business?->whatsapp,
 
             'email' =>
-                $this->email,
+                $business?->email,
+
+            'website' =>
+                $business?->website,
 
             'tax_id' =>
-                $this->tax_id,
+                $business?->tax_id,
 
-            'quotation_footer' =>
-                $this->quotation_footer,
+            'quotation_opening_text' =>
+                $this->quotation_opening_text,
+
+            'quotation_closing_text' =>
+                $this->quotation_closing_text,
+
+            'quotation_default_terms' =>
+                $this->quotation_default_terms,
+
+            'quotation_default_validity_days' =>
+                $this->quotation_default_validity_days,
+
+            'quotation_number_prefix' =>
+                $this->quotation_number_prefix,
+
+            'invoice_number_prefix' =>
+                $this->invoice_number_prefix,
 
             'invoice_footnote' =>
                 $this->invoice_footnote,

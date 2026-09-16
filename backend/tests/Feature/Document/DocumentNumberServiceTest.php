@@ -5,6 +5,7 @@ namespace Tests\Feature\Document;
 use App\Actions\Tenancy\CreateTenantWorkspaceAction;
 use App\Models\User;
 use App\Services\Document\DocumentNumberService;
+use App\Tenancy\BusinessContext;
 use App\Tenancy\TenantContext;
 use Carbon\CarbonImmutable;
 use Database\Seeders\SignovaAccessControlSeeder;
@@ -321,7 +322,7 @@ class DocumentNumberServiceTest extends TestCase
         );
     }
 
-    public function test_existing_sequence_configuration_is_respected(): void
+    public function test_existing_sequence_counter_and_padding_are_respected(): void
     {
         $workspace =
             $this->workspace(
@@ -343,6 +344,11 @@ class DocumentNumberServiceTest extends TestCase
             'tenant_id' =>
                 $workspace[
                     'tenant_id'
+                ],
+
+            'business_id' =>
+                $workspace[
+                    'business_id'
                 ],
 
             'document_type' =>
@@ -373,7 +379,7 @@ class DocumentNumberServiceTest extends TestCase
             )->nextInvoiceNumber();
 
         $this->assertSame(
-            'TAG-26-000017',
+            'INV-202609-000017',
             $number
         );
 
@@ -444,6 +450,14 @@ class DocumentNumberServiceTest extends TestCase
             TenantContext::class
         )->set(
             $workspace['tenant_id'],
+            $workspace['user_id']
+        );
+
+        app(
+            BusinessContext::class
+        )->set(
+            $workspace['tenant_id'],
+            $workspace['business_id'],
             $workspace['user_id']
         );
     }

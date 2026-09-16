@@ -2,7 +2,9 @@
 
 namespace App\Services\Document;
 
+use App\Models\TenantDocumentSetting;
 use App\Models\TenantSequence;
+use App\Tenancy\BusinessContext;
 use App\Tenancy\TenantContext;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
@@ -11,14 +13,39 @@ use Illuminate\Support\Str;
 class DocumentNumberService
 {
     public function __construct(
-        private readonly TenantContext $tenantContext
+        private readonly TenantContext $tenantContext,
+        private readonly BusinessContext $businessContext
     ) {
+    }
+
+    public function nextQuotationNumber(): string
+    {
+        return $this->nextConfiguredNumber(
+            documentType: 'QUOTATION',
+            defaultPrefix: 'PNW',
+            defaultPadding: 4
+        );
     }
 
     public function nextInvoiceNumber(): string
     {
+        return $this->nextConfiguredNumber(
+            documentType: 'INVOICE',
+            defaultPrefix: 'INV',
+            defaultPadding: 4
+        );
+    }
+
+    private function nextConfiguredNumber(
+        string $documentType,
+        string $defaultPrefix,
+        int $defaultPadding
+    ): string {
         $tenantId =
             $this->tenantContext->tenantId();
+
+        $businessId =
+            $this->businessContext->businessId();
 
         $timezone =
             DB::table('tenants')
@@ -40,30 +67,71 @@ class DocumentNumberService
         $period =
             $now->format('Ym');
 
+        $prefixColumn =
+            $documentType === 'QUOTATION'
+                ? 'quotation_number_prefix'
+                : 'invoice_number_prefix';
+
+        $configuredPrefix =
+            TenantDocumentSetting::query()
+                ->where(
+                    'tenant_id',
+                    $tenantId
+                )
+                ->where(
+                    'business_id',
+                    $businessId
+                )
+                ->value(
+                    $prefixColumn
+                );
+
+        $prefix =
+            strtoupper(
+                trim(
+                    (string) (
+                        $configuredPrefix
+                        ?: $defaultPrefix
+                    )
+                )
+            );
+
+        if ($prefix === '') {
+            $prefix =
+                $defaultPrefix;
+        }
+
         return $this->next(
-            documentType: 'INVOICE',
+            documentType: $documentType,
             period: $period,
-            defaultPrefix:
-                'INV-' . $period . '-',
-            defaultPadding: 4
+            prefix:
+                $prefix
+                . '-'
+                . $period
+                . '-',
+            defaultPadding: $defaultPadding
         );
     }
 
     public function next(
         string $documentType,
         string $period,
-        string $defaultPrefix,
+        string $prefix,
         int $defaultPadding = 4
     ): string {
         $tenantId =
             $this->tenantContext->tenantId();
 
+        $businessId =
+            $this->businessContext->businessId();
+
         return DB::transaction(
             function () use (
                 $tenantId,
+                $businessId,
                 $documentType,
                 $period,
-                $defaultPrefix,
+                $prefix,
                 $defaultPadding
             ): string {
                 TenantSequence::query()
@@ -74,6 +142,9 @@ class DocumentNumberService
                         'tenant_id' =>
                             $tenantId,
 
+                        'business_id' =>
+                            $businessId,
+
                         'document_type' =>
                             $documentType,
 
@@ -81,7 +152,7 @@ class DocumentNumberService
                             $period,
 
                         'prefix' =>
-                            $defaultPrefix,
+                            $prefix,
 
                         'next_number' =>
                             1,
@@ -103,6 +174,10 @@ class DocumentNumberService
                             $tenantId
                         )
                         ->where(
+                            'business_id',
+                            $businessId
+                        )
+                        ->where(
                             'document_type',
                             $documentType
                         )
@@ -112,6 +187,18 @@ class DocumentNumberService
                         )
                         ->lockForUpdate()
                         ->firstOrFail();
+
+                /*
+                 * Prefix config dapat berubah di tengah periode.
+                 * Counter tetap melanjutkan next_number yang sama.
+                 */
+                if (
+                    $sequence->prefix !==
+                    $prefix
+                ) {
+                    $sequence->prefix =
+                        $prefix;
+                }
 
                 $number =
                     $sequence->prefix

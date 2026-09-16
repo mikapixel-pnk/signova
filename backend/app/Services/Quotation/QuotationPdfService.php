@@ -2,15 +2,17 @@
 
 namespace App\Services\Quotation;
 
+use App\Models\BusinessProfile;
 use App\Models\TenantDocumentSetting;
+use App\Tenancy\BusinessContext;
 use App\Tenancy\TenantContext;
 use Barryvdh\DomPDF\Facade\Pdf;
-use Illuminate\Support\Facades\DB;
 
 class QuotationPdfService
 {
     public function __construct(
         private readonly TenantContext $tenantContext,
+        private readonly BusinessContext $businessContext,
         private readonly QuotationService $quotationService
     ) {
     }
@@ -34,9 +36,20 @@ class QuotationPdfService
         $tenantId =
             $this->tenantContext->tenantId();
 
-        $tenant = DB::table('tenants')
-            ->where('id', $tenantId)
-            ->firstOrFail();
+        $businessId =
+            $this->businessContext->businessId();
+
+        $business =
+            BusinessProfile::query()
+                ->where(
+                    'tenant_id',
+                    $tenantId
+                )
+                ->where(
+                    'id',
+                    $businessId
+                )
+                ->firstOrFail();
 
         $settings =
             TenantDocumentSetting::query()
@@ -44,27 +57,53 @@ class QuotationPdfService
                     'tenant_id',
                     $tenantId
                 )
+                ->where(
+                    'business_id',
+                    $businessId
+                )
                 ->first();
 
         $branding = [
             'business_name' =>
-                $settings?->business_name
-                ?: $tenant->name,
+                $business->name,
+
+            'legal_name' =>
+                $business->legal_name,
 
             'address' =>
-                $settings?->address,
+                $business->address,
+
+            'city' =>
+                $business->city,
+
+            'province' =>
+                $business->province,
+
+            'postal_code' =>
+                $business->postal_code,
 
             'phone' =>
-                $settings?->phone,
+                $business->phone,
+
+            'whatsapp' =>
+                $business->whatsapp,
 
             'email' =>
-                $settings?->email,
+                $business->email,
+
+            'website' =>
+                $business->website,
 
             'tax_id' =>
-                $settings?->tax_id,
+                $business->tax_id,
 
-            'quotation_footer' =>
-                $settings?->quotation_footer,
+            'quotation_opening_text' =>
+                $settings
+                    ?->quotation_opening_text,
+
+            'quotation_closing_text' =>
+                $settings
+                    ?->quotation_closing_text,
         ];
 
         $content = Pdf::loadView(

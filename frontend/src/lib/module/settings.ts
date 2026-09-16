@@ -10,6 +10,7 @@ import {
 
 export type SettingsSectionKey =
   | "bisnis"
+  | "dokumen"
   | "profil"
   | "keuangan"
   | "tim"
@@ -23,6 +24,9 @@ const settingsSectionMap:
   > = {
   bisnis:
     "business-settings",
+
+  dokumen:
+    "document-settings",
 
   profil:
     "profile-settings",

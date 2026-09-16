@@ -4,6 +4,7 @@ namespace Tests\Feature\Api;
 
 use App\Actions\Tenancy\CreateTenantWorkspaceAction;
 use App\Models\User;
+use App\Tenancy\BusinessContext;
 use App\Tenancy\TenantContext;
 use Database\Seeders\SignovaAccessControlSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -685,8 +686,14 @@ class InvoiceApiTest extends TestCase
         DB::table(
             'tenant_document_settings'
         )->insert([
+            'id' =>
+                (string) Str::ulid(),
+
             'tenant_id' =>
                 $workspace['tenant_id'],
+
+            'business_id' =>
+                $workspace['business_id'],
 
             'invoice_template_key' =>
                 'modern_emerald',
@@ -753,8 +760,14 @@ class InvoiceApiTest extends TestCase
         DB::table(
             'tenant_document_settings'
         )->insert([
+            'id' =>
+                (string) Str::ulid(),
+
             'tenant_id' =>
                 $workspace['tenant_id'],
+
+            'business_id' =>
+                $workspace['business_id'],
 
             'invoice_template_key' =>
                 'modern_emerald',
@@ -783,6 +796,10 @@ class InvoiceApiTest extends TestCase
             ->where(
                 'tenant_id',
                 $workspace['tenant_id']
+            )
+            ->where(
+                'business_id',
+                $workspace['business_id']
             )
             ->update([
                 'invoice_template_key' =>
@@ -1262,8 +1279,14 @@ class InvoiceApiTest extends TestCase
         DB::table(
             'tenant_document_settings'
         )->insert([
+            'id' =>
+                (string) Str::ulid(),
+
             'tenant_id' =>
                 $workspace['tenant_id'],
+
+            'business_id' =>
+                $workspace['business_id'],
 
             'business_name' =>
                 'Signova Test Business',
@@ -2413,6 +2436,14 @@ class InvoiceApiTest extends TestCase
             $invalidUserId
         );
 
+        app(
+            BusinessContext::class
+        )->set(
+            $workspace['tenant_id'],
+            $workspace['business_id'],
+            $invalidUserId
+        );
+
         $payloadItems = [
             [
                 'name' =>
@@ -2477,6 +2508,14 @@ class InvoiceApiTest extends TestCase
             TenantContext::class
         )->set(
             $workspace['tenant_id'],
+            $workspace['user_id']
+        );
+
+        app(
+            BusinessContext::class
+        )->set(
+            $workspace['tenant_id'],
+            $workspace['business_id'],
             $workspace['user_id']
         );
 

@@ -2,18 +2,20 @@
 
 namespace App\Services\Invoice\Document;
 
+use App\Models\BusinessProfile;
 use App\Models\FileAsset;
 use App\Models\Invoice;
 use App\Models\TenantDocumentSetting;
 use App\Support\Localization\CanonicalLabel;
+use App\Tenancy\BusinessContext;
 use App\Tenancy\TenantContext;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 
 class InvoiceDocumentViewModelBuilder
 {
     public function __construct(
-        private readonly TenantContext $tenantContext
+        private readonly TenantContext $tenantContext,
+        private readonly BusinessContext $businessContext
     ) {
     }
 
@@ -23,11 +25,18 @@ class InvoiceDocumentViewModelBuilder
         $tenantId =
             $this->tenantContext->tenantId();
 
-        $tenant =
-            DB::table('tenants')
+        $businessId =
+            $this->businessContext->businessId();
+
+        $business =
+            BusinessProfile::query()
+                ->where(
+                    'tenant_id',
+                    $tenantId
+                )
                 ->where(
                     'id',
-                    $tenantId
+                    $businessId
                 )
                 ->firstOrFail();
 
@@ -36,6 +45,10 @@ class InvoiceDocumentViewModelBuilder
                 ->where(
                     'tenant_id',
                     $tenantId
+                )
+                ->where(
+                    'business_id',
+                    $businessId
                 )
                 ->first();
 
@@ -139,20 +152,19 @@ class InvoiceDocumentViewModelBuilder
 
             'branding' => [
                 'business_name' =>
-                    $settings?->business_name
-                    ?: $tenant->name,
+                    $business->name,
 
                 'address' =>
-                    $settings?->address,
+                    $business->address,
 
                 'phone' =>
-                    $settings?->phone,
+                    $business->phone,
 
                 'email' =>
-                    $settings?->email,
+                    $business->email,
 
                 'tax_id' =>
-                    $settings?->tax_id,
+                    $business->tax_id,
 
                 'invoice_footnote' =>
                     $settings?->invoice_footnote,

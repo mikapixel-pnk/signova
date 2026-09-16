@@ -7,6 +7,7 @@ use App\Exceptions\Invoice\QuotationToInvoiceConflictException;
 use App\Models\Invoice;
 use App\Services\Invoice\QuotationToInvoiceService;
 use App\Services\Quotation\QuotationService;
+use App\Tenancy\BusinessContext;
 use App\Tenancy\TenantContext;
 use Database\Seeders\SignovaAccessControlSeeder;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
@@ -589,9 +590,18 @@ class QuotationToInvoiceServiceTest extends TestCase
             ]
         );
 
-        $this->assertDatabaseCount(
+        $this->assertDatabaseMissing(
             'tenant_sequences',
-            0
+            [
+                'tenant_id' =>
+                    $workspace['tenant_id'],
+
+                'business_id' =>
+                    $workspace['business_id'],
+
+                'document_type' =>
+                    'INVOICE',
+            ]
         );
 
         /*
@@ -649,6 +659,9 @@ class QuotationToInvoiceServiceTest extends TestCase
                 $workspace['user_id'],
             'tenant_id' =>
                 $workspace['tenant_id'],
+
+            'business_id' =>
+                $workspace['business_id'],
         ];
     }
 
@@ -657,6 +670,12 @@ class QuotationToInvoiceServiceTest extends TestCase
     ): void {
         app(TenantContext::class)->set(
             $workspace['tenant_id'],
+            $workspace['user_id']
+        );
+
+        app(BusinessContext::class)->set(
+            $workspace['tenant_id'],
+            $workspace['business_id'],
             $workspace['user_id']
         );
     }

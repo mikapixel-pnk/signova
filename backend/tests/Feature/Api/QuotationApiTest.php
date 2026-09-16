@@ -4,6 +4,7 @@ namespace Tests\Feature\Api;
 
 use App\Actions\Tenancy\CreateTenantWorkspaceAction;
 use App\Models\User;
+use App\Tenancy\BusinessContext;
 use App\Tenancy\TenantContext;
 use Database\Seeders\SignovaAccessControlSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -93,7 +94,7 @@ class QuotationApiTest extends TestCase
                 fn ($value) =>
                     is_string($value)
                     && preg_match(
-                        '/^PEN-\\d{4}-\\d{6}$/',
+                        '/^PNW-\\d{6}-\\d{4}$/',
                         $value
                     ) === 1
             )
@@ -1609,7 +1610,7 @@ class QuotationApiTest extends TestCase
         );
 
         $this->assertMatchesRegularExpression(
-            '/attachment; filename="Penawaran-PEN-\d{4}-\d{6}\.pdf"/',
+            '/attachment; filename="Penawaran-PNW-\d{6}-\d{4}\.pdf"/',
             $contentDisposition
         );
     }
@@ -2080,16 +2081,16 @@ class QuotationApiTest extends TestCase
         $second->assertCreated();
 
         $period =
-            now()->format('ym');
+            now()->format('Ym');
 
         $first->assertJsonPath(
             'data.quotation_number',
-            'PEN-' . $period . '-000001'
+            'PNW-' . $period . '-0001'
         );
 
         $second->assertJsonPath(
             'data.quotation_number',
-            'PEN-' . $period . '-000002'
+            'PNW-' . $period . '-0002'
         );
     }
 
@@ -2536,6 +2537,9 @@ class QuotationApiTest extends TestCase
             'tenant_id' =>
                 $workspace['tenant_id'],
 
+            'business_id' =>
+                $workspace['business_id'],
+
             'user' =>
                 User::query()->findOrFail(
                     $workspace['user_id']
@@ -2554,6 +2558,21 @@ class QuotationApiTest extends TestCase
         $this->withHeader(
             'X-Tenant-ID',
             $workspace['tenant_id']
+        );
+
+        app(
+            TenantContext::class
+        )->set(
+            $workspace['tenant_id'],
+            $workspace['user_id']
+        );
+
+        app(
+            BusinessContext::class
+        )->set(
+            $workspace['tenant_id'],
+            $workspace['business_id'],
+            $workspace['user_id']
         );
     }
 
@@ -2708,6 +2727,12 @@ class QuotationApiTest extends TestCase
             TenantContext::class
         )->set(
             $workspace['tenant_id'],
+            $workspace['user_id']
+        );
+
+        app(BusinessContext::class)->set(
+            $workspace['tenant_id'],
+            $workspace['business_id'],
             $workspace['user_id']
         );
     }

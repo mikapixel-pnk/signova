@@ -379,6 +379,31 @@ export const modules:
     },
   },
 
+  "document-settings": {
+    key: "document-settings",
+    group: "pengaturan",
+    label: "Dokumen & Template",
+    shortLabel: "Dokumen & Template",
+    href:
+      "/app/pengaturan?bagian=dokumen",
+    tone: "cyan",
+    icon: ReceiptText,
+    plan: "starter",
+    description:
+      "Atur isi penawaran, catatan tagihan, penandatangan, dan template dokumen.",
+    insight: {
+      title:
+        "Dokumen bisnis konsisten tanpa pengaturan berulang",
+      description:
+        "Paragraf penawaran, catatan tagihan, tanda tangan, dan template digunakan kembali sesuai usaha aktif.",
+    },
+    navigation: {
+      desktop: true,
+      mobile: true,
+      order: 15,
+    },
+  },
+
   "profile-settings": {
     key: "profile-settings",
     group: "pengaturan",
@@ -399,7 +424,7 @@ export const modules:
     navigation: {
       desktop: true,
       mobile: true,
-      order: 20,
+      order: 30,
     },
   },
 
@@ -423,7 +448,7 @@ export const modules:
     navigation: {
       desktop: true,
       mobile: true,
-      order: 30,
+      order: 20,
     },
   },
 

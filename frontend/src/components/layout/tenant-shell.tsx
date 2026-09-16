@@ -15,9 +15,11 @@ import Link from "next/link";
 import {
   usePathname,
   useRouter,
+  useSearchParams,
 } from "next/navigation";
 
 import {
+  Suspense,
   useEffect,
   useState,
 } from "react";
@@ -146,15 +148,51 @@ function cleanHref(
   return href.split("?")[0];
 }
 
+function settingsSectionFromHref(
+  href: string,
+): string | null {
+  const query =
+    href.split("?")[1];
+
+  if (!query) {
+    return null;
+  }
+
+  return new URLSearchParams(
+    query,
+  ).get("bagian");
+}
+
 function isActiveRoute(
   pathname: string,
   href: string,
+  settingsSection:
+    string | null = null,
 ): boolean {
   const clean =
     cleanHref(href);
 
   if (clean === "/app") {
     return pathname === "/app";
+  }
+
+  if (
+    clean ===
+      "/app/pengaturan" &&
+    pathname ===
+      "/app/pengaturan"
+  ) {
+    const targetSection =
+      settingsSectionFromHref(
+        href,
+      );
+
+    if (targetSection) {
+      return (
+        targetSection ===
+        settingsSection
+      );
+    }
   }
 
   return (
@@ -168,22 +206,57 @@ function isActiveRoute(
 function groupIsActive(
   pathname: string,
   group: NavigationGroup,
+  settingsSection:
+    string | null,
 ): boolean {
   return group.items.some(
     (item) =>
       isActiveRoute(
         pathname,
         item.href,
+        settingsSection,
       ),
   );
+}
+
+function settingsSubgroupLabel(
+  href: string,
+): string | null {
+  const section =
+    settingsSectionFromHref(
+      href,
+    );
+
+  switch (section) {
+    case "bisnis":
+    case "dokumen":
+      return "Usaha & Dokumen";
+
+    case "keuangan":
+      return "Keuangan & Pembayaran";
+
+    case "profil":
+    case "tim":
+      return "Akun & Akses";
+
+    case "paket":
+    case "integrasi":
+      return "Sistem & Langganan";
+
+    default:
+      return null;
+  }
 }
 
 function NavigationLink({
   item,
   pathname,
+  settingsSection,
 }: {
   item: NavigationItem;
   pathname: string;
+  settingsSection:
+    string | null;
 }) {
   const Icon =
     item.icon;
@@ -192,6 +265,7 @@ function NavigationLink({
     isActiveRoute(
       pathname,
       item.href,
+      settingsSection,
     );
 
   return (
@@ -233,14 +307,18 @@ function NavigationLink({
 function AccordionGroup({
   group,
   pathname,
+  settingsSection,
 }: {
   group: NavigationGroup;
   pathname: string;
+  settingsSection:
+    string | null;
 }) {
   const initiallyOpen =
     groupIsActive(
       pathname,
       group,
+      settingsSection,
     );
 
   const [
@@ -311,21 +389,106 @@ function AccordionGroup({
           }
         >
           {group.items.map(
-            (item) => (
-              <NavigationLink
-                key={
-                  `${group.id}-${item.label}`
-                }
-                item={item}
-                pathname={
-                  pathname
-                }
-              />
-            ),
+            (
+              item,
+              index,
+            ) => {
+              const subgroup =
+                group.id ===
+                "pengaturan"
+                  ? settingsSubgroupLabel(
+                      item.href,
+                    )
+                  : null;
+
+              const previousSubgroup =
+                group.id ===
+                  "pengaturan" &&
+                index > 0
+                  ? settingsSubgroupLabel(
+                      group.items[
+                        index - 1
+                      ].href,
+                    )
+                  : null;
+
+              const showSubgroup =
+                subgroup !== null &&
+                subgroup !==
+                  previousSubgroup;
+
+              return (
+                <div
+                  key={
+                    `${group.id}-${item.label}`
+                  }
+                  className={
+                    styles.accordionItemGroup
+                  }
+                >
+                  {showSubgroup ? (
+                    <div
+                      className={
+                        styles.settingsSubgroupLabel
+                      }
+                    >
+                      {subgroup}
+                    </div>
+                  ) : null}
+
+                  <NavigationLink
+                    item={item}
+                    pathname={
+                      pathname
+                    }
+                    settingsSection={
+                      settingsSection
+                    }
+                  />
+                </div>
+              );
+            },
           )}
         </div>
       ) : null}
     </section>
+  );
+}
+
+function SidebarNavigationGroups({
+  pathname,
+}: {
+  pathname: string;
+}) {
+  const searchParams =
+    useSearchParams();
+
+  const settingsSection =
+    searchParams.get(
+      "bagian",
+    );
+
+  return (
+    <>
+      {navigationGroups.map(
+        (group) => (
+          <AccordionGroup
+            key={
+              group.id
+            }
+            group={
+              group
+            }
+            pathname={
+              pathname
+            }
+            settingsSection={
+              settingsSection
+            }
+          />
+        ),
+      )}
+    </>
   );
 }
 
@@ -440,6 +603,9 @@ export function TenantShell({
             pathname={
               pathname
             }
+            settingsSection={
+              null
+            }
             item={{
               label: "Beranda",
               href: "/app",
@@ -448,21 +614,17 @@ export function TenantShell({
             }}
           />
 
-          {navigationGroups.map(
-            (group) => (
-              <AccordionGroup
-                key={
-                  group.id
-                }
-                group={
-                  group
-                }
-                pathname={
-                  pathname
-                }
-              />
-            ),
-          )}
+          <Suspense
+            fallback={
+              null
+            }
+          >
+            <SidebarNavigationGroups
+              pathname={
+                pathname
+              }
+            />
+          </Suspense>
         </nav>
 
         <div

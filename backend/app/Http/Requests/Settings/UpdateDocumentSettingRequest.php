@@ -17,38 +17,35 @@ class UpdateDocumentSettingRequest extends FormRequest
 
         foreach (
             [
-                'business_name',
-                'address',
-                'phone',
-                'email',
-                'tax_id',
-                'quotation_footer',
+                'quotation_opening_text',
+                'quotation_closing_text',
+                'quotation_default_terms',
+                'quotation_number_prefix',
+                'invoice_number_prefix',
                 'invoice_footnote',
                 'signature_name',
                 'signature_title',
             ] as $field
         ) {
-            if ($this->exists($field)) {
-                if (is_string($this->$field)) {
-                    $value = trim($this->$field);
-
-                    $data[$field] =
-                        $value === ''
-                            ? null
-                            : $value;
-                } else {
-                    $data[$field] = $this->$field;
-                }
+            if (! $this->exists($field)) {
+                continue;
             }
-        }
 
-        if (
-            array_key_exists('email', $data)
-            && is_string($data['email'])
-        ) {
-            $data['email'] = strtolower(
-                $data['email']
-            );
+            if (is_string($this->$field)) {
+                $value = trim(
+                    $this->$field
+                );
+
+                $data[$field] =
+                    $value === ''
+                        ? null
+                        : $value;
+
+                continue;
+            }
+
+            $data[$field] =
+                $this->$field;
         }
 
         $this->merge($data);
@@ -57,54 +54,65 @@ class UpdateDocumentSettingRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'business_name' => [
-                'sometimes',
-                'nullable',
-                'string',
-                'max:190',
-            ],
-            'address' => [
-                'sometimes',
-                'nullable',
-                'string',
-                'max:2000',
-            ],
-            'phone' => [
-                'sometimes',
-                'nullable',
-                'string',
-                'max:64',
-            ],
-            'email' => [
-                'sometimes',
-                'nullable',
-                'email',
-                'max:190',
-            ],
-            'tax_id' => [
-                'sometimes',
-                'nullable',
-                'string',
-                'max:100',
-            ],
-            'quotation_footer' => [
+            'quotation_opening_text' => [
                 'sometimes',
                 'nullable',
                 'string',
                 'max:5000',
             ],
+
+            'quotation_closing_text' => [
+                'sometimes',
+                'nullable',
+                'string',
+                'max:5000',
+            ],
+
+            'quotation_default_terms' => [
+                'sometimes',
+                'nullable',
+                'string',
+                'max:10000',
+            ],
+
+            'quotation_default_validity_days' => [
+                'sometimes',
+                'nullable',
+                'integer',
+                'min:1',
+                'max:365',
+            ],
+
+            'quotation_number_prefix' => [
+                'sometimes',
+                'nullable',
+                'string',
+                'max:20',
+                'regex:/^[A-Za-z0-9]+$/',
+            ],
+
+            'invoice_number_prefix' => [
+                'sometimes',
+                'nullable',
+                'string',
+                'max:20',
+                'regex:/^[A-Za-z0-9]+$/',
+            ],
+
             'invoice_footnote' => [
                 'sometimes',
                 'nullable',
                 'string',
                 'max:5000',
             ],
+
             'signature_name' => [
                 'sometimes',
                 'nullable',
                 'string',
                 'max:190',
             ],
+
             'signature_title' => [
                 'sometimes',
                 'nullable',

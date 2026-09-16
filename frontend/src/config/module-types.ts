@@ -37,6 +37,7 @@ export type ModuleKey =
   | "expense"
   | "receivables"
   | "business-settings"
+  | "document-settings"
   | "profile-settings"
   | "finance-settings"
   | "team-access"

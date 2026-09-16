@@ -3,12 +3,14 @@
 namespace App\Services\Invoice\Document;
 
 use App\Models\TenantDocumentSetting;
+use App\Tenancy\BusinessContext;
 use App\Tenancy\TenantContext;
 
 class InvoiceTemplateSnapshotService
 {
     public function __construct(
         private readonly TenantContext $tenantContext,
+        private readonly BusinessContext $businessContext,
         private readonly InvoiceTemplateRegistry $registry
     ) {
     }
@@ -21,6 +23,11 @@ class InvoiceTemplateSnapshotService
                     'tenant_id',
                     $this->tenantContext
                         ->tenantId()
+                )
+                ->where(
+                    'business_id',
+                    $this->businessContext
+                        ->businessId()
                 )
                 ->first();
 

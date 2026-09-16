@@ -152,85 +152,96 @@ Route::prefix('v1')->group(function () {
         Route::get(
             '/quotations',
             [QuotationController::class, 'index']
-        )->middleware(
-            'capability:quotation.view'
-        );
+        )->middleware([
+            'business.context',
+            'capability:quotation.view',
+        ]);
 
         Route::post(
             '/quotations',
             [QuotationController::class, 'store']
-        )->middleware(
-            'capability:quotation.create'
-        );
+        )->middleware([
+            'business.context',
+            'capability:quotation.create',
+        ]);
 
         Route::get(
             '/quotations/{quotationId}/pdf',
             [QuotationController::class, 'pdf']
-        )->middleware(
-            'capability:quotation.view'
-        );
+        )->middleware([
+            'business.context',
+            'capability:quotation.view',
+        ]);
 
         Route::get(
             '/quotations/{quotationId}',
             [QuotationController::class, 'show']
-        )->middleware(
-            'capability:quotation.view'
-        );
+        )->middleware([
+            'business.context',
+            'capability:quotation.view',
+        ]);
 
 
         Route::patch(
             '/quotations/{quotationId}',
             [QuotationController::class, 'update']
-        )->middleware(
-            'capability:quotation.update'
-        );
+        )->middleware([
+            'business.context',
+            'capability:quotation.update',
+        ]);
 
 
         Route::post(
             '/quotations/{quotationId}/versions',
             [QuotationController::class, 'storeVersion']
-        )->middleware(
-            'capability:quotation.update'
-        );
+        )->middleware([
+            'business.context',
+            'capability:quotation.update',
+        ]);
 
 
         Route::post(
             '/quotations/{quotationId}/actions/send',
             [QuotationController::class, 'send']
-        )->middleware(
-            'capability:quotation.issue'
-        );
+        )->middleware([
+            'business.context',
+            'capability:quotation.issue',
+        ]);
 
 
         Route::post(
             '/quotations/{quotationId}/actions/manual-decision',
             [QuotationController::class, 'manualDecision']
-        )->middleware(
-            'capability:quotation.issue'
-        );
+        )->middleware([
+            'business.context',
+            'capability:quotation.issue',
+        ]);
 
 
         Route::post(
             '/quotations/{quotationId}/actions/issue-public-link',
             [QuotationController::class, 'issuePublicLink']
-        )->middleware(
-            'capability:quotation.issue'
-        );
+        )->middleware([
+            'business.context',
+            'capability:quotation.issue',
+        ]);
 
 
         Route::post(
             '/quotations/{quotationId}/actions/create-invoice',
             [QuotationController::class, 'createInvoice']
-        )->middleware(
-            'capability:invoice.create'
-        );
+        )->middleware([
+            'business.context',
+            'capability:invoice.create',
+        ]);
 
         Route::post(
             '/quotations/{quotationId}/actions/cancel',
             [QuotationController::class, 'cancel']
-        )->middleware(
-            'capability:quotation.issue'
-        );
+        )->middleware([
+            'business.context',
+            'capability:quotation.issue',
+        ]);
 
 
         /*
@@ -242,45 +253,51 @@ Route::prefix('v1')->group(function () {
         Route::get(
             '/invoices',
             [InvoiceController::class, 'index']
-        )->middleware(
-            'capability:invoice.view'
-        );
+        )->middleware([
+            'business.context',
+            'capability:invoice.view',
+        ]);
 
         Route::post(
             '/invoices',
             [InvoiceController::class, 'store']
-        )->middleware(
-            'capability:invoice.create'
-        );
+        )->middleware([
+            'business.context',
+            'capability:invoice.create',
+        ]);
 
         Route::post(
             '/invoices/{invoiceId}/actions/issue',
             [InvoiceController::class, 'issue']
-        )->middleware(
-            'capability:invoice.issue'
-        );
+        )->middleware([
+            'business.context',
+            'capability:invoice.issue',
+        ]);
 
 
         Route::post(
             '/invoices/{invoiceId}/actions/void',
             [InvoiceController::class, 'void']
-        )->middleware(
-            'capability:invoice.void'
-        );
+        )->middleware([
+            'business.context',
+            'capability:invoice.void',
+        ]);
 
         Route::get(
             '/invoices/{invoiceId}/pdf',
             [InvoiceController::class, 'pdf']
-        )->middleware(
-            'capability:invoice.view'
-        );
+        )->middleware([
+            'business.context',
+            'capability:invoice.view',
+        ]);
 
         Route::get(
             '/invoices/{invoiceId}',
             [InvoiceController::class, 'show']
-        )->middleware(
-            'capability:invoice.view'
-        );
+        )->middleware([
+            'business.context',
+            'capability:invoice.view',
+        ]);
 
 
         /*
@@ -581,37 +598,42 @@ Route::prefix('v1')->group(function () {
         Route::get(
             '/settings/document',
             [DocumentSettingController::class, 'show']
-        )->middleware(
-            'capability:settings.view'
-        );
+        )->middleware([
+            'business.context',
+            'capability:settings.view',
+        ]);
 
         Route::patch(
             '/settings/document',
             [DocumentSettingController::class, 'update']
-        )->middleware(
-            'capability:settings.manage'
-        );
+        )->middleware([
+            'business.context',
+            'capability:settings.manage',
+        ]);
 
         Route::post(
             '/settings/document/signature',
             [DocumentSettingController::class, 'uploadSignature']
-        )->middleware(
-            'capability:settings.manage'
-        );
+        )->middleware([
+            'business.context',
+            'capability:settings.manage',
+        ]);
 
         Route::get(
             '/settings/document/signature',
             [DocumentSettingController::class, 'signature']
-        )->middleware(
-            'capability:settings.view'
-        );
+        )->middleware([
+            'business.context',
+            'capability:settings.view',
+        ]);
 
         Route::delete(
             '/settings/document/signature',
             [DocumentSettingController::class, 'destroySignature']
-        )->middleware(
-            'capability:settings.manage'
-        );
+        )->middleware([
+            'business.context',
+            'capability:settings.manage',
+        ]);
 
 
         /*
@@ -626,9 +648,10 @@ Route::prefix('v1')->group(function () {
                 InvoiceTemplateSettingController::class,
                 'index',
             ]
-        )->middleware(
-            'capability:settings.view'
-        );
+        )->middleware([
+            'business.context',
+            'capability:settings.view',
+        ]);
 
         Route::get(
             '/settings/invoice-templates/{templateKey}/preview',
@@ -636,9 +659,10 @@ Route::prefix('v1')->group(function () {
                 InvoiceTemplateSettingController::class,
                 'preview',
             ]
-        )->middleware(
-            'capability:settings.view'
-        );
+        )->middleware([
+            'business.context',
+            'capability:settings.view',
+        ]);
 
 
         Route::patch(
@@ -647,9 +671,10 @@ Route::prefix('v1')->group(function () {
                 InvoiceTemplateSettingController::class,
                 'update',
             ]
-        )->middleware(
-            'capability:settings.manage'
-        );
+        )->middleware([
+            'business.context',
+            'capability:settings.manage',
+        ]);
 
 
         /*

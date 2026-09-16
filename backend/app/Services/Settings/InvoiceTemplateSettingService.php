@@ -4,6 +4,7 @@ namespace App\Services\Settings;
 
 use App\Models\TenantDocumentSetting;
 use App\Services\Invoice\Document\InvoiceTemplateRegistry;
+use App\Tenancy\BusinessContext;
 use App\Tenancy\TenantContext;
 use Illuminate\Validation\ValidationException;
 
@@ -11,6 +12,7 @@ class InvoiceTemplateSettingService
 {
     public function __construct(
         private readonly TenantContext $tenantContext,
+        private readonly BusinessContext $businessContext,
         private readonly InvoiceTemplateRegistry $registry
     ) {
     }
@@ -167,6 +169,11 @@ class InvoiceTemplateSettingService
                 $this->tenantContext
                     ->tenantId()
             )
+            ->where(
+                'business_id',
+                $this->businessContext
+                    ->businessId()
+            )
             ->first();
     }
 
@@ -177,6 +184,10 @@ class InvoiceTemplateSettingService
                 'tenant_id' =>
                     $this->tenantContext
                         ->tenantId(),
+
+                'business_id' =>
+                    $this->businessContext
+                        ->businessId(),
             ]);
     }
 }

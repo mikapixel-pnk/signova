@@ -18,6 +18,7 @@ class TenantSequence extends Model
     protected $fillable = [
         'id',
         'tenant_id',
+        'business_id',
         'document_type',
         'period',
         'prefix',

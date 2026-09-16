@@ -12,6 +12,7 @@ use App\Models\QuotationVersion;
 use App\Exceptions\Quotation\InvalidQuotationTransitionException;
 use App\Exceptions\Quotation\QuotationNotEditableException;
 use App\Models\Unit;
+use App\Services\Document\DocumentNumberService;
 use App\Tenancy\TenantContext;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
@@ -25,6 +26,7 @@ class QuotationService
     public function __construct(
         private readonly TenantContext $tenantContext,
         private readonly QuotationPricingCalculator $pricingCalculator,
+        private readonly DocumentNumberService $documentNumberService,
     ) {
     }
 
@@ -134,9 +136,8 @@ class QuotationService
             }
 
             $quotationNumber =
-                $this->nextQuotationNumber(
-                    $tenantId
-                );
+                $this->documentNumberService
+                    ->nextQuotationNumber();
 
             $quotation = Quotation::query()->create([
                 'id' => (string) Str::ulid(),
@@ -685,113 +686,6 @@ class QuotationService
                 $quotation->id
             );
         });
-    }
-
-    private function nextQuotationNumber(
-        string $tenantId
-    ): string {
-        $prefix =
-            strtoupper(
-                trim(
-                    (string) config(
-                        'signova_documents.quotation.prefix',
-                        'PEN'
-                    )
-                )
-            );
-
-        if ($prefix === '') {
-            $prefix = 'PEN';
-        }
-
-        $period =
-            now()->format(
-                (string) config(
-                    'signova_documents.quotation.period_format',
-                    'ym'
-                )
-            );
-
-        $sequenceDigits =
-            (int) config(
-                'signova_documents.quotation.sequence_digits',
-                6
-            );
-
-        $base =
-            $prefix
-            . '-'
-            . $period;
-
-        DB::select(
-            'SELECT pg_advisory_xact_lock('
-            . 'hashtextextended(?, 0)'
-            . ')',
-            [
-                'signova:quotation-number:'
-                . $tenantId
-                . ':'
-                . $base,
-            ]
-        );
-
-        $pattern =
-            '^'
-            . preg_quote(
-                $base,
-                '/'
-            )
-            . '-[0-9]{'
-            . $sequenceDigits
-            . '}$';
-
-        $latestNumber =
-            Quotation::query()
-                ->where(
-                    'tenant_id',
-                    $tenantId
-                )
-                ->where(
-                    'quotation_number',
-                    'LIKE',
-                    $base . '-%'
-                )
-                ->whereRaw(
-                    'quotation_number ~ ?',
-                    [$pattern]
-                )
-                ->orderByRaw(
-                    'CAST(RIGHT(quotation_number, ?) AS INTEGER) DESC',
-                    [$sequenceDigits]
-                )
-                ->value(
-                    'quotation_number'
-                );
-
-        $sequence = 1;
-
-        if (
-            is_string($latestNumber)
-            && preg_match(
-                '/-([0-9]{'
-                . $sequenceDigits
-                . '})$/',
-                $latestNumber,
-                $matches
-            ) === 1
-        ) {
-            $sequence =
-                ((int) $matches[1])
-                + 1;
-        }
-
-        return sprintf(
-            '%s-%0'
-            . $sequenceDigits
-            . 'd',
-            $base,
-            $sequence
-        );
     }
 
     private function createVersionRecord(

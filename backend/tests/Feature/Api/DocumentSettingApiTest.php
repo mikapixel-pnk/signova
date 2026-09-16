@@ -42,6 +42,22 @@ class DocumentSettingApiTest extends TestCase
             $workspace
         );
 
+        $businessId =
+            DB::table('business_profiles')
+                ->where(
+                    'tenant_id',
+                    $workspace['tenant_id']
+                )
+                ->where(
+                    'is_default',
+                    true
+                )
+                ->value('id');
+
+        $this->assertIsString(
+            $businessId
+        );
+
         $this->getJson(
             '/api/v1/settings/document'
         )
@@ -59,10 +75,16 @@ class DocumentSettingApiTest extends TestCase
             '/api/v1/settings/document',
             [
                 'business_name' =>
-                    'PT Signova Reklame',
+                    'Nama yang harus diabaikan',
+
+                'quotation_opening_text' =>
+                    'Dengan hormat, berikut penawaran kami.',
+
+                'quotation_closing_text' =>
+                    'Demikian penawaran ini kami sampaikan.',
 
                 'invoice_footnote' =>
-                    'Terima kasih atas kepercayaan Anda.',
+                    'Pembayaran dianggap sah setelah diterima.',
 
                 'signature_name' =>
                     'Budi Santoso',
@@ -74,7 +96,15 @@ class DocumentSettingApiTest extends TestCase
             ->assertOk()
             ->assertJsonPath(
                 'data.business_name',
-                'PT Signova Reklame'
+                'Settings Test'
+            )
+            ->assertJsonPath(
+                'data.quotation_opening_text',
+                'Dengan hormat, berikut penawaran kami.'
+            )
+            ->assertJsonPath(
+                'data.quotation_closing_text',
+                'Demikian penawaran ini kami sampaikan.'
             )
             ->assertJsonPath(
                 'data.signature_name',
@@ -87,11 +117,42 @@ class DocumentSettingApiTest extends TestCase
                 'tenant_id' =>
                     $workspace['tenant_id'],
 
-                'business_name' =>
-                    'PT Signova Reklame',
+                'business_id' =>
+                    $businessId,
+
+                'quotation_opening_text' =>
+                    'Dengan hormat, berikut penawaran kami.',
+
+                'quotation_closing_text' =>
+                    'Demikian penawaran ini kami sampaikan.',
 
                 'signature_title' =>
                     'Finance Manager',
+            ]
+        );
+
+        $this->assertDatabaseHas(
+            'business_profiles',
+            [
+                'id' =>
+                    $businessId,
+
+                'tenant_id' =>
+                    $workspace['tenant_id'],
+
+                'name' =>
+                    'Settings Test',
+            ]
+        );
+
+        $this->assertDatabaseMissing(
+            'business_profiles',
+            [
+                'id' =>
+                    $businessId,
+
+                'name' =>
+                    'Nama yang harus diabaikan',
             ]
         );
     }

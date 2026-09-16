@@ -105,6 +105,12 @@
             margin-top: 18px;
         }
 
+        .quotation-paragraph {
+            margin-top: 18px;
+            line-height: 1.6;
+            text-align: justify;
+        }
+
         .footer {
             margin-top: 28px;
             border-top: 1px solid #ddd;
@@ -202,6 +208,14 @@
         </td>
     </tr>
 </table>
+
+@if ($branding['quotation_opening_text'])
+    <div class="quotation-paragraph">
+        {!! nl2br(e(
+            $branding['quotation_opening_text']
+        )) !!}
+    </div>
+@endif
 
 <table class="items-table">
     <thead>
@@ -349,10 +363,10 @@
     </div>
 @endif
 
-@if ($branding['quotation_footer'])
-    <div class="footer">
+@if ($branding['quotation_closing_text'])
+    <div class="quotation-paragraph">
         {!! nl2br(e(
-            $branding['quotation_footer']
+            $branding['quotation_closing_text']
         )) !!}
     </div>
 @endif

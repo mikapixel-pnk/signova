@@ -6,6 +6,7 @@ use App\Actions\Tenancy\CreateTenantWorkspaceAction;
 use App\Models\TenantDocumentSetting;
 use App\Services\Quotation\QuotationPdfService;
 use App\Services\Quotation\QuotationService;
+use App\Tenancy\BusinessContext;
 use App\Tenancy\TenantContext;
 use Database\Seeders\SignovaAccessControlSeeder;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
@@ -64,19 +65,37 @@ class QuotationPdfServiceTest extends TestCase
             'Q-PDF-BRANDING'
         );
 
+        DB::table('business_profiles')
+            ->where(
+                'id',
+                $fixture['business_id']
+            )
+            ->update([
+                'name' =>
+                    'PT Signage Hebat',
+
+                'address' =>
+                    'Jl. Reklame No. 88',
+
+                'phone' =>
+                    '08123456789',
+
+                'email' =>
+                    'halo@signage.test',
+            ]);
+
         TenantDocumentSetting::query()->create([
             'tenant_id' =>
                 $fixture['tenant_id'],
-            'business_name' =>
-                'PT Signage Hebat',
-            'address' =>
-                'Jl. Reklame No. 88',
-            'phone' =>
-                '08123456789',
-            'email' =>
-                'halo@signage.test',
-            'quotation_footer' =>
-                'Terima kasih atas kepercayaan Anda.',
+
+            'business_id' =>
+                $fixture['business_id'],
+
+            'quotation_opening_text' =>
+                'Dengan hormat, berikut penawaran kami.',
+
+            'quotation_closing_text' =>
+                'Demikian penawaran ini kami sampaikan.',
         ]);
 
         $this->setTenantContext(
@@ -147,6 +166,14 @@ class QuotationPdfServiceTest extends TestCase
             $fixture['tenant_id'],
             $fixture['user_id']
         );
+
+        app(
+            BusinessContext::class
+        )->set(
+            $fixture['tenant_id'],
+            $fixture['business_id'],
+            $fixture['user_id']
+        );
     }
 
     private function quotationFixture(
@@ -171,6 +198,14 @@ class QuotationPdfServiceTest extends TestCase
             TenantContext::class
         )->set(
             $workspace['tenant_id'],
+            $workspace['user_id']
+        );
+
+        app(
+            BusinessContext::class
+        )->set(
+            $workspace['tenant_id'],
+            $workspace['business_id'],
             $workspace['user_id']
         );
 
@@ -256,8 +291,13 @@ class QuotationPdfServiceTest extends TestCase
         return [
             'tenant_id' =>
                 $workspace['tenant_id'],
+
+            'business_id' =>
+                $workspace['business_id'],
+
             'user_id' =>
                 $workspace['user_id'],
+
             'quotation_id' =>
                 $quotation->id,
         ];

@@ -5,6 +5,7 @@ namespace App\Services\Settings;
 use App\Models\FileAsset;
 use App\Models\TenantDocumentSetting;
 use App\Services\File\FileService;
+use App\Tenancy\BusinessContext;
 use App\Tenancy\TenantContext;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
@@ -13,6 +14,7 @@ class DocumentSettingService
 {
     public function __construct(
         private readonly TenantContext $tenantContext,
+        private readonly BusinessContext $businessContext,
         private readonly FileService $fileService
     ) {
     }
@@ -22,11 +24,24 @@ class DocumentSettingService
         $tenantId =
             $this->tenantContext->tenantId();
 
-        return TenantDocumentSetting::query()
-            ->firstOrCreate([
-                'tenant_id' =>
-                    $tenantId,
-            ]);
+        $settings =
+            TenantDocumentSetting::query()
+                ->firstOrCreate(
+                    [
+                        'tenant_id' =>
+                            $tenantId,
+
+                        'business_id' =>
+                            $this->businessContext
+                                ->businessId(),
+                    ],
+                    $this->defaultAttributes()
+                );
+
+        return $settings->loadMissing([
+            'business',
+            'signatureImage',
+        ]);
     }
 
     public function update(
@@ -72,16 +87,30 @@ class DocumentSettingService
                                 'tenant_id',
                                 $tenantId
                             )
+                            ->where(
+                                'business_id',
+                                $this->businessContext
+                                    ->businessId()
+                            )
                             ->lockForUpdate()
                             ->first();
 
                     if ($settings === null) {
                         $settings =
                             TenantDocumentSetting::query()
-                                ->create([
-                                    'tenant_id' =>
-                                        $tenantId,
-                                ]);
+                                ->create(
+                                    array_merge(
+                                        [
+                                            'tenant_id' =>
+                                                $tenantId,
+
+                                            'business_id' =>
+                                                $this->businessContext
+                                                    ->businessId(),
+                                        ],
+                                        $this->defaultAttributes()
+                                    )
+                                );
                     }
 
                     if (
@@ -150,6 +179,11 @@ class DocumentSettingService
                             'tenant_id',
                             $tenantId
                         )
+                        ->where(
+                            'business_id',
+                            $this->businessContext
+                                ->businessId()
+                        )
                         ->lockForUpdate()
                         ->first();
 
@@ -194,6 +228,37 @@ class DocumentSettingService
         return $this->get()->load(
             'signatureImage'
         );
+    }
+
+    private function defaultAttributes(): array
+    {
+        return [
+            'quotation_opening_text' =>
+                TenantDocumentSetting::
+                    DEFAULT_QUOTATION_OPENING_TEXT,
+
+            'quotation_closing_text' =>
+                TenantDocumentSetting::
+                    DEFAULT_QUOTATION_CLOSING_TEXT,
+
+            'invoice_footnote' =>
+                TenantDocumentSetting::
+                    DEFAULT_INVOICE_FOOTNOTE,
+
+            'quotation_default_terms' =>
+                TenantDocumentSetting::
+                    DEFAULT_QUOTATION_TERMS,
+
+            'quotation_default_validity_days' =>
+                TenantDocumentSetting::
+                    DEFAULT_QUOTATION_VALIDITY_DAYS,
+
+            'quotation_number_prefix' =>
+                'PNW',
+
+            'invoice_number_prefix' =>
+                'INV',
+        ];
     }
 
     public function signatureFile(): ?FileAsset

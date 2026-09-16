@@ -1,0 +1,617 @@
+.page {
+  display: grid;
+  gap: 16px;
+}
+
+.form {
+  display: grid;
+  gap: 14px;
+}
+
+.card {
+  display: grid;
+  gap: 16px;
+
+  border:
+    1px solid
+    var(--border);
+
+  border-radius: 18px;
+
+  background:
+    var(--surface);
+
+  padding: 16px;
+}
+
+.cardHeader {
+  display: flex;
+  align-items: flex-start;
+  gap: 11px;
+}
+
+.cardHeader h2 {
+  margin: 0;
+  font-size: 14px;
+}
+
+.cardHeader p {
+  margin: 4px 0 0;
+
+  color:
+    var(--foreground-muted);
+
+  font-size: 10px;
+  line-height: 1.45;
+}
+
+.cardIcon {
+  display: grid;
+  width: 40px;
+  height: 40px;
+  flex: 0 0 auto;
+  place-items: center;
+
+  border-radius: 12px;
+
+  background:
+    color-mix(
+      in srgb,
+      var(--sv-cyan) 14%,
+      var(--surface)
+    );
+
+  color:
+    var(--sv-cyan);
+}
+
+.identityGrid,
+.twoColumns {
+  display: grid;
+  gap: 10px;
+}
+
+.info {
+  display: grid;
+  gap: 4px;
+
+  border:
+    1px solid
+    var(--border);
+
+  border-radius: 12px;
+
+  padding: 11px 12px;
+}
+
+.info span,
+.field > span {
+  color:
+    var(--foreground-muted);
+
+  font-size: 9px;
+  font-weight: 650;
+}
+
+.info strong {
+  font-size: 11px;
+  font-weight: 650;
+  line-height: 1.45;
+}
+
+.profileLink {
+  width: fit-content;
+
+  color:
+    var(--sv-cyan);
+
+  font-size: 10px;
+  font-weight: 700;
+
+  text-decoration: none;
+}
+
+.field {
+  display: grid;
+  gap: 7px;
+}
+
+.field input,
+.field textarea {
+  width: 100%;
+
+  border:
+    1px solid
+    var(--border);
+
+  border-radius: 12px;
+
+  background:
+    var(--background);
+
+  padding:
+    11px
+    12px;
+
+  color:
+    var(--foreground);
+
+  font: inherit;
+  font-size: 11px;
+
+  outline: none;
+}
+
+.field textarea {
+  min-height: 110px;
+  resize: vertical;
+  line-height: 1.55;
+}
+
+.field input:focus,
+.field textarea:focus {
+  border-color:
+    color-mix(
+      in srgb,
+      var(--sv-cyan) 62%,
+      var(--border)
+    );
+}
+
+.signatureStatus {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+
+  gap: 8px;
+
+  border:
+    1px dashed
+    var(--border);
+
+  border-radius: 12px;
+
+  padding: 12px;
+}
+
+.signatureStatus strong {
+  font-size: 10px;
+}
+
+.signatureStatus span {
+  color:
+    var(--foreground-muted);
+
+  font-size: 9px;
+}
+
+.submitButton {
+  display: inline-flex;
+
+  min-height: 42px;
+
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+
+  border: 0;
+  border-radius: 12px;
+
+  background:
+    var(--sv-blue);
+
+  padding:
+    10px
+    16px;
+
+  color: white;
+
+  font: inherit;
+  font-size: 11px;
+  font-weight: 750;
+
+  cursor: pointer;
+}
+
+.submitButton:disabled {
+  cursor: wait;
+  opacity: 0.65;
+}
+
+.state {
+  border:
+    1px solid
+    var(--border);
+
+  border-radius: 16px;
+
+  padding: 24px;
+
+  color:
+    var(--foreground-muted);
+
+  text-align: center;
+  font-size: 11px;
+}
+
+@media (min-width: 760px) {
+  .identityGrid,
+  .twoColumns {
+    grid-template-columns:
+      repeat(
+        2,
+        minmax(0, 1fr)
+      );
+  }
+
+  .card {
+    padding: 20px;
+  }
+}
+
+.signaturePanel {
+  display: grid;
+  gap: 14px;
+}
+
+.signaturePreview {
+  display: grid;
+  min-height: 150px;
+  place-items: center;
+  gap: 8px;
+
+  overflow: hidden;
+
+  border:
+    1px dashed
+    var(--border);
+
+  border-radius: 14px;
+
+  background:
+    var(--background);
+
+  color:
+    var(--foreground-muted);
+
+  font-size: 10px;
+}
+
+.signaturePreview img {
+  display: block;
+
+  max-width: 100%;
+  max-height: 180px;
+
+  object-fit: contain;
+
+  padding: 14px;
+}
+
+.signatureControls {
+  display: grid;
+  align-content: start;
+  gap: 10px;
+}
+
+.signatureControls small {
+  color:
+    var(--foreground-muted);
+
+  font-size: 9px;
+  line-height: 1.4;
+}
+
+.filePicker {
+  display: inline-flex;
+  width: fit-content;
+
+  align-items: center;
+  gap: 7px;
+
+  border:
+    1px solid
+    var(--border);
+
+  border-radius: 11px;
+
+  padding:
+    9px
+    12px;
+
+  color:
+    var(--foreground);
+
+  font-size: 10px;
+  font-weight: 700;
+
+  cursor: pointer;
+}
+
+.filePicker input {
+  display: none;
+}
+
+.buttonRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.primaryButton,
+.secondaryButton,
+.dangerButton {
+  display: inline-flex;
+  min-height: 38px;
+
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+
+  border-radius: 11px;
+
+  padding:
+    8px
+    12px;
+
+  font: inherit;
+  font-size: 10px;
+  font-weight: 750;
+
+  cursor: pointer;
+}
+
+.primaryButton {
+  border:
+    1px solid
+    transparent;
+
+  background:
+    var(--sv-blue);
+
+  color: white;
+}
+
+.secondaryButton {
+  border:
+    1px solid
+    var(--border);
+
+  background:
+    var(--surface);
+
+  color:
+    var(--foreground);
+}
+
+.dangerButton {
+  border:
+    1px solid
+    color-mix(
+      in srgb,
+      #ef4444 30%,
+      var(--border)
+    );
+
+  background:
+    color-mix(
+      in srgb,
+      #ef4444 7%,
+      var(--surface)
+    );
+
+  color:
+    #ef4444;
+}
+
+.primaryButton:disabled,
+.secondaryButton:disabled,
+.dangerButton:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.templateGrid {
+  display: grid;
+  gap: 9px;
+}
+
+.templateCard,
+.templateCardActive {
+  display: grid;
+  min-width: 0;
+  gap: 4px;
+
+  border:
+    1px solid
+    var(--border);
+
+  border-radius: 14px;
+
+  background:
+    var(--background);
+
+  padding: 13px;
+
+  color:
+    var(--foreground);
+
+  font: inherit;
+  text-align: left;
+
+  cursor: pointer;
+}
+
+.templateCardActive {
+  border-color:
+    color-mix(
+      in srgb,
+      var(--sv-cyan) 55%,
+      var(--border)
+    );
+
+  background:
+    color-mix(
+      in srgb,
+      var(--sv-cyan) 8%,
+      var(--surface)
+    );
+}
+
+.templateCard strong {
+  font-size: 11px;
+}
+
+.templateCard span,
+.templateCardActive span,
+.templateCard small,
+.templateCardActive small {
+  color:
+    var(--foreground-muted);
+
+  font-size: 9px;
+  line-height: 1.4;
+}
+
+.templateCard:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.paletteSection {
+  display: grid;
+  gap: 9px;
+}
+
+.paletteSection > strong {
+  font-size: 10px;
+}
+
+.paletteOptions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.paletteButton,
+.paletteButtonActive {
+  display: inline-flex;
+  min-height: 36px;
+
+  align-items: center;
+  gap: 7px;
+
+  border:
+    1px solid
+    var(--border);
+
+  border-radius: 999px;
+
+  background:
+    var(--surface);
+
+  padding:
+    7px
+    11px;
+
+  color:
+    var(--foreground);
+
+  font: inherit;
+  font-size: 9px;
+  font-weight: 700;
+
+  cursor: pointer;
+}
+
+.paletteButtonActive {
+  border-color:
+    var(--sv-cyan);
+}
+
+.paletteDot {
+  width: 11px;
+  height: 11px;
+
+  border-radius: 999px;
+
+  background:
+    var(--sv-blue);
+}
+
+.paletteButton[data-palette="emerald"]
+.paletteDot,
+.paletteButtonActive[data-palette="emerald"]
+.paletteDot {
+  background:
+    #059669;
+}
+
+.paletteButton[data-palette="slate"]
+.paletteDot,
+.paletteButtonActive[data-palette="slate"]
+.paletteDot {
+  background:
+    #64748b;
+}
+
+.previewFrame {
+  overflow: hidden;
+
+  border:
+    1px solid
+    var(--border);
+
+  border-radius: 14px;
+
+  background:
+    white;
+}
+
+.previewFrame iframe {
+  display: block;
+
+  width: 100%;
+  height: 560px;
+
+  border: 0;
+
+  background:
+    white;
+}
+
+@media (min-width: 760px) {
+  .signaturePanel {
+    grid-template-columns:
+      minmax(240px, 0.8fr)
+      minmax(0, 1.2fr);
+
+    align-items: start;
+  }
+
+  .templateGrid {
+    grid-template-columns:
+      repeat(
+        3,
+        minmax(0, 1fr)
+      );
+  }
+}
+
+.validityField {
+  display: flex;
+  width: min(100%, 240px);
+  align-items: center;
+  gap: 8px;
+}
+
+.validityField input {
+  width: 120px;
+}
+
+.validityField span {
+  color: var(--foreground-muted);
+  font-size: 10px;
+  font-weight: 700;
+}

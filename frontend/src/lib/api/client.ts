@@ -362,6 +362,11 @@ async function performRequest<
     await ensureCsrfCookie();
   }
 
+  const isFormDataBody =
+    typeof FormData !==
+      "undefined" &&
+    body instanceof FormData;
+
   const requestHeaders =
     new Headers(
       headers,
@@ -373,7 +378,8 @@ async function performRequest<
   );
 
   if (
-    body !== undefined
+    body !== undefined &&
+    !isFormDataBody
   ) {
     requestHeaders.set(
       "Content-Type",
@@ -438,9 +444,11 @@ async function performRequest<
           body ===
           undefined
             ? undefined
-            : JSON.stringify(
-                body,
-              ),
+            : isFormDataBody
+              ? body
+              : JSON.stringify(
+                  body,
+                ),
       },
     );
 
@@ -561,6 +569,69 @@ export async function authenticatedApiBlobRequest(
   }
 
   return response.blob();
+}
+
+export async function authenticatedApiTextRequest(
+  path: string,
+): Promise<string> {
+  const context =
+    getSelectedContext();
+
+  const tenantId =
+    context?.type ===
+    "TENANT"
+      ? context.tenantId
+      : null;
+
+  const businessId =
+    context?.type ===
+    "TENANT"
+      ? context.businessId
+      : null;
+
+  const requestHeaders =
+    new Headers();
+
+  requestHeaders.set(
+    "Accept",
+    "text/html, text/plain",
+  );
+
+  if (tenantId) {
+    requestHeaders.set(
+      "X-Signova-Tenant",
+      tenantId,
+    );
+  }
+
+  if (businessId) {
+    requestHeaders.set(
+      "X-Signova-Business",
+      businessId,
+    );
+  }
+
+  const response =
+    await fetch(
+      buildUrl(path),
+      {
+        method: "GET",
+        credentials:
+          "include",
+        headers:
+          requestHeaders,
+        cache:
+          "no-store",
+      },
+    );
+
+  if (!response.ok) {
+    throw await parseApiError(
+      response,
+    );
+  }
+
+  return response.text();
 }
 
 export async function authenticatedApiRequest<
