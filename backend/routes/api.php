@@ -686,37 +686,42 @@ Route::prefix('v1')->group(function () {
         Route::get(
             '/settings/payment',
             [PaymentSettingController::class, 'show']
-        )->middleware(
-            'capability:settings.view'
-        );
+        )->middleware([
+            'business.context',
+            'capability:settings.view',
+        ]);
 
         Route::patch(
             '/settings/payment',
             [PaymentSettingController::class, 'update']
-        )->middleware(
-            'capability:settings.manage'
-        );
+        )->middleware([
+            'business.context',
+            'capability:settings.manage',
+        ]);
 
         Route::post(
             '/settings/payment/static-qr',
             [PaymentSettingController::class, 'uploadStaticQr']
-        )->middleware(
-            'capability:settings.manage'
-        );
+        )->middleware([
+            'business.context',
+            'capability:settings.manage',
+        ]);
 
         Route::get(
             '/settings/payment/static-qr',
             [PaymentSettingController::class, 'staticQr']
-        )->middleware(
-            'capability:settings.view'
-        );
+        )->middleware([
+            'business.context',
+            'capability:settings.view',
+        ]);
 
         Route::delete(
             '/settings/payment/static-qr',
             [PaymentSettingController::class, 'destroyStaticQr']
-        )->middleware(
-            'capability:settings.manage'
-        );
+        )->middleware([
+            'business.context',
+            'capability:settings.manage',
+        ]);
 
 
         /*

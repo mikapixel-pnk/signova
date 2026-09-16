@@ -3,6 +3,7 @@
 namespace Tests\Feature\Api;
 
 use App\Actions\Tenancy\CreateTenantWorkspaceAction;
+use App\Models\BusinessProfile;
 use App\Models\User;
 use Database\Seeders\SignovaAccessControlSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -599,6 +600,151 @@ class PaymentSettingApiTest extends TestCase
             );
     }
 
+    public function test_same_tenant_businesses_have_separate_payment_settings(): void
+    {
+        $workspace =
+            $this->workspace(
+                'payment-settings-multi-business@example.test',
+                'Payment Settings Multi Business'
+            );
+
+        $secondBusiness =
+            BusinessProfile::query()->create([
+                'tenant_id' =>
+                    $workspace['tenant_id'],
+
+                'name' =>
+                    'Usaha Kedua',
+
+                'is_default' =>
+                    false,
+
+                'status' =>
+                    'ACTIVE',
+            ]);
+
+        $first =
+            $workspace;
+
+        $second =
+            $workspace;
+
+        $second['business_id'] =
+            $secondBusiness->id;
+
+        $this->actingAsWorkspace(
+            $first
+        );
+
+        $this->patchJson(
+            '/api/v1/settings/payment',
+            [
+                'bank_transfer_enabled' =>
+                    true,
+
+                'bank_name' =>
+                    'BCA',
+
+                'bank_account_number' =>
+                    '1111111111',
+
+                'bank_account_name' =>
+                    'Usaha Pertama',
+            ]
+        )->assertOk();
+
+        $this->actingAsWorkspace(
+            $second
+        );
+
+        $this->patchJson(
+            '/api/v1/settings/payment',
+            [
+                'bank_transfer_enabled' =>
+                    true,
+
+                'bank_name' =>
+                    'MANDIRI',
+
+                'bank_account_number' =>
+                    '2222222222',
+
+                'bank_account_name' =>
+                    'Usaha Kedua',
+            ]
+        )->assertOk();
+
+        $this->actingAsWorkspace(
+            $first
+        );
+
+        $this->getJson(
+            '/api/v1/settings/payment'
+        )
+            ->assertOk()
+            ->assertJsonPath(
+                'data.bank_name',
+                'BCA'
+            )
+            ->assertJsonPath(
+                'data.bank_account_number',
+                '1111111111'
+            )
+            ->assertJsonPath(
+                'data.bank_account_name',
+                'Usaha Pertama'
+            );
+
+        $this->actingAsWorkspace(
+            $second
+        );
+
+        $this->getJson(
+            '/api/v1/settings/payment'
+        )
+            ->assertOk()
+            ->assertJsonPath(
+                'data.bank_name',
+                'MANDIRI'
+            )
+            ->assertJsonPath(
+                'data.bank_account_number',
+                '2222222222'
+            )
+            ->assertJsonPath(
+                'data.bank_account_name',
+                'Usaha Kedua'
+            );
+
+        $this->assertDatabaseHas(
+            'tenant_payment_settings',
+            [
+                'tenant_id' =>
+                    $workspace['tenant_id'],
+
+                'business_id' =>
+                    $first['business_id'],
+
+                'bank_name' =>
+                    'BCA',
+            ]
+        );
+
+        $this->assertDatabaseHas(
+            'tenant_payment_settings',
+            [
+                'tenant_id' =>
+                    $workspace['tenant_id'],
+
+                'business_id' =>
+                    $second['business_id'],
+
+                'bank_name' =>
+                    'MANDIRI',
+            ]
+        );
+    }
+
     public function test_tenant_cannot_preview_another_tenant_static_qr(): void
     {
         $first = $this->workspace(
@@ -657,6 +803,9 @@ class PaymentSettingApiTest extends TestCase
             'tenant_id' =>
                 $workspace['tenant_id'],
 
+            'business_id' =>
+                $workspace['business_id'],
+
             'user' =>
                 User::query()->findOrFail(
                     $workspace['user_id']
@@ -675,6 +824,11 @@ class PaymentSettingApiTest extends TestCase
         $this->withHeader(
             'X-Tenant-ID',
             $workspace['tenant_id']
+        );
+
+        $this->withHeader(
+            'X-Signova-Business',
+            $workspace['business_id']
         );
     }
 

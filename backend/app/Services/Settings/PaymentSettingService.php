@@ -5,6 +5,7 @@ namespace App\Services\Settings;
 use App\Models\FileAsset;
 use App\Models\TenantPaymentSetting;
 use App\Services\File\FileService;
+use App\Tenancy\BusinessContext;
 use App\Tenancy\TenantContext;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
@@ -13,6 +14,7 @@ class PaymentSettingService
 {
     public function __construct(
         private readonly TenantContext $tenantContext,
+        private readonly BusinessContext $businessContext,
         private readonly FileService $fileService
     ) {
     }
@@ -22,11 +24,18 @@ class PaymentSettingService
         $tenantId =
             $this->tenantContext->tenantId();
 
+        $businessId =
+            $this->businessContext->businessId();
+
         $settings =
             TenantPaymentSetting::query()
                 ->where(
                     'tenant_id',
                     $tenantId
+                )
+                ->where(
+                    'business_id',
+                    $businessId
                 )
                 ->first();
 
@@ -39,6 +48,9 @@ class PaymentSettingService
 
         $settings->tenant_id =
             $tenantId;
+
+        $settings->business_id =
+            $businessId;
 
         $settings->bank_transfer_enabled =
             false;
@@ -80,12 +92,16 @@ class PaymentSettingService
         $tenantId =
             $this->tenantContext->tenantId();
 
+        $businessId =
+            $this->businessContext->businessId();
+
         $oldFile = null;
 
         try {
             DB::transaction(
                 function () use (
                     $tenantId,
+                    $businessId,
                     $newFile,
                     &$oldFile
                 ): void {
@@ -94,6 +110,10 @@ class PaymentSettingService
                             ->where(
                                 'tenant_id',
                                 $tenantId
+                            )
+                            ->where(
+                                'business_id',
+                                $businessId
                             )
                             ->lockForUpdate()
                             ->first();
@@ -104,6 +124,9 @@ class PaymentSettingService
 
                         $settings->tenant_id =
                             $tenantId;
+
+                        $settings->business_id =
+                            $businessId;
 
                         $settings
                             ->bank_transfer_enabled =
@@ -186,11 +209,15 @@ class PaymentSettingService
         $tenantId =
             $this->tenantContext->tenantId();
 
+        $businessId =
+            $this->businessContext->businessId();
+
         $oldFile = null;
 
         DB::transaction(
             function () use (
                 $tenantId,
+                $businessId,
                 &$oldFile
             ): void {
                 $settings =
@@ -198,6 +225,10 @@ class PaymentSettingService
                         ->where(
                             'tenant_id',
                             $tenantId
+                        )
+                        ->where(
+                            'business_id',
+                            $businessId
                         )
                         ->lockForUpdate()
                         ->first();

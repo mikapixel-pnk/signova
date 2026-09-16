@@ -2,12 +2,13 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class TenantPaymentSetting extends Model
 {
-    protected $primaryKey = 'tenant_id';
+    use HasUlids;
 
     public $incrementing = false;
 
@@ -15,6 +16,7 @@ class TenantPaymentSetting extends Model
 
     protected $fillable = [
         'tenant_id',
+        'business_id',
         'bank_transfer_enabled',
         'bank_name',
         'bank_account_number',
