@@ -1,0 +1,505 @@
+.page {
+  display: grid;
+  gap: 18px;
+  padding-bottom: 32px;
+}
+
+.toolbar {
+  display: grid;
+  gap: 10px;
+}
+
+.search {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  min-height: 46px;
+  padding: 0 14px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--surface);
+}
+
+.search input {
+  width: 100%;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+}
+
+.filter {
+  min-height: 46px;
+  padding: 0 13px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--surface);
+  color: inherit;
+  font: inherit;
+}
+
+.listCard {
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  background: var(--surface);
+}
+
+.listHeader {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 18px;
+  border-bottom: 1px solid var(--border);
+}
+
+.listHeader div {
+  display: grid;
+  gap: 4px;
+}
+
+.listHeader strong {
+  font-size: 1rem;
+}
+
+.listHeader span {
+  color: var(--muted-foreground);
+  font-size: 0.84rem;
+}
+
+.empty {
+  display: grid;
+  justify-items: center;
+  gap: 10px;
+  padding: 44px 20px;
+  text-align: center;
+}
+
+.empty p {
+  max-width: 420px;
+  margin: 0 0 8px;
+  color: var(--muted-foreground);
+  line-height: 1.6;
+}
+
+.desktopTable {
+  display: none;
+  overflow-x: auto;
+}
+
+.desktopTable table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.desktopTable th,
+.desktopTable td {
+  padding: 15px 18px;
+  border-bottom: 1px solid var(--border);
+  text-align: left;
+  vertical-align: middle;
+}
+
+.desktopTable th {
+  color: var(--muted-foreground);
+  font-size: 0.78rem;
+  font-weight: 650;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.desktopTable td strong,
+.desktopTable td small {
+  display: block;
+}
+
+.desktopTable td small {
+  margin-top: 3px;
+  color: var(--muted-foreground);
+}
+
+.amount {
+  text-align: right !important;
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  padding: 5px 9px;
+  border-radius: 999px;
+  background: var(--muted);
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.badge[data-status="DRAFT"] {
+  background: color-mix(in srgb, #64748b 15%, transparent);
+}
+
+.badge[data-status="ISSUED"] {
+  background: color-mix(in srgb, #2563eb 15%, transparent);
+}
+
+.badge[data-status="PARTIALLY_PAID"] {
+  background: color-mix(in srgb, #d97706 16%, transparent);
+}
+
+.badge[data-status="PAID"] {
+  background: color-mix(in srgb, #16a34a 16%, transparent);
+}
+
+.badge[data-status="VOID"] {
+  background: color-mix(in srgb, #dc2626 14%, transparent);
+}
+
+.mobileList {
+  display: grid;
+}
+
+.mobileCard {
+  display: grid;
+  gap: 15px;
+  padding: 16px;
+  border-bottom: 1px solid var(--border);
+}
+
+.mobileCard:last-child {
+  border-bottom: 0;
+}
+
+.mobileTop {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.mobileTop > div {
+  display: grid;
+  gap: 4px;
+}
+
+.mobileTop > div span {
+  color: var(--muted-foreground);
+  font-size: 0.85rem;
+}
+
+.mobileMeta {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.mobileMeta > span {
+  display: grid;
+  gap: 3px;
+  color: var(--muted-foreground);
+  font-size: 0.76rem;
+}
+
+.mobileMeta strong {
+  color: var(--foreground);
+  font-size: 0.86rem;
+}
+
+.pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 14px 16px;
+  border-top: 1px solid var(--border);
+}
+
+.pagination > span {
+  color: var(--muted-foreground);
+  font-size: 0.8rem;
+  text-align: center;
+}
+
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: flex;
+  justify-content: flex-end;
+  background: rgb(0 0 0 / 48%);
+}
+
+.editor {
+  width: min(100%, 760px);
+  height: 100%;
+  overflow-y: auto;
+  background: var(--background);
+  box-shadow: -16px 0 40px rgb(0 0 0 / 18%);
+}
+
+.editorHeader {
+  position: sticky;
+  top: 0;
+  z-index: 3;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  padding: 18px;
+  border-bottom: 1px solid var(--border);
+  background: color-mix(in srgb, var(--background) 96%, transparent);
+  backdrop-filter: blur(14px);
+}
+
+.editorHeader > div {
+  display: grid;
+  gap: 4px;
+}
+
+.editorHeader span {
+  color: var(--muted-foreground);
+  font-size: 0.76rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.editorHeader h2,
+.editorHeader p {
+  margin: 0;
+}
+
+.editorHeader p {
+  max-width: 540px;
+  color: var(--muted-foreground);
+  font-size: 0.88rem;
+  line-height: 1.5;
+}
+
+.close,
+.remove {
+  display: inline-grid;
+  place-items: center;
+  flex: 0 0 auto;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+}
+
+.close {
+  width: 40px;
+  height: 40px;
+}
+
+.remove {
+  width: 34px;
+  height: 34px;
+  color: #dc2626;
+}
+
+.close:hover,
+.remove:hover {
+  background: var(--muted);
+}
+
+.form {
+  display: grid;
+  gap: 18px;
+  padding: 18px;
+}
+
+.formGrid,
+.numberGrid,
+.dimensionGrid {
+  display: grid;
+  gap: 12px;
+}
+
+.field {
+  display: grid;
+  gap: 7px;
+}
+
+.field > span {
+  font-size: 0.82rem;
+  font-weight: 650;
+}
+
+.field input,
+.field select,
+.field textarea {
+  width: 100%;
+  min-height: 44px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  outline: 0;
+  background: var(--surface);
+  color: inherit;
+  font: inherit;
+}
+
+.field textarea {
+  resize: vertical;
+}
+
+.field input:focus,
+.field select:focus,
+.field textarea:focus {
+  border-color: color-mix(in srgb, currentColor 28%, var(--border));
+  box-shadow: 0 0 0 3px color-mix(in srgb, currentColor 7%, transparent);
+}
+
+.itemsHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.itemsHeader > div {
+  display: grid;
+  gap: 4px;
+}
+
+.itemsHeader p {
+  margin: 0;
+  color: var(--muted-foreground);
+  font-size: 0.82rem;
+}
+
+.lines {
+  display: grid;
+  gap: 12px;
+}
+
+.line {
+  display: grid;
+  gap: 14px;
+  padding: 15px;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: var(--surface);
+}
+
+.lineTitle {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.catalogHint {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.catalogHint span {
+  padding: 5px 8px;
+  border-radius: 8px;
+  background: var(--muted);
+  color: var(--muted-foreground);
+  font-size: 0.74rem;
+}
+
+.lineTotal {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding-top: 12px;
+  border-top: 1px dashed var(--border);
+}
+
+.lineTotal span {
+  color: var(--muted-foreground);
+  font-size: 0.8rem;
+}
+
+.summary {
+  display: grid;
+  gap: 9px;
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: var(--surface);
+}
+
+.summary > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.summary span {
+  color: var(--muted-foreground);
+}
+
+.grandTotal {
+  margin-top: 5px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+  font-size: 1.05rem;
+}
+
+.summary p {
+  margin: 4px 0 0;
+  color: var(--muted-foreground);
+  font-size: 0.76rem;
+  line-height: 1.5;
+}
+
+.editorFooter {
+  position: sticky;
+  bottom: 0;
+  display: flex;
+  justify-content: flex-end;
+  gap: 9px;
+  padding: 14px 0 2px;
+  background: var(--background);
+}
+
+@media (min-width: 640px) {
+  .toolbar {
+    grid-template-columns: minmax(0, 1fr) 210px;
+  }
+
+  .formGrid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .numberGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .dimensionGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .form {
+    padding: 22px;
+  }
+
+  .editorHeader {
+    padding: 22px;
+  }
+}
+
+@media (min-width: 860px) {
+  .desktopTable {
+    display: block;
+  }
+
+  .mobileList {
+    display: none;
+  }
+
+  .numberGrid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .dimensionGrid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
