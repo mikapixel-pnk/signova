@@ -62,6 +62,17 @@ class FileService
         );
     }
 
+    public function storeBusinessLogo(
+        UploadedFile $uploadedFile
+    ): FileAsset {
+        return $this->storePrivateFile(
+            $uploadedFile,
+            'BUSINESS_LOGO',
+            'business-logos',
+            self::SIGNATURE_MIME_MAP
+        );
+    }
+
     private function storePrivateFile(
         UploadedFile $uploadedFile,
         string $purpose,

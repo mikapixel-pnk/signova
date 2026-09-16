@@ -595,6 +595,31 @@ Route::prefix('v1')->group(function () {
         ]);
 
 
+        Route::post(
+            '/settings/business-profile/logo',
+            [BusinessProfileController::class, 'uploadLogo']
+        )->middleware([
+            'business.context',
+            'capability:settings.manage',
+        ]);
+
+        Route::get(
+            '/settings/business-profile/logo',
+            [BusinessProfileController::class, 'logo']
+        )->middleware([
+            'business.context',
+            'capability:settings.view',
+        ]);
+
+        Route::delete(
+            '/settings/business-profile/logo',
+            [BusinessProfileController::class, 'destroyLogo']
+        )->middleware([
+            'business.context',
+            'capability:settings.manage',
+        ]);
+
+
         Route::get(
             '/settings/document',
             [DocumentSettingController::class, 'show']

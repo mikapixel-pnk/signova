@@ -22,6 +22,7 @@ class BusinessProfile extends Model
         'email',
         'website',
         'tax_id',
+        'logo_file_id',
         'is_default',
         'status',
     ];

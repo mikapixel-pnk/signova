@@ -44,6 +44,12 @@ class BusinessProfileResource extends JsonResource
             'tax_id' =>
                 $this->tax_id,
 
+            'has_logo' =>
+                $this->logo_file_id !== null,
+
+            'logo_file_id' =>
+                $this->logo_file_id,
+
             'is_default' =>
                 (bool) $this->is_default,
 
