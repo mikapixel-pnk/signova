@@ -11,6 +11,10 @@ import {
 } from "@/components/module/module-page";
 
 import {
+  BusinessProfileSettings,
+} from "@/components/settings/business-profile-settings";
+
+import {
   getSettingsSection,
   getSettingsSections,
 } from "@/lib/module/settings";
@@ -88,11 +92,16 @@ export function SettingsPage() {
         )}
       </nav>
 
-      <ModulePage
-        moduleKey={
-          active.key
-        }
-      />
+      {active.key ===
+      "business-settings" ? (
+        <BusinessProfileSettings />
+      ) : (
+        <ModulePage
+          moduleKey={
+            active.key
+          }
+        />
+      )}
     </div>
   );
 }

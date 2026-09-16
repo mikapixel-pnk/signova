@@ -9,6 +9,7 @@ use App\Http\Controllers\Api\V1\Finance\FinanceSummaryController;
 use App\Http\Controllers\Api\V1\Finance\IncomeController;
 use App\Http\Controllers\Api\V1\Invoice\InvoiceController;
 use App\Http\Controllers\Api\V1\Payment\PaymentController;
+use App\Http\Controllers\Api\V1\Settings\BusinessProfileController;
 use App\Http\Controllers\Api\V1\Settings\DocumentSettingController;
 use App\Http\Controllers\Api\V1\Settings\InvoiceTemplateSettingController;
 use App\Http\Controllers\Api\V1\Settings\PaymentSettingController;
@@ -553,6 +554,29 @@ Route::prefix('v1')->group(function () {
         | Pengaturan Dokumen & Branding
         |--------------------------------------------------------------------------
         */
+
+        /*
+        |--------------------------------------------------------------------------
+        | Profil Usaha
+        |--------------------------------------------------------------------------
+        */
+
+        Route::get(
+            '/settings/business-profile',
+            [BusinessProfileController::class, 'show']
+        )->middleware([
+            'business.context',
+            'capability:settings.view',
+        ]);
+
+        Route::patch(
+            '/settings/business-profile',
+            [BusinessProfileController::class, 'update']
+        )->middleware([
+            'business.context',
+            'capability:settings.manage',
+        ]);
+
 
         Route::get(
             '/settings/document',
