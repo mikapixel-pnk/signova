@@ -1,6 +1,7 @@
 import type {
   AccessContext,
   AuthUser,
+  BusinessAccess,
   PlatformAccess,
   TenantAccess,
 } from "@/types/auth";
@@ -16,6 +17,10 @@ export type LoginData = {
 
   tenant:
     | TenantAccess
+    | null;
+
+  business:
+    | BusinessAccess
     | null;
 
   tenants: TenantAccess[];

@@ -6,6 +6,13 @@ export type AuthUser = {
   auth_status: string;
 };
 
+export type BusinessAccess = {
+  id: string;
+  name: string;
+  is_default: boolean;
+  status: string;
+};
+
 export type TenantAccess = {
   id: string;
   name: string;
@@ -13,6 +20,7 @@ export type TenantAccess = {
   lifecycle_status: string;
   timezone: string;
   locale: string;
+  businesses: BusinessAccess[];
 };
 
 export type PlatformAccess = {
@@ -28,6 +36,7 @@ export type AccessContext =
   | {
       type: "TENANT";
       tenant_id: string;
+      business_id: string;
     };
 
 export type AuthContextData = {

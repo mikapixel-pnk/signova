@@ -1,5 +1,6 @@
 import type {
   AuthUser,
+  BusinessAccess,
   TenantAccess,
 } from "@/types/auth";
 
@@ -22,6 +23,10 @@ export type RegisterData = {
 
   tenant:
     | TenantAccess
+    | null;
+
+  business:
+    | BusinessAccess
     | null;
 
   token: string;
