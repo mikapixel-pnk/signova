@@ -11,6 +11,7 @@ class CatalogItem extends Model
 
     protected $fillable = [
         'tenant_id',
+        'business_id',
         'category_id',
         'unit_id',
         'type',

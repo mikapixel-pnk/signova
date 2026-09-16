@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Catalog;
 
+use App\Tenancy\BusinessContext;
 use App\Tenancy\TenantContext;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -56,6 +57,10 @@ class UpdateCatalogItemRequest extends FormRequest
             TenantContext::class
         )->tenantId();
 
+        $businessId = app(
+            BusinessContext::class
+        )->businessId();
+
         return [
             'category_id' => [
                 'sometimes',
@@ -65,10 +70,15 @@ class UpdateCatalogItemRequest extends FormRequest
                     'id'
                 )->where(
                     fn ($query) =>
-                        $query->where(
-                            'tenant_id',
-                            $tenantId
-                        )
+                        $query
+                            ->where(
+                                'tenant_id',
+                                $tenantId
+                            )
+                            ->where(
+                                'business_id',
+                                $businessId
+                            )
                 ),
             ],
             'unit_id' => [
@@ -79,10 +89,15 @@ class UpdateCatalogItemRequest extends FormRequest
                     'id'
                 )->where(
                     fn ($query) =>
-                        $query->where(
-                            'tenant_id',
-                            $tenantId
-                        )
+                        $query
+                            ->where(
+                                'tenant_id',
+                                $tenantId
+                            )
+                            ->where(
+                                'business_id',
+                                $businessId
+                            )
                 ),
             ],
             'type' => [
@@ -100,10 +115,15 @@ class UpdateCatalogItemRequest extends FormRequest
                 )
                     ->where(
                         fn ($query) =>
-                            $query->where(
-                                'tenant_id',
-                                $tenantId
-                            )
+                            $query
+                                ->where(
+                                    'tenant_id',
+                                    $tenantId
+                                )
+                                ->where(
+                                    'business_id',
+                                    $businessId
+                                )
                     )
                     ->ignore(
                         $this->route('itemId'),

@@ -103,6 +103,9 @@ class CatalogService
                 $tenantId =
                     $this->tenantContext->tenantId();
 
+                $businessId =
+                    $this->businessContext->businessId();
+
                 $code =
                     $data['code'] ?? null;
 
@@ -113,6 +116,7 @@ class CatalogService
                     $code =
                         $this->nextItemCode(
                             $tenantId,
+                            $businessId,
                             $data['type'],
                             $data['category_id'] ?? null
                         );
@@ -121,6 +125,7 @@ class CatalogService
                 return CatalogItem::query()->create([
                     'id' => (string) Str::ulid(),
                     'tenant_id' => $tenantId,
+                    'business_id' => $businessId,
                     'category_id' =>
                         $data['category_id'] ?? null,
                     'unit_id' =>
@@ -147,6 +152,7 @@ class CatalogService
 
     private function nextItemCode(
         string $tenantId,
+        string $businessId,
         string $type,
         ?string $categoryId = null
     ): string {
@@ -158,6 +164,7 @@ class CatalogService
         $categoryPrefix =
             $this->itemCategoryCodePrefix(
                 $tenantId,
+                $businessId,
                 $categoryId
             );
 
@@ -167,7 +174,7 @@ class CatalogService
             . $categoryPrefix;
 
         /*
-         * Serialisasi generator per tenant,
+         * Serialisasi generator per Tenant, Business,
          * jenis, dan prefix kategori.
          */
         DB::select(
@@ -178,6 +185,8 @@ class CatalogService
                 'signova:catalog-item-code:'
                 . $tenantId
                 . ':'
+                . $businessId
+                . ':'
                 . $prefix,
             ]
         );
@@ -187,6 +196,10 @@ class CatalogService
                 ->where(
                     'tenant_id',
                     $tenantId
+                )
+                ->where(
+                    'business_id',
+                    $businessId
                 )
                 ->where(
                     'code',
@@ -227,6 +240,7 @@ class CatalogService
 
     private function itemCategoryCodePrefix(
         string $tenantId,
+        string $businessId,
         ?string $categoryId
     ): string {
         if (! $categoryId) {
@@ -238,6 +252,10 @@ class CatalogService
                 ->where(
                     'tenant_id',
                     $tenantId
+                )
+                ->where(
+                    'business_id',
+                    $businessId
                 )
                 ->where(
                     'id',
@@ -391,6 +409,10 @@ class CatalogService
             ->where(
                 'tenant_id',
                 $this->tenantContext->tenantId()
+            )
+            ->where(
+                'business_id',
+                $this->businessContext->businessId()
             );
     }
 

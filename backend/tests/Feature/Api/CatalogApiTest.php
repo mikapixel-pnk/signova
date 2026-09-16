@@ -269,6 +269,7 @@ class CatalogApiTest extends TestCase
 
         $this->insertItem(
             $first['tenant_id'],
+            $first['business_id'],
             'FIRST-SERVICE',
             'Jasa Pasang Neon',
             'SERVICE',
@@ -277,6 +278,7 @@ class CatalogApiTest extends TestCase
 
         $this->insertItem(
             $first['tenant_id'],
+            $first['business_id'],
             'FIRST-PRODUCT',
             'Acrylic Sheet',
             'PRODUCT',
@@ -285,6 +287,7 @@ class CatalogApiTest extends TestCase
 
         $this->insertItem(
             $second['tenant_id'],
+            $second['business_id'],
             'SECOND-SERVICE',
             'Jasa Tenant Lain',
             'SERVICE',
@@ -329,6 +332,7 @@ class CatalogApiTest extends TestCase
 
         $itemId = $this->insertItem(
             $workspace['tenant_id'],
+            $workspace['business_id'],
             'UPDATE-001',
             'Nama Lama',
             'PRODUCT',
@@ -390,6 +394,7 @@ class CatalogApiTest extends TestCase
 
         $foreignItemId = $this->insertItem(
             $second['tenant_id'],
+            $second['business_id'],
             'FOREIGN-001',
             'Barang Tenant Lain',
             'PRODUCT',
@@ -1059,6 +1064,7 @@ class CatalogApiTest extends TestCase
 
         $foreignItemId = $this->insertItem(
             $second['tenant_id'],
+            $second['business_id'],
             'FOREIGN-PATCH',
             'Barang Asli',
             'PRODUCT',
@@ -1098,7 +1104,204 @@ class CatalogApiTest extends TestCase
         );
     }
 
-    public function test_duplicate_catalog_item_code_is_rejected_within_same_tenant(): void
+    public function test_catalog_items_are_isolated_between_businesses_in_same_tenant(): void
+    {
+        $workspace = $this->workspace(
+            'item-business-isolation@example.test',
+            'Item Business Isolation'
+        );
+
+        $secondBusinessId = (string) Str::ulid();
+
+        DB::table('business_profiles')->insert([
+            'id' => $secondBusinessId,
+            'tenant_id' => $workspace['tenant_id'],
+            'name' => 'Usaha Kedua',
+            'is_default' => false,
+            'status' => 'ACTIVE',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $foreignItemId = $this->insertItem(
+            $workspace['tenant_id'],
+            $secondBusinessId,
+            'BUSINESS-B-ITEM',
+            'Barang Usaha Kedua',
+            'PRODUCT',
+            'STANDARD'
+        );
+
+        $this->actingAsWorkspace($workspace);
+
+        $listResponse = $this->getJson(
+            '/api/v1/catalog/items'
+        );
+
+        $listResponse->assertOk();
+
+        $this->assertFalse(
+            collect($listResponse->json('data'))
+                ->contains(
+                    fn (array $item) =>
+                        $item['id'] === $foreignItemId
+                )
+        );
+
+        $this->getJson(
+            "/api/v1/catalog/items/{$foreignItemId}"
+        )
+            ->assertNotFound()
+            ->assertJsonPath(
+                'error.code',
+                'RESOURCE_NOT_FOUND'
+            );
+
+        $this->patchJson(
+            "/api/v1/catalog/items/{$foreignItemId}",
+            [
+                'name' => 'Perubahan Tidak Sah',
+            ]
+        )
+            ->assertNotFound()
+            ->assertJsonPath(
+                'error.code',
+                'RESOURCE_NOT_FOUND'
+            );
+
+        $this->assertDatabaseHas(
+            'catalog_items',
+            [
+                'id' => $foreignItemId,
+                'tenant_id' =>
+                    $workspace['tenant_id'],
+                'business_id' =>
+                    $secondBusinessId,
+                'name' => 'Barang Usaha Kedua',
+            ]
+        );
+    }
+
+    public function test_category_from_other_business_is_rejected_for_catalog_item(): void
+    {
+        $workspace = $this->workspace(
+            'item-foreign-category@example.test',
+            'Item Foreign Category'
+        );
+
+        $secondBusinessId = (string) Str::ulid();
+
+        DB::table('business_profiles')->insert([
+            'id' => $secondBusinessId,
+            'tenant_id' => $workspace['tenant_id'],
+            'name' => 'Usaha Kedua',
+            'is_default' => false,
+            'status' => 'ACTIVE',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $foreignCategoryId = $this->insertCategory(
+            $workspace['tenant_id'],
+            $secondBusinessId,
+            'FOREIGN-BUSINESS-CAT',
+            'Kategori Usaha Kedua'
+        );
+
+        $this->actingAsWorkspace($workspace);
+
+        $this->postJson(
+            '/api/v1/catalog/items',
+            [
+                'category_id' => $foreignCategoryId,
+                'type' => 'PRODUCT',
+                'name' => 'Barang Tidak Sah',
+            ]
+        )
+            ->assertStatus(422)
+            ->assertJsonPath(
+                'error.code',
+                'VALIDATION_FAILED'
+            );
+
+        $this->assertDatabaseMissing(
+            'catalog_items',
+            [
+                'tenant_id' =>
+                    $workspace['tenant_id'],
+                'business_id' =>
+                    $workspace['business_id'],
+                'name' => 'Barang Tidak Sah',
+            ]
+        );
+    }
+
+    public function test_unit_from_other_business_is_rejected_for_catalog_item(): void
+    {
+        $workspace = $this->workspace(
+            'item-foreign-unit@example.test',
+            'Item Foreign Unit'
+        );
+
+        $secondBusinessId = (string) Str::ulid();
+
+        DB::table('business_profiles')->insert([
+            'id' => $secondBusinessId,
+            'tenant_id' => $workspace['tenant_id'],
+            'name' => 'Usaha Kedua',
+            'is_default' => false,
+            'status' => 'ACTIVE',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $foreignUnitId = (string) Str::ulid();
+
+        DB::table('units')->insert([
+            'id' => $foreignUnitId,
+            'tenant_id' =>
+                $workspace['tenant_id'],
+            'business_id' =>
+                $secondBusinessId,
+            'code' => 'OTHER-BUSINESS-UNIT',
+            'name' => 'Satuan Usaha Kedua',
+            'symbol' => 'OBU',
+            'unit_type' => 'OTHER',
+            'decimal_precision' => 2,
+            'status' => 'ACTIVE',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $this->actingAsWorkspace($workspace);
+
+        $this->postJson(
+            '/api/v1/catalog/items',
+            [
+                'unit_id' => $foreignUnitId,
+                'type' => 'PRODUCT',
+                'name' => 'Barang Unit Tidak Sah',
+            ]
+        )
+            ->assertStatus(422)
+            ->assertJsonPath(
+                'error.code',
+                'VALIDATION_FAILED'
+            );
+
+        $this->assertDatabaseMissing(
+            'catalog_items',
+            [
+                'tenant_id' =>
+                    $workspace['tenant_id'],
+                'business_id' =>
+                    $workspace['business_id'],
+                'name' => 'Barang Unit Tidak Sah',
+            ]
+        );
+    }
+
+    public function test_duplicate_catalog_item_code_is_rejected_within_same_business(): void
     {
         $workspace = $this->workspace(
             'catalog-duplicate@example.test',
@@ -1107,6 +1310,7 @@ class CatalogApiTest extends TestCase
 
         $this->insertItem(
             $workspace['tenant_id'],
+            $workspace['business_id'],
             'DUP-ITEM',
             'Item Pertama',
             'PRODUCT',
@@ -1128,6 +1332,85 @@ class CatalogApiTest extends TestCase
                 'error.code',
                 'VALIDATION_FAILED'
             );
+    }
+
+    public function test_same_catalog_item_code_is_allowed_in_different_businesses(): void
+    {
+        $workspace = $this->workspace(
+            'item-cross-business-code@example.test',
+            'Item Cross Business Code'
+        );
+
+        $this->insertItem(
+            $workspace['tenant_id'],
+            $workspace['business_id'],
+            'SHARED-ITEM',
+            'Item Business Utama',
+            'PRODUCT',
+            'STANDARD'
+        );
+
+        $secondBusinessId = (string) Str::ulid();
+
+        DB::table('business_profiles')->insert([
+            'id' => $secondBusinessId,
+            'tenant_id' => $workspace['tenant_id'],
+            'name' => 'Usaha Kedua',
+            'is_default' => false,
+            'status' => 'ACTIVE',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $this->insertItem(
+            $workspace['tenant_id'],
+            $secondBusinessId,
+            'SHARED-ITEM',
+            'Item Business Kedua',
+            'PRODUCT',
+            'STANDARD'
+        );
+
+        $this->assertSame(
+            2,
+            DB::table('catalog_items')
+                ->where(
+                    'tenant_id',
+                    $workspace['tenant_id']
+                )
+                ->where('code', 'SHARED-ITEM')
+                ->count()
+        );
+
+        $this->assertSame(
+            1,
+            DB::table('catalog_items')
+                ->where(
+                    'tenant_id',
+                    $workspace['tenant_id']
+                )
+                ->where(
+                    'business_id',
+                    $workspace['business_id']
+                )
+                ->where('code', 'SHARED-ITEM')
+                ->count()
+        );
+
+        $this->assertSame(
+            1,
+            DB::table('catalog_items')
+                ->where(
+                    'tenant_id',
+                    $workspace['tenant_id']
+                )
+                ->where(
+                    'business_id',
+                    $secondBusinessId
+                )
+                ->where('code', 'SHARED-ITEM')
+                ->count()
+        );
     }
 
     public function test_categories_are_isolated_between_businesses_in_same_tenant(): void
@@ -1417,6 +1700,7 @@ class CatalogApiTest extends TestCase
 
     private function insertItem(
         string $tenantId,
+        string $businessId,
         string $code,
         string $name,
         string $type,
@@ -1427,6 +1711,7 @@ class CatalogApiTest extends TestCase
         DB::table('catalog_items')->insert([
             'id' => $id,
             'tenant_id' => $tenantId,
+            'business_id' => $businessId,
             'category_id' => null,
             'unit_id' => null,
             'type' => $type,

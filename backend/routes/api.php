@@ -675,30 +675,34 @@ Route::prefix('v1')->group(function () {
         Route::get(
             '/catalog/items',
             [CatalogItemController::class, 'index']
-        )->middleware(
-            'capability:catalog.view'
-        );
+        )->middleware([
+            'business.context',
+            'capability:catalog.view',
+        ]);
 
         Route::post(
             '/catalog/items',
             [CatalogItemController::class, 'store']
-        )->middleware(
-            'capability:catalog.manage'
-        );
+        )->middleware([
+            'business.context',
+            'capability:catalog.manage',
+        ]);
 
         Route::get(
             '/catalog/items/{itemId}',
             [CatalogItemController::class, 'show']
-        )->middleware(
-            'capability:catalog.view'
-        );
+        )->middleware([
+            'business.context',
+            'capability:catalog.view',
+        ]);
 
         Route::patch(
             '/catalog/items/{itemId}',
             [CatalogItemController::class, 'update']
-        )->middleware(
-            'capability:catalog.manage'
-        );
+        )->middleware([
+            'business.context',
+            'capability:catalog.manage',
+        ]);
 
         /*
         |--------------------------------------------------------------------------

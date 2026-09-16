@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Catalog;
 
+use App\Tenancy\BusinessContext;
 use App\Tenancy\TenantContext;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -55,6 +56,10 @@ class StoreCatalogItemRequest extends FormRequest
             TenantContext::class
         )->tenantId();
 
+        $businessId = app(
+            BusinessContext::class
+        )->businessId();
+
         return [
             'category_id' => [
                 'nullable',
@@ -64,10 +69,15 @@ class StoreCatalogItemRequest extends FormRequest
                     'id'
                 )->where(
                     fn ($query) =>
-                        $query->where(
-                            'tenant_id',
-                            $tenantId
-                        )
+                        $query
+                            ->where(
+                                'tenant_id',
+                                $tenantId
+                            )
+                            ->where(
+                                'business_id',
+                                $businessId
+                            )
                 ),
             ],
             'unit_id' => [
@@ -78,10 +88,15 @@ class StoreCatalogItemRequest extends FormRequest
                     'id'
                 )->where(
                     fn ($query) =>
-                        $query->where(
-                            'tenant_id',
-                            $tenantId
-                        )
+                        $query
+                            ->where(
+                                'tenant_id',
+                                $tenantId
+                            )
+                            ->where(
+                                'business_id',
+                                $businessId
+                            )
                 ),
             ],
             'type' => [
@@ -97,10 +112,15 @@ class StoreCatalogItemRequest extends FormRequest
                     'code'
                 )->where(
                     fn ($query) =>
-                        $query->where(
-                            'tenant_id',
-                            $tenantId
-                        )
+                        $query
+                            ->where(
+                                'tenant_id',
+                                $tenantId
+                            )
+                            ->where(
+                                'business_id',
+                                $businessId
+                            )
                 ),
             ],
             'name' => [
