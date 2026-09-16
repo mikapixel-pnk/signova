@@ -16,6 +16,7 @@ class InvoiceStatusHistory extends Model
     protected $fillable = [
         'id',
         'tenant_id',
+        'business_id',
         'invoice_id',
         'from_state',
         'to_state',

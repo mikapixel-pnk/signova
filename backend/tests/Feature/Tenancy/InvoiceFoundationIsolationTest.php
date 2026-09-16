@@ -5,6 +5,7 @@ namespace Tests\Feature\Tenancy;
 use App\Actions\Tenancy\CreateTenantWorkspaceAction;
 use Database\Seeders\SignovaAccessControlSeeder;
 use App\Services\Quotation\QuotationService;
+use App\Tenancy\BusinessContext;
 use App\Tenancy\TenantContext;
 use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -93,6 +94,10 @@ class InvoiceFoundationIsolationTest extends TestCase
             'id' => (string) Str::ulid(),
             'tenant_id' =>
                 $first['tenant_id'],
+
+            'business_id' =>
+                $first['business_id'],
+
             'invoice_id' =>
                 $invoiceId,
             'catalog_item_id' =>
@@ -227,6 +232,10 @@ class InvoiceFoundationIsolationTest extends TestCase
             'id' => (string) Str::ulid(),
             'tenant_id' =>
                 $first['tenant_id'],
+
+            'business_id' =>
+                $first['business_id'],
+
             'invoice_id' =>
                 $invoiceId,
             'from_state' => null,
@@ -261,6 +270,9 @@ class InvoiceFoundationIsolationTest extends TestCase
                 $workspace['user_id'],
             'tenant_id' =>
                 $workspace['tenant_id'],
+
+            'business_id' =>
+                $workspace['business_id'],
         ];
     }
 
@@ -269,6 +281,12 @@ class InvoiceFoundationIsolationTest extends TestCase
     ): void {
         app(TenantContext::class)->set(
             $workspace['tenant_id'],
+            $workspace['user_id']
+        );
+
+        app(BusinessContext::class)->set(
+            $workspace['tenant_id'],
+            $workspace['business_id'],
             $workspace['user_id']
         );
     }
@@ -374,6 +392,10 @@ class InvoiceFoundationIsolationTest extends TestCase
             'id' => $id,
             'tenant_id' =>
                 $workspace['tenant_id'],
+
+            'business_id' =>
+                $workspace['business_id'],
+
             'invoice_number' =>
                 $invoiceNumber,
             'customer_id' =>

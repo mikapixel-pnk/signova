@@ -12,6 +12,7 @@ use App\Models\Unit;
 use App\Services\Document\DocumentNumberService;
 use App\Services\Invoice\Document\InvoiceTemplateSnapshotService;
 use App\Services\Quotation\QuotationPricingCalculator;
+use App\Tenancy\BusinessContext;
 use App\Tenancy\TenantContext;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
@@ -22,6 +23,7 @@ class InvoiceService
 {
     public function __construct(
         private readonly TenantContext $tenantContext,
+        private readonly BusinessContext $businessContext,
         private readonly DocumentNumberService $documentNumberService,
         private readonly QuotationPricingCalculator $pricingCalculator,
         private readonly InvoiceTemplateSnapshotService $templateSnapshotService
@@ -45,6 +47,10 @@ class InvoiceService
                     $this->tenantContext
                         ->tenantId();
 
+                $businessId =
+                    $this->businessContext
+                        ->businessId();
+
                 $userId =
                     $this->tenantContext
                         ->userId();
@@ -54,6 +60,10 @@ class InvoiceService
                         ->where(
                             'tenant_id',
                             $tenantId
+                        )
+                        ->where(
+                            'business_id',
+                            $businessId
                         )
                         ->where(
                             'id',
@@ -176,6 +186,9 @@ class InvoiceService
                             'tenant_id' =>
                                 $tenantId,
 
+                            'business_id' =>
+                                $businessId,
+
                             'invoice_number' =>
                                 $invoiceNumber,
 
@@ -247,6 +260,9 @@ class InvoiceService
 
                             'tenant_id' =>
                                 $tenantId,
+
+                            'business_id' =>
+                                $businessId,
 
                             'invoice_id' =>
                                 $invoiceId,
@@ -337,6 +353,9 @@ class InvoiceService
 
                         'tenant_id' =>
                             $tenantId,
+
+                        'business_id' =>
+                            $businessId,
 
                         'invoice_id' =>
                             $invoiceId,
@@ -561,6 +580,9 @@ class InvoiceService
                     'tenant_id' =>
                         $this->tenantContext->tenantId(),
 
+                    'business_id' =>
+                        $this->businessContext->businessId(),
+
                     'invoice_id' =>
                         $invoice->id,
 
@@ -613,6 +635,11 @@ class InvoiceService
                             ->tenantId()
                     )
                     ->where(
+                        'business_id',
+                        $this->businessContext
+                            ->businessId()
+                    )
+                    ->where(
                         'id',
                         $item[
                             'catalog_item_id'
@@ -632,6 +659,11 @@ class InvoiceService
                         'tenant_id',
                         $this->tenantContext
                             ->tenantId()
+                    )
+                    ->where(
+                        'business_id',
+                        $this->businessContext
+                            ->businessId()
                     )
                     ->where(
                         'id',
@@ -697,6 +729,10 @@ class InvoiceService
             ->where(
                 'tenant_id',
                 $this->tenantContext->tenantId()
+            )
+            ->where(
+                'business_id',
+                $this->businessContext->businessId()
             );
     }
 }

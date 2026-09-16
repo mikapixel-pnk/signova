@@ -7,6 +7,7 @@ use App\Models\InvoiceItem;
 use App\Models\InvoiceStatusHistory;
 use App\Services\Document\DocumentNumberService;
 use App\Services\Quotation\QuotationService;
+use App\Tenancy\BusinessContext;
 use App\Tenancy\TenantContext;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -16,6 +17,7 @@ class QuotationToInvoiceService
 {
     public function __construct(
         private readonly TenantContext $tenantContext,
+        private readonly BusinessContext $businessContext,
         private readonly QuotationService $quotationService,
         private readonly DocumentNumberService $documentNumberService,
     ) {
@@ -49,10 +51,17 @@ class QuotationToInvoiceService
         $tenantId =
             $this->tenantContext->tenantId();
 
+        $businessId =
+            $this->businessContext->businessId();
+
         $existing = Invoice::query()
             ->where(
                 'tenant_id',
                 $tenantId
+            )
+            ->where(
+                'business_id',
+                $businessId
             )
             ->where(
                 'source_quotation_version_id',
@@ -72,6 +81,7 @@ class QuotationToInvoiceService
                 $quotation,
                 $version,
                 $tenantId,
+                $businessId,
                 $dueAt
             ): Invoice {
                 $lockedQuotation = DB::table(
@@ -84,6 +94,10 @@ class QuotationToInvoiceService
                     ->where(
                         'tenant_id',
                         $tenantId
+                    )
+                    ->where(
+                        'business_id',
+                        $businessId
                     )
                     ->lockForUpdate()
                     ->first();
@@ -121,6 +135,10 @@ class QuotationToInvoiceService
                         $tenantId
                     )
                     ->where(
+                        'business_id',
+                        $businessId
+                    )
+                    ->where(
                         'source_quotation_version_id',
                         $version->id
                     )
@@ -145,6 +163,7 @@ class QuotationToInvoiceService
                     ->create([
                         'id' => $invoiceId,
                         'tenant_id' => $tenantId,
+                        'business_id' => $businessId,
                         'invoice_number' =>
                             $invoiceNumber,
                         'customer_id' =>
@@ -182,6 +201,8 @@ class QuotationToInvoiceService
                                 (string) Str::ulid(),
                             'tenant_id' =>
                                 $tenantId,
+                            'business_id' =>
+                                $businessId,
                             'invoice_id' =>
                                 $invoiceId,
                             'source_quotation_item_id' =>
@@ -223,6 +244,8 @@ class QuotationToInvoiceService
                             (string) Str::ulid(),
                         'tenant_id' =>
                             $tenantId,
+                        'business_id' =>
+                            $businessId,
                         'invoice_id' =>
                             $invoiceId,
                         'from_state' => null,

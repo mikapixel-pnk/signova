@@ -100,6 +100,11 @@ class QuotationToInvoiceServiceTest extends TestCase
         );
 
         $this->assertSame(
+            $workspace['business_id'],
+            $invoice->business_id
+        );
+
+        $this->assertSame(
             (string) $version->subtotal,
             (string) $invoice->subtotal
         );
@@ -127,6 +132,11 @@ class QuotationToInvoiceServiceTest extends TestCase
         $item = $invoice->items->first();
 
         $this->assertSame(
+            $workspace['business_id'],
+            $item->business_id
+        );
+
+        $this->assertSame(
             'Jasa Konversi',
             $item->name
         );
@@ -148,6 +158,11 @@ class QuotationToInvoiceServiceTest extends TestCase
 
         $history =
             $invoice->statusHistory->first();
+
+        $this->assertSame(
+            $workspace['business_id'],
+            $history->business_id
+        );
 
         $this->assertNull(
             $history->from_state
@@ -640,6 +655,70 @@ class QuotationToInvoiceServiceTest extends TestCase
     }
 
 
+
+    public function test_cannot_convert_quotation_from_other_business_in_same_tenant(): void
+    {
+        $workspace = $this->workspace(
+            'invoice-convert-business@example.test',
+            'Invoice Convert Business'
+        );
+
+        $secondBusinessId = $this->createBusiness(
+            $workspace['tenant_id'],
+            'Usaha Kedua'
+        );
+
+        $secondWorkspace = $workspace;
+        $secondWorkspace['business_id'] =
+            $secondBusinessId;
+
+        $this->setTenantContext(
+            $secondWorkspace
+        );
+
+        $customerId =
+            $this->insertCustomer(
+                $workspace['tenant_id'],
+                'CUST-CONVERT-BUSINESS-B',
+                'Pelanggan Usaha Kedua',
+                $secondBusinessId
+            );
+
+        $quotation =
+            $this->createQuotation(
+                $customerId,
+                'Q-CONVERT-BUSINESS-B'
+            );
+
+        DB::table('quotations')
+            ->where(
+                'id',
+                $quotation->id
+            )
+            ->update([
+                'status' =>
+                    'APPROVED',
+
+                'updated_at' =>
+                    now(),
+            ]);
+
+        $this->setTenantContext(
+            $workspace
+        );
+
+        $this->expectException(
+            ModelNotFoundException::class
+        );
+
+        app(
+            QuotationToInvoiceService::class
+        )->convert(
+            $quotation->id
+        );
+    }
+
+
     private function workspace(
         string $email,
         string $businessName
@@ -680,6 +759,28 @@ class QuotationToInvoiceServiceTest extends TestCase
         );
     }
 
+
+    private function createBusiness(
+        string $tenantId,
+        string $name
+    ): string {
+        $businessId =
+            (string) Str::ulid();
+
+        DB::table('business_profiles')->insert([
+            'id' => $businessId,
+            'tenant_id' => $tenantId,
+            'name' => $name,
+            'is_default' => false,
+            'status' => 'ACTIVE',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        return $businessId;
+    }
+
+
     private function businessIdForTenant(
         string $tenantId
     ): string {
@@ -713,7 +814,8 @@ class QuotationToInvoiceServiceTest extends TestCase
     private function insertCustomer(
         string $tenantId,
         string $code,
-        string $name
+        string $name,
+        ?string $businessId = null
     ): string {
         $id = (string) Str::ulid();
 
@@ -721,7 +823,8 @@ class QuotationToInvoiceServiceTest extends TestCase
             'id' => $id,
             'tenant_id' => $tenantId,
             'business_id' =>
-                $this->businessIdForTenant(
+                $businessId
+                ?? $this->businessIdForTenant(
                     $tenantId
                 ),
             'type' => 'COMPANY',

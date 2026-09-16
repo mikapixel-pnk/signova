@@ -2553,6 +2553,238 @@ class InvoiceApiTest extends TestCase
     }
 
 
+
+    public function test_invoice_is_inaccessible_from_other_business_in_same_tenant(): void
+    {
+        $workspace = $this->workspace(
+            'invoice-business-isolation@example.test',
+            'Invoice Business Isolation'
+        );
+
+        $secondBusinessId = $this->createBusiness(
+            $workspace['tenant_id'],
+            'Usaha Kedua'
+        );
+
+        $foreignWorkspace = $workspace;
+        $foreignWorkspace['business_id'] =
+            $secondBusinessId;
+
+        $foreignCustomerId =
+            $this->insertCustomer(
+                $workspace['tenant_id'],
+                'CUST-BUSINESS-B',
+                'Pelanggan Usaha Kedua',
+                $secondBusinessId
+            );
+
+        $invoiceId = $this->insertInvoice(
+            $foreignWorkspace,
+            $foreignCustomerId,
+            'INV-BUSINESS-B',
+            'DRAFT'
+        );
+
+        $this->actingAsWorkspace(
+            $workspace
+        );
+
+        $this->getJson(
+            "/api/v1/invoices/{$invoiceId}"
+        )->assertNotFound();
+
+        $this->postJson(
+            "/api/v1/invoices/{$invoiceId}/actions/issue"
+        )->assertNotFound();
+
+        $this->postJson(
+            "/api/v1/invoices/{$invoiceId}/actions/void",
+            [
+                'reason' =>
+                    'Tidak boleh lintas Business.',
+            ]
+        )->assertNotFound();
+
+        $this->getJson(
+            "/api/v1/invoices/{$invoiceId}/pdf"
+        )->assertNotFound();
+
+        $this->assertDatabaseHas(
+            'invoices',
+            [
+                'id' => $invoiceId,
+                'business_id' =>
+                    $secondBusinessId,
+                'status' => 'DRAFT',
+            ]
+        );
+    }
+
+    public function test_manual_invoice_rejects_customer_from_other_business_in_same_tenant(): void
+    {
+        $workspace = $this->workspace(
+            'invoice-business-customer@example.test',
+            'Invoice Business Customer'
+        );
+
+        $secondBusinessId = $this->createBusiness(
+            $workspace['tenant_id'],
+            'Usaha Kedua'
+        );
+
+        $foreignCustomerId =
+            $this->insertCustomer(
+                $workspace['tenant_id'],
+                'CUST-BUSINESS-FOREIGN',
+                'Pelanggan Usaha Kedua',
+                $secondBusinessId
+            );
+
+        $this->actingAsWorkspace(
+            $workspace
+        );
+
+        $this->postJson(
+            '/api/v1/invoices',
+            [
+                'customer_id' =>
+                    $foreignCustomerId,
+
+                'items' => [
+                    [
+                        'name' =>
+                            'Jasa Manual',
+
+                        'quantity' =>
+                            1,
+
+                        'pricing_method' =>
+                            'MANUAL',
+
+                        'unit_price' =>
+                            100000,
+                    ],
+                ],
+            ]
+        )->assertNotFound();
+
+        $this->assertDatabaseCount(
+            'invoices',
+            0
+        );
+    }
+
+    public function test_invoice_number_sequence_is_independent_per_business(): void
+    {
+        $workspace = $this->workspace(
+            'invoice-business-number@example.test',
+            'Invoice Business Number'
+        );
+
+        $secondBusinessId = $this->createBusiness(
+            $workspace['tenant_id'],
+            'Usaha Kedua'
+        );
+
+        $customerA =
+            $this->insertCustomer(
+                $workspace['tenant_id'],
+                'CUST-NUM-A',
+                'Pelanggan Usaha Pertama',
+                $workspace['business_id']
+            );
+
+        $customerB =
+            $this->insertCustomer(
+                $workspace['tenant_id'],
+                'CUST-NUM-B',
+                'Pelanggan Usaha Kedua',
+                $secondBusinessId
+            );
+
+        app(TenantContext::class)->set(
+            $workspace['tenant_id'],
+            $workspace['user_id']
+        );
+
+        app(BusinessContext::class)->set(
+            $workspace['tenant_id'],
+            $workspace['business_id'],
+            $workspace['user_id']
+        );
+
+        $invoiceA =
+            app(
+                \App\Services\Invoice\InvoiceService::class
+            )->createDraft(
+                $customerA,
+                [
+                    [
+                        'name' =>
+                            'Jasa A',
+
+                        'quantity' =>
+                            1,
+
+                        'pricing_method' =>
+                            'MANUAL',
+
+                        'unit_price' =>
+                            100000,
+                    ],
+                ]
+            );
+
+        app(BusinessContext::class)->set(
+            $workspace['tenant_id'],
+            $secondBusinessId,
+            $workspace['user_id']
+        );
+
+        $invoiceB =
+            app(
+                \App\Services\Invoice\InvoiceService::class
+            )->createDraft(
+                $customerB,
+                [
+                    [
+                        'name' =>
+                            'Jasa B',
+
+                        'quantity' =>
+                            1,
+
+                        'pricing_method' =>
+                            'MANUAL',
+
+                        'unit_price' =>
+                            100000,
+                    ],
+                ]
+            );
+
+        $this->assertMatchesRegularExpression(
+            '/^INV-\d{6}-0001$/',
+            $invoiceA->invoice_number
+        );
+
+        $this->assertMatchesRegularExpression(
+            '/^INV-\d{6}-0001$/',
+            $invoiceB->invoice_number
+        );
+
+        $this->assertSame(
+            $invoiceA->invoice_number,
+            $invoiceB->invoice_number
+        );
+
+        $this->assertNotSame(
+            $invoiceA->business_id,
+            $invoiceB->business_id
+        );
+    }
+
+
     private function workspace(
         string $email,
         string $businessName
@@ -2596,7 +2828,34 @@ class InvoiceApiTest extends TestCase
             'X-Tenant-ID',
             $workspace['tenant_id']
         );
+
+        $this->withHeader(
+            'X-Signova-Business',
+            $workspace['business_id']
+        );
     }
+
+
+    private function createBusiness(
+        string $tenantId,
+        string $name
+    ): string {
+        $businessId =
+            (string) Str::ulid();
+
+        DB::table('business_profiles')->insert([
+            'id' => $businessId,
+            'tenant_id' => $tenantId,
+            'name' => $name,
+            'is_default' => false,
+            'status' => 'ACTIVE',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        return $businessId;
+    }
+
 
     private function businessIdForTenant(
         string $tenantId
@@ -2631,7 +2890,8 @@ class InvoiceApiTest extends TestCase
     private function insertCustomer(
         string $tenantId,
         string $code,
-        string $name
+        string $name,
+        ?string $businessId = null
     ): string {
         $id = (string) Str::ulid();
 
@@ -2639,7 +2899,8 @@ class InvoiceApiTest extends TestCase
             'id' => $id,
             'tenant_id' => $tenantId,
             'business_id' =>
-                $this->businessIdForTenant(
+                $businessId
+                ?? $this->businessIdForTenant(
                     $tenantId
                 ),
             'type' => 'COMPANY',
@@ -2666,6 +2927,8 @@ class InvoiceApiTest extends TestCase
             'id' => $id,
             'tenant_id' =>
                 $workspace['tenant_id'],
+            'business_id' =>
+                $workspace['business_id'],
             'invoice_number' => $number,
             'customer_id' => $customerId,
             'project_id' => null,
@@ -2696,13 +2959,19 @@ class InvoiceApiTest extends TestCase
         string $tenantId,
         string $invoiceId,
         string $name,
-        string $amount
+        string $amount,
+        ?string $businessId = null
     ): string {
         $id = (string) Str::ulid();
 
         DB::table('invoice_items')->insert([
             'id' => $id,
             'tenant_id' => $tenantId,
+            'business_id' =>
+                $businessId
+                ?? $this->businessIdForTenant(
+                    $tenantId
+                ),
             'invoice_id' => $invoiceId,
             'source_quotation_item_id' => null,
             'catalog_item_id' => null,
@@ -2740,6 +3009,9 @@ class InvoiceApiTest extends TestCase
             'id' => $id,
             'tenant_id' =>
                 $workspace['tenant_id'],
+
+            'business_id' =>
+                $workspace['business_id'],
             'invoice_id' => $invoiceId,
             'from_state' => $fromState,
             'to_state' => $toState,
