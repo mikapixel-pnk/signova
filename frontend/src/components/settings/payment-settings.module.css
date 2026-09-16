@@ -1,0 +1,284 @@
+.page {
+  display: grid;
+  gap: 18px;
+}
+
+.loading {
+  padding: 28px;
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  background: var(--surface);
+  color: var(--muted-foreground);
+}
+
+.card {
+  padding: 22px;
+  border: 1px solid var(--border);
+  border-radius: 22px;
+  background: var(--surface);
+  display: grid;
+  gap: 20px;
+}
+
+.cardHeader {
+  display: flex;
+  gap: 13px;
+  align-items: flex-start;
+}
+
+.cardHeader h2 {
+  margin: 0;
+  font-size: 17px;
+}
+
+.cardHeader p {
+  margin: 5px 0 0;
+  color: var(--muted-foreground);
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.cardIcon {
+  width: 40px;
+  height: 40px;
+  display: grid;
+  place-items: center;
+  border-radius: 13px;
+  background: var(--muted);
+  flex: 0 0 auto;
+}
+
+.toggleRow {
+  display: flex;
+  justify-content: space-between;
+  gap: 18px;
+  align-items: center;
+  padding: 15px 16px;
+  border-radius: 16px;
+  background: var(--muted);
+}
+
+.toggleRow div {
+  display: grid;
+  gap: 3px;
+}
+
+.toggleRow strong {
+  font-size: 14px;
+}
+
+.toggleRow span {
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--muted-foreground);
+}
+
+.toggleRow input {
+  width: 19px;
+  height: 19px;
+  flex: 0 0 auto;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns:
+    repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.grid label,
+.fileField {
+  display: grid;
+  gap: 7px;
+}
+
+.grid label > span,
+.fileField > span {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.grid input,
+.fileField input {
+  width: 100%;
+  min-height: 44px;
+  border: 1px solid var(--border);
+  border-radius: 13px;
+  background: var(--background);
+  color: inherit;
+  padding: 10px 12px;
+  font: inherit;
+}
+
+.full {
+  grid-column: 1 / -1;
+}
+
+.qrGrid {
+  display: grid;
+  grid-template-columns:
+    minmax(180px, 240px)
+    minmax(0, 1fr);
+  gap: 22px;
+  align-items: start;
+}
+
+.qrPreview {
+  aspect-ratio: 1;
+  border-radius: 18px;
+  border: 1px dashed var(--border);
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  background: var(--muted);
+}
+
+.qrPreview img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.qrEmpty {
+  display: grid;
+  justify-items: center;
+  gap: 10px;
+  text-align: center;
+  color: var(--muted-foreground);
+  font-size: 12px;
+}
+
+.qrActions {
+  display: grid;
+  gap: 13px;
+}
+
+.fileField small,
+.selectedFile,
+.fileMeta {
+  color: var(--muted-foreground);
+  font-size: 12px;
+}
+
+.buttonRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.secondaryButton,
+.dangerButton {
+  min-height: 42px;
+  padding: 9px 14px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border-radius: 12px;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.secondaryButton {
+  border: 1px solid var(--border);
+  background: var(--background);
+  color: inherit;
+}
+
+.dangerButton {
+  border: 1px solid
+    color-mix(
+      in srgb,
+      #ef4444 35%,
+      var(--border)
+    );
+  background:
+    color-mix(
+      in srgb,
+      #ef4444 8%,
+      var(--background)
+    );
+  color: #ef4444;
+}
+
+.secondaryButton:disabled,
+.dangerButton:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.gateway {
+  display: flex;
+  justify-content: space-between;
+  gap: 18px;
+  align-items: center;
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+}
+
+.gateway strong {
+  font-size: 14px;
+}
+
+.gateway p {
+  margin: 4px 0 0;
+  color: var(--muted-foreground);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.gateway > span {
+  white-space: nowrap;
+  border-radius: 999px;
+  padding: 6px 10px;
+  background: var(--muted);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+@media (max-width: 720px) {
+  .card {
+    padding: 17px;
+    border-radius: 18px;
+  }
+
+  .grid,
+  .qrGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .full {
+    grid-column: auto;
+  }
+
+  .qrPreview {
+    max-width: 240px;
+  }
+
+  .toggleRow,
+  .gateway {
+    align-items: flex-start;
+  }
+}
+
+.submitButton {
+  min-height: 44px;
+  border: 0;
+  border-radius: 13px;
+  padding: 10px 16px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: var(--foreground);
+  color: var(--background);
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.submitButton:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}

@@ -20,6 +20,10 @@ import {
 } from "@/components/settings/document-settings";
 
 import {
+  PaymentSettings,
+} from "@/components/settings/payment-settings";
+
+import {
   ModulePage,
 } from "@/components/module/module-page";
 
@@ -303,6 +307,9 @@ export function SettingsPage() {
         ) : active.key ===
           "document-settings" ? (
           <DocumentSettings />
+        ) : active.key ===
+          "finance-settings" ? (
+          <PaymentSettings />
         ) : (
           <ModulePage
             moduleKey={

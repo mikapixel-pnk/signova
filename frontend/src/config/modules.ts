@@ -438,12 +438,12 @@ export const modules:
     icon: Banknote,
     plan: "starter",
     description:
-      "Atur rekening, penomoran dokumen, termin, pajak, dan template keuangan.",
+      "Atur rekening penerimaan, QR pembayaran, dan kebijakan pembayaran usaha.",
     insight: {
       title:
         "Atur sekali, gunakan berulang",
       description:
-        "Rekening, prefix dokumen, template, dan termin pembayaran sebaiknya tidak dimasukkan ulang setiap transaksi.",
+        "Rekening dan metode pembayaran disimpan per usaha agar tidak perlu dimasukkan ulang setiap transaksi.",
     },
     navigation: {
       desktop: true,
