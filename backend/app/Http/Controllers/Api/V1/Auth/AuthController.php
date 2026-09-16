@@ -56,6 +56,10 @@ class AuthController extends Controller
                 'tenant' => $this->tenantPayload(
                     $result['tenant_id']
                 ),
+                'business' =>
+                    $this->defaultBusinessPayload(
+                        $result['tenant_id']
+                    ),
                 'token' => $token,
                 'token_type' => 'Bearer',
             ],
@@ -131,6 +135,16 @@ class AuthController extends Controller
                         === 'TENANT'
                         ? $this->tenantPayload(
                             $context['default_context']['tenant_id']
+                        )
+                        : null,
+
+                'business' =>
+                    $context['default_context']
+                    && $context['default_context']['type']
+                        === 'TENANT'
+                        ? $this->businessPayload(
+                            $context['default_context']['tenant_id'],
+                            $context['default_context']['business_id']
                         )
                         : null,
 
@@ -331,6 +345,35 @@ class AuthController extends Controller
             'phone' => $user->phone,
             'auth_status' => $user->auth_status,
         ];
+    }
+
+    private function defaultBusinessPayload(
+        string $tenantId
+    ): ?array {
+        $businessId =
+            DB::table('business_profiles')
+                ->where(
+                    'tenant_id',
+                    $tenantId
+                )
+                ->where(
+                    'status',
+                    'ACTIVE'
+                )
+                ->where(
+                    'is_default',
+                    true
+                )
+                ->value('id');
+
+        if (! $businessId) {
+            return null;
+        }
+
+        return $this->businessPayload(
+            $tenantId,
+            $businessId
+        );
     }
 
     private function businessPayload(

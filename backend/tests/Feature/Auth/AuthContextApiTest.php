@@ -241,6 +241,136 @@ class AuthContextApiTest extends TestCase
             );
     }
 
+    public function test_single_tenant_context_includes_default_business(): void
+    {
+        $register = $this->postJson(
+            '/api/v1/auth/register',
+            [
+                'name' =>
+                    'Business Context User',
+                'email' =>
+                    'business-context@example.test',
+                'password' =>
+                    'SecurePassword123!',
+                'password_confirmation' =>
+                    'SecurePassword123!',
+                'tenant_name' =>
+                    'Business Context Workspace',
+            ]
+        )->assertCreated();
+
+        $tenantId =
+            $register->json(
+                'data.tenant.id'
+            );
+
+        $businessId =
+            $register->json(
+                'data.business.id'
+            );
+
+        $this->assertNotNull(
+            $businessId
+        );
+
+        $login = $this->postJson(
+            '/api/v1/auth/login',
+            [
+                'email' =>
+                    'business-context@example.test',
+                'password' =>
+                    'SecurePassword123!',
+            ]
+        );
+
+        $login
+            ->assertOk()
+            ->assertJsonPath(
+                'data.default_context.type',
+                'TENANT'
+            )
+            ->assertJsonPath(
+                'data.default_context.tenant_id',
+                $tenantId
+            )
+            ->assertJsonPath(
+                'data.default_context.business_id',
+                $businessId
+            )
+            ->assertJsonPath(
+                'data.business.id',
+                $businessId
+            )
+            ->assertJsonPath(
+                'data.access.tenants.0.businesses.0.id',
+                $businessId
+            );
+    }
+
+    public function test_multiple_businesses_require_context_selection(): void
+    {
+        $register = $this->postJson(
+            '/api/v1/auth/register',
+            [
+                'name' =>
+                    'Multi Business Context User',
+                'email' =>
+                    'multi-business-context@example.test',
+                'password' =>
+                    'SecurePassword123!',
+                'password_confirmation' =>
+                    'SecurePassword123!',
+                'tenant_name' =>
+                    'Multi Business Context Workspace',
+            ]
+        )->assertCreated();
+
+        $tenantId =
+            $register->json(
+                'data.tenant.id'
+            );
+
+        DB::table(
+            'business_profiles'
+        )->insert([
+            'id' => (string) Str::ulid(),
+            'tenant_id' => $tenantId,
+            'name' => 'Usaha Kedua',
+            'is_default' => false,
+            'status' => 'ACTIVE',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $login = $this->postJson(
+            '/api/v1/auth/login',
+            [
+                'email' =>
+                    'multi-business-context@example.test',
+                'password' =>
+                    'SecurePassword123!',
+            ]
+        );
+
+        $login
+            ->assertOk()
+            ->assertJsonPath(
+                'data.default_context',
+                null
+            )
+            ->assertJsonPath(
+                'data.requires_context_selection',
+                true
+            );
+
+        $this->assertCount(
+            2,
+            $login->json(
+                'data.access.tenants.0.businesses'
+            )
+        );
+    }
+
     private function createUser(
         string $email
     ): User {

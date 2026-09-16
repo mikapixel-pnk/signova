@@ -17,6 +17,58 @@ class AuthAccessContextService
     {
         $tenants = $this->activeTenants($user);
 
+        $businessesByTenant =
+            $this->activeBusinessesByTenant(
+                $tenants
+                    ->pluck('id')
+                    ->all()
+            );
+
+        $tenantAccess =
+            $tenants
+                ->map(
+                    function ($tenant) use (
+                        $businessesByTenant
+                    ): array {
+                        $businesses =
+                            collect(
+                                $businessesByTenant[
+                                    $tenant->id
+                                ] ?? []
+                            )
+                                ->map(
+                                    fn ($business) => [
+                                        'id' =>
+                                            $business->id,
+                                        'name' =>
+                                            $business->name,
+                                        'is_default' =>
+                                            (bool)
+                                            $business->is_default,
+                                        'status' =>
+                                            $business->status,
+                                    ]
+                                )
+                                ->values()
+                                ->all();
+
+                        return [
+                            'id' => $tenant->id,
+                            'name' => $tenant->name,
+                            'slug' => $tenant->slug,
+                            'lifecycle_status' =>
+                                $tenant->lifecycle_status,
+                            'timezone' =>
+                                $tenant->timezone,
+                            'locale' =>
+                                $tenant->locale,
+                            'businesses' =>
+                                $businesses,
+                        ];
+                    }
+                )
+                ->values();
+
         $platformAvailable =
             $this->platformCapabilities
                 ->hasPlatformAccess($user);
@@ -26,9 +78,17 @@ class AuthAccessContextService
                 ? $this->platformCapabilities->codes($user)
                 : [];
 
+        $businessContextCount =
+            $tenantAccess->sum(
+                fn (array $tenant): int =>
+                    count(
+                        $tenant['businesses']
+                    )
+            );
+
         $contextCount =
             ($platformAvailable ? 1 : 0)
-            + $tenants->count();
+            + $businessContextCount;
 
         $defaultContext = null;
 
@@ -39,11 +99,27 @@ class AuthAccessContextService
                     'tenant_id' => null,
                 ];
             } else {
-                $defaultContext = [
-                    'type' => 'TENANT',
-                    'tenant_id' =>
-                        $tenants->first()->id,
-                ];
+                foreach ($tenantAccess as $tenant) {
+                    if (
+                        count(
+                            $tenant['businesses']
+                        ) !== 1
+                    ) {
+                        continue;
+                    }
+
+                    $defaultContext = [
+                        'type' => 'TENANT',
+                        'tenant_id' =>
+                            $tenant['id'],
+                        'business_id' =>
+                            $tenant['businesses'][0][
+                                'id'
+                            ],
+                    ];
+
+                    break;
+                }
             }
         }
 
@@ -57,22 +133,7 @@ class AuthAccessContextService
                 ],
 
                 'tenants' =>
-                    $tenants
-                        ->map(
-                            fn ($tenant) => [
-                                'id' => $tenant->id,
-                                'name' => $tenant->name,
-                                'slug' => $tenant->slug,
-                                'lifecycle_status' =>
-                                    $tenant->lifecycle_status,
-                                'timezone' =>
-                                    $tenant->timezone,
-                                'locale' =>
-                                    $tenant->locale,
-                            ]
-                        )
-                        ->values()
-                        ->all(),
+                    $tenantAccess->all(),
             ],
 
             'default_context' =>
@@ -84,6 +145,35 @@ class AuthAccessContextService
             'has_access' =>
                 $contextCount > 0,
         ];
+    }
+
+    private function activeBusinessesByTenant(
+        array $tenantIds
+    ) {
+        if ($tenantIds === []) {
+            return collect();
+        }
+
+        return DB::table('business_profiles')
+            ->whereIn(
+                'tenant_id',
+                $tenantIds
+            )
+            ->where(
+                'status',
+                'ACTIVE'
+            )
+            ->orderByDesc('is_default')
+            ->orderBy('created_at')
+            ->orderBy('id')
+            ->get([
+                'id',
+                'tenant_id',
+                'name',
+                'is_default',
+                'status',
+            ])
+            ->groupBy('tenant_id');
     }
 
     private function activeTenants(User $user)
