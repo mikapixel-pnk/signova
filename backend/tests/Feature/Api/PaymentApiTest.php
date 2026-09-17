@@ -1199,6 +1199,167 @@ class PaymentApiTest extends TestCase
             );
     }
 
+    public function test_verified_invoice_payment_can_attach_first_evidence_after_recording(): void
+    {
+        \Illuminate\Support\Facades\Storage::fake(
+            'local'
+        );
+
+        config()->set(
+            'filesystems.private_disk',
+            'local'
+        );
+
+        $workspace =
+            $this->workspace(
+                'verified-proof-after-record@example.test',
+                'Verified Proof After Record'
+            );
+
+        $customer =
+            $this->customer(
+                $workspace,
+                'Verified Proof Customer'
+            );
+
+        $invoiceId =
+            $this->createReceivableInvoice(
+                $workspace,
+                $customer,
+                'INV-VERIFIED-PROOF',
+                '100000.00',
+                'ISSUED'
+            );
+
+        $cashAccountId =
+            $this->cashAccount(
+                $workspace
+            );
+
+        $this->actingAsWorkspace(
+            $workspace
+        );
+
+        $response =
+            $this->postJson(
+                '/api/v1/invoices/'
+                . $invoiceId
+                . '/actions/record-payment',
+                [
+                    'cash_account_id' =>
+                        $cashAccountId,
+
+                    'amount' =>
+                        '100000.00',
+
+                    'paid_at' =>
+                        now()->toISOString(),
+
+                    'method' =>
+                        'BANK_TRANSFER',
+
+                    'reference' =>
+                        'PAY-WITH-PROOF-LATER',
+                ]
+            )
+                ->assertCreated()
+                ->assertJsonPath(
+                    'data.payment.status',
+                    'VERIFIED'
+                )
+                ->assertJsonPath(
+                    'data.payment.has_evidence',
+                    false
+                );
+
+        $paymentId =
+            $response->json(
+                'data.payment.id'
+            );
+
+        $this->post(
+            '/api/v1/payments/'
+            . $paymentId
+            . '/evidence',
+            [
+                'evidence' =>
+                    \Illuminate\Http\UploadedFile::fake()
+                        ->image(
+                            'verified-proof.png',
+                            800,
+                            800
+                        ),
+            ]
+        )
+            ->assertOk()
+            ->assertJsonPath(
+                'data.status',
+                'VERIFIED'
+            )
+            ->assertJsonPath(
+                'data.has_evidence',
+                true
+            )
+            ->assertJsonPath(
+                'data.evidence.mime_type',
+                'image/png'
+            );
+
+        $file =
+            DB::table('files')
+                ->where(
+                    'tenant_id',
+                    $workspace['tenant_id']
+                )
+                ->where(
+                    'purpose',
+                    'PAYMENT_PROOF'
+                )
+                ->first();
+
+        $this->assertNotNull(
+            $file
+        );
+
+        $this->assertDatabaseHas(
+            'payments',
+            [
+                'id' =>
+                    $paymentId,
+
+                'tenant_id' =>
+                    $workspace['tenant_id'],
+
+                'business_id' =>
+                    $workspace['business_id'],
+
+                'status' =>
+                    'VERIFIED',
+
+                'evidence_file_id' =>
+                    $file->id,
+            ]
+        );
+
+        \Illuminate\Support\Facades\Storage::disk(
+            'local'
+        )->assertExists(
+            $file->object_key
+        );
+
+        $this->get(
+            '/api/v1/payments/'
+            . $paymentId
+            . '/evidence'
+        )
+            ->assertOk()
+            ->assertHeader(
+                'Content-Type',
+                'image/png'
+            );
+    }
+
+
     public function test_verified_payment_evidence_is_immutable(): void
     {
         \Illuminate\Support\Facades\Storage::fake(

@@ -1419,8 +1419,14 @@ class PaymentService
                             ->lockForUpdate()
                             ->firstOrFail();
 
+                    $canAttachToVerified =
+                        $payment->status === 'VERIFIED'
+                        && $payment->evidence_file_id
+                            === null;
+
                     if (
                         $payment->status !== 'PENDING'
+                        && ! $canAttachToVerified
                     ) {
                         throw new PaymentEvidenceLockedException(
                             $payment->status
