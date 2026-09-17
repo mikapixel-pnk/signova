@@ -615,3 +615,149 @@
   font-size: 10px;
   font-weight: 700;
 }
+
+.templateCardHeader {
+  display: flex;
+  min-width: 0;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.templateCardHeader strong {
+  min-width: 0;
+  font-size: 11px;
+}
+
+.templateTier {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  border:
+    1px solid
+    color-mix(
+      in srgb,
+      var(--sv-cyan) 22%,
+      var(--border)
+    );
+  border-radius: 999px;
+  background:
+    color-mix(
+      in srgb,
+      var(--sv-cyan) 8%,
+      var(--surface)
+    );
+  padding: 3px 7px;
+  color: var(--sv-cyan);
+  font-size: 8px;
+  font-weight: 800;
+  line-height: 1;
+  text-transform: none;
+}
+
+.templateLayout {
+  color: var(--foreground-muted);
+  font-size: 9px;
+  line-height: 1.4;
+}
+
+.templateMeta {
+  display: flex;
+  min-height: 22px;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.templateMeta > span {
+  font-size: 8px;
+  font-weight: 650;
+}
+
+.templateSelected {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  background:
+    color-mix(
+      in srgb,
+      #10b981 12%,
+      var(--surface)
+    );
+  padding: 3px 7px;
+  color: #059669 !important;
+}
+
+.templateLocked {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--foreground-muted);
+}
+
+.templateUpgradeNote {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  border:
+    1px solid
+    color-mix(
+      in srgb,
+      var(--sv-cyan) 25%,
+      var(--border)
+    );
+  border-radius: 12px;
+  background:
+    color-mix(
+      in srgb,
+      var(--sv-cyan) 6%,
+      var(--surface)
+    );
+  padding: 11px 12px;
+  color: var(--sv-cyan);
+}
+
+.templateUpgradeNote > div {
+  display: grid;
+  gap: 3px;
+}
+
+.templateUpgradeNote strong {
+  font-size: 10px;
+}
+
+.templateUpgradeNote span {
+  color: var(--foreground-muted);
+  font-size: 9px;
+  line-height: 1.45;
+}
+
+.templateCard,
+.templateCardActive {
+  transition:
+    border-color 140ms ease,
+    background 140ms ease,
+    transform 140ms ease;
+}
+
+.templateCard:hover {
+  border-color:
+    color-mix(
+      in srgb,
+      var(--sv-cyan) 30%,
+      var(--border)
+    );
+  transform: translateY(-1px);
+}
+
+@media (min-width: 1080px) {
+  .templateGrid {
+    grid-template-columns:
+      repeat(
+        4,
+        minmax(0, 1fr)
+      );
+  }
+}

@@ -15,6 +15,8 @@ export type BusinessProfile = {
   email: string | null;
   website: string | null;
   tax_id: string | null;
+  has_logo: boolean;
+  logo_file_id: string | null;
   is_default: boolean;
   status: "ACTIVE" | "INACTIVE";
   created_at: string | null;

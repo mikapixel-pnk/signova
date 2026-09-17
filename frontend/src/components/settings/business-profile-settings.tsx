@@ -2,7 +2,10 @@
 
 import {
   Building2,
+  ImageIcon,
   Save,
+  Trash2,
+  Upload,
 } from "lucide-react";
 
 import {
@@ -29,8 +32,11 @@ import {
 } from "@/lib/api/error-message";
 
 import {
+  deleteBusinessLogo,
+  getBusinessLogo,
   getBusinessProfile,
   updateBusinessProfile,
+  uploadBusinessLogo,
 } from "@/lib/business-profile/service";
 
 import type {
@@ -206,6 +212,25 @@ export function BusinessProfileSettings() {
     {},
   );
 
+  const [
+    logoUrl,
+    setLogoUrl,
+  ] = useState<string | null>(
+    null,
+  );
+
+  const [
+    logoFile,
+    setLogoFile,
+  ] = useState<File | null>(
+    null,
+  );
+
+  const [
+    logoBusy,
+    setLogoBusy,
+  ] = useState(false);
+
   useEffect(() => {
     let cancelled = false;
 
@@ -256,6 +281,60 @@ export function BusinessProfileSettings() {
     };
   }, []);
 
+  useEffect(() => {
+    let active = true;
+    let objectUrl:
+      string | null = null;
+
+    async function loadLogo() {
+      if (!profile?.has_logo) {
+        setLogoUrl(
+          null,
+        );
+        return;
+      }
+
+      try {
+        const blob =
+          await getBusinessLogo();
+
+        if (!active) {
+          return;
+        }
+
+        objectUrl =
+          URL.createObjectURL(
+            blob,
+          );
+
+        setLogoUrl(
+          objectUrl,
+        );
+      } catch {
+        if (active) {
+          setLogoUrl(
+            null,
+          );
+        }
+      }
+    }
+
+    void loadLogo();
+
+    return () => {
+      active = false;
+
+      if (objectUrl) {
+        URL.revokeObjectURL(
+          objectUrl,
+        );
+      }
+    };
+  }, [
+    profile?.has_logo,
+    profile?.logo_file_id,
+  ]);
+
   function updateField(
     key: keyof FormState,
     value: string,
@@ -270,6 +349,126 @@ export function BusinessProfileSettings() {
     setSubmitError(null);
     setSuccessMessage(null);
     setRequestId(null);
+  }
+
+  async function handleLogoUpload() {
+    if (!logoFile) {
+      setSubmitError(
+        "Pilih file logo terlebih dahulu.",
+      );
+      return;
+    }
+
+    const allowed = [
+      "image/png",
+      "image/jpeg",
+      "image/webp",
+    ];
+
+    if (
+      !allowed.includes(
+        logoFile.type,
+      )
+    ) {
+      setSubmitError(
+        "Gunakan logo PNG, JPG/JPEG, atau WebP.",
+      );
+      return;
+    }
+
+    if (
+      logoFile.size >
+      5 * 1024 * 1024
+    ) {
+      setSubmitError(
+        "Ukuran logo maksimal 5 MB.",
+      );
+      return;
+    }
+
+    setLogoBusy(true);
+    setSubmitError(null);
+    setSuccessMessage(null);
+    setRequestId(null);
+
+    try {
+      const response =
+        await uploadBusinessLogo(
+          logoFile,
+        );
+
+      setProfile(
+        response.data,
+      );
+
+      setLogoFile(
+        null,
+      );
+
+      setSuccessMessage(
+        response.message ??
+          "Logo usaha berhasil disimpan.",
+      );
+    } catch (error) {
+      setSubmitError(
+        apiErrorMessage(
+          error,
+          "Logo usaha belum berhasil disimpan.",
+        ),
+      );
+
+      setRequestId(
+        apiRequestId(error),
+      );
+    } finally {
+      setLogoBusy(false);
+    }
+  }
+
+  async function handleLogoDelete() {
+    if (
+      !window.confirm(
+        "Hapus logo untuk usaha aktif?",
+      )
+    ) {
+      return;
+    }
+
+    setLogoBusy(true);
+    setSubmitError(null);
+    setSuccessMessage(null);
+    setRequestId(null);
+
+    try {
+      const response =
+        await deleteBusinessLogo();
+
+      setProfile(
+        response.data,
+      );
+
+      setLogoFile(
+        null,
+      );
+
+      setSuccessMessage(
+        response.message ??
+          "Logo usaha berhasil dihapus.",
+      );
+    } catch (error) {
+      setSubmitError(
+        apiErrorMessage(
+          error,
+          "Logo usaha belum berhasil dihapus.",
+        ),
+      );
+
+      setRequestId(
+        apiRequestId(error),
+      );
+    } finally {
+      setLogoBusy(false);
+    }
   }
 
   async function handleSubmit(
@@ -446,6 +645,175 @@ export function BusinessProfileSettings() {
           handleSubmit
         }
       >
+        <section
+          className={
+            styles.card
+          }
+        >
+          <header
+            className={
+              styles.cardHeader
+            }
+          >
+            <div>
+              <h2>
+                Logo Usaha
+              </h2>
+
+              <p>
+                Logo digunakan pada Tagihan, Penawaran, dan dokumen usaha lainnya.
+              </p>
+            </div>
+
+            <ImageIcon
+              size={20}
+            />
+          </header>
+
+          <div
+            className={
+              styles.logoPanel
+            }
+          >
+            <div
+              className={
+                styles.logoPreview
+              }
+            >
+              {logoUrl ? (
+                <>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                  src={logoUrl}
+                  alt={`Logo ${profile.name}`}
+                  />
+                </>
+              ) : (
+                <div
+                  className={
+                    styles.logoEmpty
+                  }
+                >
+                  <ImageIcon
+                    size={28}
+                  />
+
+                  <span>
+                    Belum ada logo
+                  </span>
+                </div>
+              )}
+            </div>
+
+            <div
+              className={
+                styles.logoControls
+              }
+            >
+              <label
+                className={
+                  styles.filePicker
+                }
+              >
+                <Upload
+                  size={15}
+                />
+
+                Pilih Logo
+
+                <input
+                  type="file"
+                  accept="image/png,image/jpeg,image/webp"
+                  disabled={logoBusy}
+                  onChange={
+                    (event) => {
+                      setLogoFile(
+                        event.target
+                          .files?.[0] ??
+                          null,
+                      );
+
+                      setSubmitError(
+                        null,
+                      );
+
+                      setSuccessMessage(
+                        null,
+                      );
+                    }
+                  }
+                />
+              </label>
+
+              {logoFile ? (
+                <small>
+                  File dipilih: {
+                    logoFile.name
+                  }
+                </small>
+              ) : (
+                <small>
+                  PNG, JPG/JPEG, atau WebP.
+                  Maksimal 5 MB.
+                </small>
+              )}
+
+              <div
+                className={
+                  styles.logoActions
+                }
+              >
+                <button
+                  type="button"
+                  className={
+                    styles.logoPrimaryButton
+                  }
+                  disabled={
+                    logoBusy ||
+                    !logoFile
+                  }
+                  onClick={
+                    () =>
+                      void handleLogoUpload()
+                  }
+                >
+                  <Upload
+                    size={15}
+                  />
+
+                  {logoBusy
+                    ? "Memproses..."
+                    : profile.has_logo
+                      ? "Ganti Logo"
+                      : "Unggah Logo"}
+                </button>
+
+                {profile.has_logo ? (
+                  <button
+                    type="button"
+                    className={
+                      styles.logoDangerButton
+                    }
+                    disabled={
+                      logoBusy
+                    }
+                    onClick={
+                      () =>
+                        void handleLogoDelete()
+                    }
+                  >
+                    <Trash2
+                      size={15}
+                    />
+
+                    Hapus
+                  </button>
+                ) : null}
+              </div>
+            </div>
+          </div>
+        </section>
+
         <section
           className={
             styles.card

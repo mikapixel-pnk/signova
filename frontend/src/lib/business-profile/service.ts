@@ -1,4 +1,5 @@
 import {
+  authenticatedApiBlobRequest,
   authenticatedApiRequest,
 } from "@/lib/api/client";
 
@@ -31,5 +32,46 @@ export async function updateBusinessProfile(
       method: "PATCH",
       body: payload,
     },
+  );
+}
+
+export async function uploadBusinessLogo(
+  file: File,
+): Promise<BusinessProfileResponse> {
+  const body =
+    new FormData();
+
+  body.append(
+    "logo",
+    file,
+  );
+
+  return authenticatedApiRequest<
+    BusinessProfileResponse
+  >(
+    "/settings/business-profile/logo",
+    {
+      method: "POST",
+      body,
+    },
+  );
+}
+
+export async function deleteBusinessLogo():
+Promise<BusinessProfileResponse> {
+  return authenticatedApiRequest<
+    BusinessProfileResponse
+  >(
+    "/settings/business-profile/logo",
+    {
+      method: "DELETE",
+    },
+  );
+}
+
+export async function getBusinessLogo():
+Promise<Blob> {
+  return authenticatedApiBlobRequest(
+    "/settings/business-profile/logo",
   );
 }

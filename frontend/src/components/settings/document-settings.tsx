@@ -6,6 +6,7 @@ import {
   Eye,
   FileText,
   ImageIcon,
+  Lock,
   Palette,
   ReceiptText,
   Save,
@@ -89,6 +90,19 @@ function paletteLabel(
           value.toUpperCase(),
       )
   );
+}
+
+function tierLabel(
+  tier: string,
+): string {
+  return tier
+    .toLowerCase()
+    .replaceAll("_", " ")
+    .replace(
+      /\b\w/g,
+      (value) =>
+        value.toUpperCase(),
+    );
 }
 
 export function DocumentSettings() {
@@ -637,10 +651,7 @@ export function DocumentSettings() {
             item.key === key,
         );
 
-    if (
-      !template ||
-      !template.is_available
-    ) {
+    if (!template) {
       return;
     }
 
@@ -702,7 +713,11 @@ export function DocumentSettings() {
   }
 
   async function handleTemplateSave() {
-    if (!templateKey) {
+    if (
+      !templateKey ||
+      !selectedTemplate
+        ?.is_available
+    ) {
       return;
     }
 
@@ -1312,7 +1327,7 @@ export function DocumentSettings() {
             >
               {catalog.templates.map(
                 (template) => {
-                  const selected =
+                  const active =
                     template.key ===
                     templateKey;
 
@@ -1322,12 +1337,8 @@ export function DocumentSettings() {
                         template.key
                       }
                       type="button"
-                      disabled={
-                        !template
-                          .is_available
-                      }
                       className={
-                        selected
+                        active
                           ? styles.templateCardActive
                           : styles.templateCard
                       }
@@ -1338,29 +1349,83 @@ export function DocumentSettings() {
                           )
                       }
                     >
-                      <strong>
-                        {
-                          template.name
+                      <div
+                        className={
+                          styles.templateCardHeader
                         }
-                      </strong>
+                      >
+                        <strong>
+                          {
+                            template.name
+                          }
+                        </strong>
 
-                      <span>
-                        {
+                        <span
+                          className={
+                            styles.templateTier
+                          }
+                        >
+                          {
+                            tierLabel(
+                              template.tier,
+                            )
+                          }
+                        </span>
+                      </div>
+
+                      <span
+                        className={
+                          styles.templateLayout
+                        }
+                      >
+                        Tampilan {
                           template.layout
                         }
                       </span>
 
-                      {!template
-                        .is_available ? (
-                        <small>
-                          Belum tersedia
-                          pada paket ini
-                        </small>
-                      ) : selected ? (
-                        <small>
-                          Dipilih
-                        </small>
-                      ) : null}
+                      <div
+                        className={
+                          styles.templateMeta
+                        }
+                      >
+                        {template
+                          .is_selected ? (
+                          <span
+                            className={
+                              styles.templateSelected
+                            }
+                          >
+                            Aktif
+                          </span>
+                        ) : active ? (
+                          <span>
+                            Sedang dilihat
+                          </span>
+                        ) : (
+                          <span>
+                            Pilih untuk melihat
+                          </span>
+                        )}
+
+                        {!template
+                          .is_available ? (
+                          <span
+                            className={
+                              styles.templateLocked
+                            }
+                          >
+                            <Lock
+                              size={12}
+                            />
+
+                            Perlu paket {
+                              tierLabel(
+                                template.tier,
+                              )
+                            }
+                          </span>
+                        ) : null}
+                      </div>
                     </button>
                   );
                 },
@@ -1432,6 +1497,35 @@ export function DocumentSettings() {
               </div>
             ) : null}
 
+            {selectedTemplate &&
+            !selectedTemplate
+              .is_available ? (
+              <div
+                className={
+                  styles.templateUpgradeNote
+                }
+              >
+                <Lock
+                  size={15}
+                />
+
+                <div>
+                  <strong>
+                    Template dapat dipratinjau
+                  </strong>
+
+                  <span>
+                    Template ini memerlukan paket {
+                      tierLabel(
+                        selectedTemplate
+                          .tier,
+                      )
+                    } untuk digunakan.
+                  </span>
+                </div>
+              </div>
+            ) : null}
+
             <div
               className={
                 styles.buttonRow
@@ -1465,7 +1559,9 @@ export function DocumentSettings() {
                 }
                 disabled={
                   templateBusy ||
-                  !templateKey
+                  !templateKey ||
+                  !selectedTemplate
+                    ?.is_available
                 }
                 onClick={
                   () =>

@@ -160,3 +160,130 @@
   cursor: wait;
   opacity: 0.65;
 }
+
+.logoPanel {
+  display: grid;
+  gap: 16px;
+  padding: 16px;
+}
+
+.logoPreview {
+  display: grid;
+  min-height: 170px;
+  place-items: center;
+  overflow: hidden;
+  border: 1px dashed var(--border);
+  border-radius: 14px;
+  background: var(--background);
+}
+
+.logoPreview img {
+  display: block;
+  max-width: min(100%, 320px);
+  max-height: 150px;
+  object-fit: contain;
+  padding: 14px;
+}
+
+.logoEmpty {
+  display: grid;
+  place-items: center;
+  gap: 8px;
+  color: var(--foreground-muted);
+  font-size: 11px;
+  text-align: center;
+}
+
+.logoControls {
+  display: grid;
+  align-content: start;
+  gap: 10px;
+}
+
+.logoControls small {
+  color: var(--foreground-muted);
+  font-size: 10px;
+  line-height: 1.45;
+}
+
+.filePicker {
+  display: inline-flex;
+  width: fit-content;
+  min-height: 38px;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  border: 1px solid var(--border);
+  border-radius: 11px;
+  background: var(--surface);
+  padding: 8px 12px;
+  color: var(--foreground);
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.filePicker input {
+  display: none;
+}
+
+.logoActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.logoPrimaryButton,
+.logoDangerButton {
+  display: inline-flex;
+  min-height: 38px;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  border-radius: 11px;
+  padding: 8px 12px;
+  font: inherit;
+  font-size: 11px;
+  font-weight: 750;
+  cursor: pointer;
+}
+
+.logoPrimaryButton {
+  border: 1px solid transparent;
+  background: var(--sv-blue);
+  color: white;
+}
+
+.logoDangerButton {
+  border:
+    1px solid
+    color-mix(
+      in srgb,
+      #ef4444 30%,
+      var(--border)
+    );
+  background:
+    color-mix(
+      in srgb,
+      #ef4444 7%,
+      var(--surface)
+    );
+  color: #ef4444;
+}
+
+.logoPrimaryButton:disabled,
+.logoDangerButton:disabled,
+.filePicker:has(input:disabled) {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+@media (min-width: 760px) {
+  .logoPanel {
+    grid-template-columns:
+      minmax(220px, 0.8fr)
+      minmax(0, 1.2fr);
+    align-items: start;
+    padding: 20px;
+  }
+}
