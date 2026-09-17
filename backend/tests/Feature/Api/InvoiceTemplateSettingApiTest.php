@@ -92,7 +92,7 @@ class InvoiceTemplateSettingApiTest extends TestCase
             );
 
         $this->assertCount(
-            4,
+            5,
             $templates
         );
 
@@ -101,6 +101,7 @@ class InvoiceTemplateSettingApiTest extends TestCase
                 'classic_blue',
                 'modern_emerald',
                 'minimal_slate',
+                'ocean_blue',
                 'premium_navy',
             ],
             array_column(
@@ -113,7 +114,7 @@ class InvoiceTemplateSettingApiTest extends TestCase
             array_slice(
                 $templates,
                 0,
-                3
+                4
             ) as $template
         ) {
             $this->assertSame(
@@ -126,8 +127,35 @@ class InvoiceTemplateSettingApiTest extends TestCase
             );
         }
 
-        $premium =
+        $ocean =
             $templates[3];
+
+        $this->assertSame(
+            'Ocean Blue',
+            $ocean['name']
+        );
+
+        $this->assertSame(
+            'STARTER',
+            $ocean['tier']
+        );
+
+        $this->assertTrue(
+            $ocean['is_available']
+        );
+
+        $this->assertSame(
+            'ocean',
+            $ocean['default_palette']
+        );
+
+        $this->assertArrayNotHasKey(
+            'author',
+            $ocean
+        );
+
+        $premium =
+            $templates[4];
 
         $this->assertSame(
             'Premium Navy',
@@ -192,6 +220,50 @@ class InvoiceTemplateSettingApiTest extends TestCase
 
                 'invoice_palette_key' =>
                     'emerald',
+            ]
+        );
+    }
+
+    public function test_owner_can_select_ocean_blue_starter_template(): void
+    {
+        $workspace =
+            $this->workspace(
+                'template-ocean@example.test',
+                'Template Ocean'
+            );
+
+        $this->actingAsWorkspace(
+            $workspace
+        );
+
+        $this->patchJson(
+            '/api/v1/settings/invoice-templates',
+            [
+                'invoice_template_key' =>
+                    'ocean_blue',
+            ]
+        )
+            ->assertOk()
+            ->assertJsonPath(
+                'data.selected.template_key',
+                'ocean_blue'
+            )
+            ->assertJsonPath(
+                'data.selected.palette_key',
+                'ocean'
+            );
+
+        $this->assertDatabaseHas(
+            'tenant_document_settings',
+            [
+                'tenant_id' =>
+                    $workspace['tenant_id'],
+
+                'invoice_template_key' =>
+                    'ocean_blue',
+
+                'invoice_palette_key' =>
+                    'ocean',
             ]
         );
     }
@@ -473,6 +545,9 @@ class InvoiceTemplateSettingApiTest extends TestCase
 
             'minimal_slate' =>
                 'minimal',
+
+            'ocean_blue' =>
+                'ocean',
 
             'premium_navy' =>
                 'premium',

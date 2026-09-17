@@ -35,6 +35,9 @@ class InvoiceTemplateRenderTest extends TestCase
 
             'minimal_slate' =>
                 'minimal',
+
+            'ocean_blue' =>
+                'ocean',
         ];
 
         foreach (
@@ -55,7 +58,8 @@ class InvoiceTemplateRenderTest extends TestCase
             $html =
                 $renderer->renderHtml(
                     $resolved['view'],
-                    $viewModel
+                    $viewModel,
+                    $resolved['view_path']
                 );
 
             $this->assertStringContainsString(
@@ -78,7 +82,8 @@ class InvoiceTemplateRenderTest extends TestCase
             $pdf =
                 $renderer->render(
                     $resolved['view'],
-                    $viewModel
+                    $viewModel,
+                    $resolved['view_path']
                 );
 
             $this->assertStringStartsWith(
@@ -94,6 +99,112 @@ class InvoiceTemplateRenderTest extends TestCase
             );
         }
     }
+    public function test_ocean_blue_renders_from_package_view(): void
+    {
+        $resolver =
+            app(
+                InvoiceTemplateViewResolver::class
+            );
+
+        $factory =
+            app(
+                InvoicePreviewViewModelFactory::class
+            );
+
+        $renderer =
+            app(
+                InvoicePdfRenderer::class
+            );
+
+        $resolved =
+            $resolver->resolve(
+                'ocean_blue'
+            );
+
+        $this->assertNull(
+            $resolved['view']
+        );
+
+        $this->assertIsString(
+            $resolved['view_path']
+        );
+
+        $this->assertFileExists(
+            $resolved['view_path']
+        );
+
+        $this->assertSame(
+            'STARTER',
+            $resolved[
+                'template'
+            ]['tier']
+        );
+
+        $this->assertSame(
+            'Novel',
+            $resolved[
+                'template'
+            ]['author']
+        );
+
+        $backgroundPath =
+            $resolved[
+                'template'
+            ]['package_path']
+            . '/'
+            . $resolved[
+                'template'
+            ]['background']['asset'];
+
+        $this->assertFileExists(
+            $backgroundPath
+        );
+
+        $viewModel =
+            $factory->make(
+                $resolved
+            );
+
+        $html =
+            $renderer->renderHtml(
+                $resolved['view'],
+                $viewModel,
+                $resolved['view_path']
+            );
+
+        $this->assertStringContainsString(
+            'data-invoice-layout="ocean"',
+            $html
+        );
+
+        $this->assertStringContainsString(
+            'INV-202609-0001',
+            $html
+        );
+
+        $this->assertStringContainsString(
+            'data:image/png;base64,',
+            $html
+        );
+
+        $pdf =
+            $renderer->render(
+                $resolved['view'],
+                $viewModel,
+                $resolved['view_path']
+            );
+
+        $this->assertStringStartsWith(
+            '%PDF-',
+            $pdf
+        );
+
+        $this->assertGreaterThan(
+            1000,
+            strlen($pdf)
+        );
+    }
+
     public function test_premium_navy_renders_from_package_view(): void
     {
         $resolver =

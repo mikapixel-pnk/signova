@@ -20,6 +20,7 @@ class InvoiceTemplateLoaderTest extends TestCase
                 'classic_blue',
                 'modern_emerald',
                 'minimal_slate',
+                'ocean_blue',
                 'premium_navy',
             ],
             array_keys(
@@ -45,6 +46,29 @@ class InvoiceTemplateLoaderTest extends TestCase
                 'premium_navy'
             ]['sort_order']
         );
+
+
+        $this->assertSame(
+            'STARTER',
+            $templates[
+                'ocean_blue'
+            ]['tier']
+        );
+
+        $this->assertSame(
+            'ocean',
+            $templates[
+                'ocean_blue'
+            ]['default_palette']
+        );
+
+        $this->assertSame(
+            40,
+            $templates[
+                'ocean_blue'
+            ]['sort_order']
+        );
+
     }
 
     public function test_loader_normalizes_palette_contract(): void
