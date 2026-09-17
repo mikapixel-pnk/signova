@@ -385,6 +385,8 @@
   font-weight: 650;
 }
 
+.field input,
+.field select,
 .field textarea {
   width: 100%;
   padding: 11px 12px;
@@ -409,7 +411,201 @@
   padding: 14px 18px 18px;
 }
 
+.paymentOverview {
+  display: grid;
+  grid-template-columns:
+    repeat(
+      3,
+      minmax(0, 1fr)
+    );
+  gap: 1px;
+  border-bottom: 1px solid var(--border);
+  background: var(--border);
+}
+
+.paymentOverview > div {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+  padding: 14px;
+  background: var(--surface);
+}
+
+.paymentOverview span {
+  color: var(--muted-foreground);
+  font-size: 0.73rem;
+}
+
+.paymentOverview strong {
+  overflow-wrap: anywhere;
+  font-size: 0.9rem;
+}
+
+.paymentOutstanding strong {
+  font-size: 1rem;
+}
+
+.paymentList {
+  display: grid;
+}
+
+.paymentItem {
+  display: grid;
+  gap: 9px;
+  padding: 15px 17px;
+  border-bottom: 1px solid var(--border);
+}
+
+.paymentItem:last-child {
+  border-bottom: 0;
+}
+
+.paymentItemTop {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.paymentItemTop > div {
+  display: grid;
+  gap: 2px;
+}
+
+.paymentItemTop > div > span {
+  color: var(--muted-foreground);
+  font-size: 0.78rem;
+}
+
+.paymentStatus {
+  flex: 0 0 auto;
+  padding: 5px 8px;
+  border-radius: 999px;
+  background: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.paymentMeta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 12px;
+  color: var(--muted-foreground);
+  font-size: 0.76rem;
+}
+
+.paymentEmpty {
+  margin: 0;
+  padding: 20px 17px;
+  color: var(--muted-foreground);
+  font-size: 0.84rem;
+  line-height: 1.55;
+}
+
+.sheetOverlay {
+  position: fixed;
+  inset: 0;
+  z-index: 95;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  background: rgb(0 0 0 / 48%);
+}
+
+.paymentSheet {
+  width: 100%;
+  max-height: min(90dvh, 760px);
+  overflow: auto;
+  border: 1px solid var(--border);
+  border-bottom: 0;
+  border-radius: 22px 22px 0 0;
+  background: var(--background);
+  box-shadow: 0 -20px 60px rgb(0 0 0 / 25%);
+}
+
+.paymentSheetBody {
+  display: grid;
+  gap: 18px;
+  padding: 18px;
+}
+
+.paymentSheetSummary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 13px 14px;
+  border-radius: 14px;
+  background: var(--muted);
+}
+
+.paymentSheetSummary span {
+  color: var(--muted-foreground);
+  font-size: 0.82rem;
+}
+
+.paymentSheetSummary strong {
+  font-size: 1.03rem;
+}
+
+.paymentForm {
+  display: grid;
+  gap: 15px;
+}
+
+.field input,
+.field select {
+  min-height: 44px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  outline: 0;
+  background: var(--surface);
+  color: inherit;
+  font: inherit;
+}
+
+.field input:focus,
+.field select:focus,
+.field textarea:focus {
+  border-color: var(--foreground);
+}
+
+.fieldError {
+  justify-self: start !important;
+}
+
+.formError {
+  padding: 11px 12px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--muted);
+  font-size: 0.82rem;
+  line-height: 1.5;
+}
+
+.paymentEvidenceHint {
+  padding: 11px 12px;
+  border-radius: 12px;
+  background: var(--muted);
+  color: var(--muted-foreground);
+  font-size: 0.78rem;
+  line-height: 1.5;
+}
+
 @media (min-width: 680px) {
+  .sheetOverlay {
+    align-items: center;
+    padding: 20px;
+  }
+
+  .paymentSheet {
+    width: min(100%, 560px);
+    border-bottom: 1px solid var(--border);
+    border-radius: 22px;
+    box-shadow: 0 22px 60px rgb(0 0 0 / 25%);
+  }
+
   .actionCard {
     grid-template-columns:
       minmax(0, 1fr)

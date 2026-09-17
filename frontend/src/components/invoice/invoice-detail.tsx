@@ -49,9 +49,21 @@ import {
   voidInvoice,
 } from "@/lib/invoice/service";
 
+import {
+  listInvoicePayments,
+  listPaymentCashAccounts,
+  recordInvoicePayment,
+} from "@/lib/payment/service";
+
 import type {
   Invoice,
 } from "@/types/invoice";
+
+import type {
+  InvoicePaymentHistoryItem,
+  PaymentCashAccount,
+  PaymentMethod,
+} from "@/types/payment";
 
 import styles from "./invoice-detail.module.css";
 
@@ -133,6 +145,60 @@ function localDateTime(
       minute: "2-digit",
     },
   ).format(date);
+}
+
+function paymentMethodLabel(
+  method: PaymentMethod,
+): string {
+  switch (method) {
+    case "BANK_TRANSFER":
+      return "Transfer Bank";
+
+    case "STATIC_QR":
+      return "QR Statis";
+
+    default:
+      return method;
+  }
+}
+
+function paymentStatusLabel(
+  status: string,
+): string {
+  switch (status) {
+    case "VERIFIED":
+      return "Terverifikasi";
+
+    case "PENDING":
+      return "Menunggu verifikasi";
+
+    case "REJECTED":
+      return "Ditolak";
+
+    case "REVERSED":
+      return "Dibatalkan";
+
+    default:
+      return status;
+  }
+}
+
+function localDateTimeInput(
+  date = new Date(),
+): string {
+  const local =
+    new Date(
+      date.getTime() -
+      date.getTimezoneOffset() *
+        60_000,
+    );
+
+  return local
+    .toISOString()
+    .slice(
+      0,
+      16,
+    );
 }
 
 function nextStep(
@@ -226,6 +292,90 @@ export function InvoiceDetail() {
     setVoidReason,
   ] = useState("");
 
+  const [
+    payments,
+    setPayments,
+  ] = useState<
+    InvoicePaymentHistoryItem[]
+  >([]);
+
+  const [
+    paymentsLoading,
+    setPaymentsLoading,
+  ] = useState(true);
+
+  const [
+    paymentsError,
+    setPaymentsError,
+  ] = useState<unknown>(
+    null,
+  );
+
+  const [
+    paymentOpen,
+    setPaymentOpen,
+  ] = useState(false);
+
+  const [
+    paymentSaving,
+    setPaymentSaving,
+  ] = useState(false);
+
+  const [
+    paymentError,
+    setPaymentError,
+  ] = useState<unknown>(
+    null,
+  );
+
+  const [
+    cashAccounts,
+    setCashAccounts,
+  ] = useState<
+    PaymentCashAccount[]
+  >([]);
+
+  const [
+    cashAccountsLoading,
+    setCashAccountsLoading,
+  ] = useState(false);
+
+  const [
+    cashAccountsError,
+    setCashAccountsError,
+  ] = useState<unknown>(
+    null,
+  );
+
+  const [
+    paymentCashAccountId,
+    setPaymentCashAccountId,
+  ] = useState("");
+
+  const [
+    paymentAmount,
+    setPaymentAmount,
+  ] = useState("");
+
+  const [
+    paymentPaidAt,
+    setPaymentPaidAt,
+  ] = useState(
+    localDateTimeInput(),
+  );
+
+  const [
+    paymentMethod,
+    setPaymentMethod,
+  ] = useState<PaymentMethod>(
+    "BANK_TRANSFER",
+  );
+
+  const [
+    paymentReference,
+    setPaymentReference,
+  ] = useState("");
+
   useEffect(() => {
     let cancelled =
       false;
@@ -266,6 +416,54 @@ export function InvoiceDetail() {
   ]);
 
   useEffect(() => {
+    let cancelled =
+      false;
+
+    async function loadPayments() {
+      setPaymentsLoading(
+        true,
+      );
+
+      setPaymentsError(
+        null,
+      );
+
+      try {
+        const response =
+          await listInvoicePayments(
+            params.id,
+          );
+
+        if (!cancelled) {
+          setPayments(
+            response.data,
+          );
+        }
+      } catch (caught) {
+        if (!cancelled) {
+          setPaymentsError(
+            caught,
+          );
+        }
+      } finally {
+        if (!cancelled) {
+          setPaymentsLoading(
+            false,
+          );
+        }
+      }
+    }
+
+    void loadPayments();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    params.id,
+  ]);
+
+  useEffect(() => {
     if (!actionSuccess) {
       return;
     }
@@ -289,6 +487,254 @@ export function InvoiceDetail() {
     actionSuccess,
   ]);
 
+
+  async function refreshPayments() {
+    setPaymentsLoading(
+      true,
+    );
+
+    setPaymentsError(
+      null,
+    );
+
+    try {
+      const response =
+        await listInvoicePayments(
+          params.id,
+        );
+
+      setPayments(
+        response.data,
+      );
+    } catch (caught) {
+      setPaymentsError(
+        caught,
+      );
+    } finally {
+      setPaymentsLoading(
+        false,
+      );
+    }
+  }
+
+  async function loadCashAccounts() {
+    setCashAccountsLoading(
+      true,
+    );
+
+    setCashAccountsError(
+      null,
+    );
+
+    try {
+      const response =
+        await listPaymentCashAccounts();
+
+      const sorted =
+        [...response.data]
+          .sort(
+            (a, b) =>
+              Number(
+                b.is_default,
+              ) -
+              Number(
+                a.is_default,
+              ),
+          );
+
+      setCashAccounts(
+        sorted,
+      );
+
+      setPaymentCashAccountId(
+        (
+          current
+        ) =>
+          current ||
+          sorted[0]?.id ||
+          "",
+      );
+    } catch (caught) {
+      setCashAccountsError(
+        caught,
+      );
+    } finally {
+      setCashAccountsLoading(
+        false,
+      );
+    }
+  }
+
+  async function openPaymentSheet() {
+    if (!invoice) {
+      return;
+    }
+
+    setPaymentError(
+      null,
+    );
+
+    setPaymentAmount(
+      String(
+        invoice.outstanding_amount,
+      ),
+    );
+
+    setPaymentPaidAt(
+      localDateTimeInput(),
+    );
+
+    setPaymentMethod(
+      "BANK_TRANSFER",
+    );
+
+    setPaymentReference(
+      "",
+    );
+
+    setPaymentOpen(
+      true,
+    );
+
+    if (
+      cashAccounts.length ===
+      0
+    ) {
+      await loadCashAccounts();
+    }
+  }
+
+  async function handleRecordPayment() {
+    if (!invoice) {
+      return;
+    }
+
+    const amount =
+      Number(
+        paymentAmount,
+      );
+
+    const outstanding =
+      Number(
+        invoice.outstanding_amount,
+      );
+
+    if (
+      !Number.isFinite(amount) ||
+      amount <= 0
+    ) {
+      setPaymentError(
+        new Error(
+          "Nominal pembayaran harus lebih dari 0.",
+        ),
+      );
+
+      return;
+    }
+
+    if (
+      amount >
+      outstanding
+    ) {
+      setPaymentError(
+        new Error(
+          "Nominal pembayaran tidak boleh melebihi sisa tagihan.",
+        ),
+      );
+
+      return;
+    }
+
+    if (
+      !paymentCashAccountId
+    ) {
+      setPaymentError(
+        new Error(
+          "Pilih akun Kas & Bank tujuan.",
+        ),
+      );
+
+      return;
+    }
+
+    const paidAt =
+      new Date(
+        paymentPaidAt,
+      );
+
+    if (
+      Number.isNaN(
+        paidAt.getTime(),
+      )
+    ) {
+      setPaymentError(
+        new Error(
+          "Tanggal pembayaran belum valid.",
+        ),
+      );
+
+      return;
+    }
+
+    setPaymentSaving(
+      true,
+    );
+
+    setPaymentError(
+      null,
+    );
+
+    setActionError(
+      null,
+    );
+
+    try {
+      const response =
+        await recordInvoicePayment(
+          invoice.id,
+          {
+            cash_account_id:
+              paymentCashAccountId,
+
+            amount:
+              paymentAmount,
+
+            paid_at:
+              paidAt.toISOString(),
+
+            method:
+              paymentMethod,
+
+            reference:
+              paymentReference.trim() ||
+              null,
+          },
+        );
+
+      setInvoice(
+        response.data.invoice,
+      );
+
+      setPaymentOpen(
+        false,
+      );
+
+      setActionSuccess(
+        response.message ??
+        "Pembayaran berhasil dicatat.",
+      );
+
+      await refreshPayments();
+    } catch (caught) {
+      setPaymentError(
+        caught,
+      );
+    } finally {
+      setPaymentSaving(
+        false,
+      );
+    }
+  }
 
   async function handleIssue() {
     if (!invoice) {
@@ -523,6 +969,17 @@ export function InvoiceDetail() {
       "DRAFT" ||
     invoice.status ===
       "ISSUED";
+
+  const canRecordPayment =
+    [
+      "ISSUED",
+      "PARTIALLY_PAID",
+    ].includes(
+      invoice.status,
+    ) &&
+    Number(
+      invoice.outstanding_amount,
+    ) > 0;
 
   return (
     <section
@@ -1099,6 +1556,206 @@ export function InvoiceDetail() {
         </div>
       </section>
 
+      <section
+        className={
+          styles.card
+        }
+      >
+        <header
+          className={
+            styles.cardHeader
+          }
+        >
+          <div>
+            <strong>
+              Pembayaran
+            </strong>
+
+            <span>
+              {payments.length > 0
+                ? `${payments.length} pembayaran tercatat`
+                : "Belum ada pembayaran"}
+            </span>
+          </div>
+
+          {canRecordPayment ? (
+            <Button
+              type="button"
+              disabled={
+                paymentSaving
+              }
+              leadingIcon={
+                <ReceiptText
+                  size={17}
+                />
+              }
+              onClick={
+                () =>
+                  void openPaymentSheet()
+              }
+            >
+              Catat Pembayaran
+            </Button>
+          ) : null}
+        </header>
+
+        <div
+          className={
+            styles.paymentOverview
+          }
+        >
+          <div>
+            <span>
+              Total Tagihan
+            </span>
+
+            <strong>
+              {money(
+                invoice.total,
+                invoice.currency,
+              )}
+            </strong>
+          </div>
+
+          <div>
+            <span>
+              Sudah Dibayar
+            </span>
+
+            <strong>
+              {money(
+                invoice.paid_amount,
+                invoice.currency,
+              )}
+            </strong>
+          </div>
+
+          <div
+            className={
+              styles.paymentOutstanding
+            }
+          >
+            <span>
+              Sisa Tagihan
+            </span>
+
+            <strong>
+              {money(
+                invoice.outstanding_amount,
+                invoice.currency,
+              )}
+            </strong>
+          </div>
+        </div>
+
+        <div
+          className={
+            styles.paymentList
+          }
+        >
+          {paymentsLoading ? (
+            <p
+              className={
+                styles.paymentEmpty
+              }
+            >
+              Memuat riwayat pembayaran...
+            </p>
+          ) : paymentsError ? (
+            <p
+              className={
+                styles.paymentEmpty
+              }
+            >
+              Riwayat pembayaran belum dapat dimuat.{" "}
+              {apiErrorMessage(
+                paymentsError,
+              )}
+            </p>
+          ) : payments.length ===
+            0 ? (
+            <p
+              className={
+                styles.paymentEmpty
+              }
+            >
+              Belum ada pembayaran untuk tagihan ini.
+            </p>
+          ) : (
+            payments.map(
+              (
+                payment,
+              ) => (
+                <article
+                  key={
+                    payment.allocation_id
+                  }
+                  className={
+                    styles.paymentItem
+                  }
+                >
+                  <div
+                    className={
+                      styles.paymentItemTop
+                    }
+                  >
+                    <div>
+                      <strong>
+                        {money(
+                          payment.allocated_amount,
+                          invoice.currency,
+                        )}
+                      </strong>
+
+                      <span>
+                        {paymentMethodLabel(
+                          payment.method,
+                        )}
+                      </span>
+                    </div>
+
+                    <span
+                      className={
+                        styles.paymentStatus
+                      }
+                    >
+                      {paymentStatusLabel(
+                        payment.status,
+                      )}
+                    </span>
+                  </div>
+
+                  <div
+                    className={
+                      styles.paymentMeta
+                    }
+                  >
+                    <span>
+                      {localDateTime(
+                        payment.paid_at,
+                      )}
+                    </span>
+
+                    {payment.reference ? (
+                      <span>
+                        Ref.{" "}
+                        {payment.reference}
+                      </span>
+                    ) : null}
+
+                    <span>
+                      {payment.has_evidence
+                        ? "Ada bukti pembayaran"
+                        : "Tanpa bukti pembayaran"}
+                    </span>
+                  </div>
+                </article>
+              ),
+            )
+          )}
+        </div>
+      </section>
+
       {invoice.notes ? (
         <section
           className={
@@ -1206,6 +1863,391 @@ export function InvoiceDetail() {
           )}
         </div>
       </section>
+
+      {paymentOpen ? (
+        <div
+          className={
+            styles.sheetOverlay
+          }
+          onMouseDown={
+            () => {
+              if (
+                !paymentSaving
+              ) {
+                setPaymentOpen(
+                  false,
+                );
+              }
+            }
+          }
+        >
+          <form
+            className={
+              styles.paymentSheet
+            }
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="payment-title"
+            onMouseDown={
+              (
+                event,
+              ) => {
+                event.stopPropagation();
+              }
+            }
+            onSubmit={
+              (
+                event,
+              ) => {
+                event.preventDefault();
+
+                void handleRecordPayment();
+              }
+            }
+          >
+            <header
+              className={
+                styles.dialogHeader
+              }
+            >
+              <div>
+                <span>
+                  Pembayaran
+                </span>
+
+                <h2
+                  id="payment-title"
+                >
+                  Catat Pembayaran
+                </h2>
+
+                <p>
+                  Pembayaran akan langsung diverifikasi dan dialokasikan ke tagihan ini.
+                </p>
+              </div>
+
+              <button
+                type="button"
+                className={
+                  styles.close
+                }
+                aria-label="Tutup"
+                disabled={
+                  paymentSaving
+                }
+                onClick={
+                  () =>
+                    setPaymentOpen(
+                      false,
+                    )
+                }
+              >
+                <X
+                  size={19}
+                />
+              </button>
+            </header>
+
+            <div
+              className={
+                styles.paymentSheetBody
+              }
+            >
+              <div
+                className={
+                  styles.paymentSheetSummary
+                }
+              >
+                <span>
+                  Sisa tagihan
+                </span>
+
+                <strong>
+                  {money(
+                    invoice.outstanding_amount,
+                    invoice.currency,
+                  )}
+                </strong>
+              </div>
+
+              <div
+                className={
+                  styles.paymentForm
+                }
+              >
+                <label
+                  className={
+                    styles.field
+                  }
+                >
+                  <span>
+                    Nominal
+                  </span>
+
+                  <input
+                    type="number"
+                    inputMode="decimal"
+                    min="0.01"
+                    step="0.01"
+                    value={
+                      paymentAmount
+                    }
+                    disabled={
+                      paymentSaving
+                    }
+                    onChange={
+                      (
+                        event,
+                      ) =>
+                        setPaymentAmount(
+                          event.target.value,
+                        )
+                    }
+                  />
+
+                  <small>
+                    Maksimal{" "}
+                    {money(
+                      invoice.outstanding_amount,
+                      invoice.currency,
+                    )}
+                  </small>
+                </label>
+
+                <label
+                  className={
+                    styles.field
+                  }
+                >
+                  <span>
+                    Tanggal Pembayaran
+                  </span>
+
+                  <input
+                    type="datetime-local"
+                    value={
+                      paymentPaidAt
+                    }
+                    disabled={
+                      paymentSaving
+                    }
+                    onChange={
+                      (
+                        event,
+                      ) =>
+                        setPaymentPaidAt(
+                          event.target.value,
+                        )
+                    }
+                  />
+                </label>
+
+                <label
+                  className={
+                    styles.field
+                  }
+                >
+                  <span>
+                    Metode
+                  </span>
+
+                  <select
+                    value={
+                      paymentMethod
+                    }
+                    disabled={
+                      paymentSaving
+                    }
+                    onChange={
+                      (
+                        event,
+                      ) =>
+                        setPaymentMethod(
+                          event.target
+                            .value as
+                            PaymentMethod,
+                        )
+                    }
+                  >
+                    <option
+                      value="BANK_TRANSFER"
+                    >
+                      Transfer Bank
+                    </option>
+
+                    <option
+                      value="STATIC_QR"
+                    >
+                      QR Statis
+                    </option>
+                  </select>
+                </label>
+
+                <label
+                  className={
+                    styles.field
+                  }
+                >
+                  <span>
+                    Akun Kas / Bank Tujuan
+                  </span>
+
+                  <select
+                    value={
+                      paymentCashAccountId
+                    }
+                    disabled={
+                      paymentSaving ||
+                      cashAccountsLoading
+                    }
+                    onChange={
+                      (
+                        event,
+                      ) =>
+                        setPaymentCashAccountId(
+                          event.target.value,
+                        )
+                    }
+                  >
+                    <option
+                      value=""
+                    >
+                      {cashAccountsLoading
+                        ? "Memuat akun..."
+                        : "Pilih akun"}
+                    </option>
+
+                    {cashAccounts.map(
+                      (
+                        account,
+                      ) => (
+                        <option
+                          key={
+                            account.id
+                          }
+                          value={
+                            account.id
+                          }
+                        >
+                          {account.name}
+                          {account.is_default
+                            ? " • Default"
+                            : ""}
+                        </option>
+                      ),
+                    )}
+                  </select>
+
+                  {cashAccountsError ? (
+                    <small
+                      className={
+                        styles.fieldError
+                      }
+                    >
+                      {apiErrorMessage(
+                        cashAccountsError,
+                      )}
+                    </small>
+                  ) : cashAccounts.length ===
+                      0 &&
+                    !cashAccountsLoading ? (
+                    <small>
+                      Belum ada akun Kas & Bank aktif.
+                    </small>
+                  ) : null}
+                </label>
+
+                <label
+                  className={
+                    styles.field
+                  }
+                >
+                  <span>
+                    Referensi
+                  </span>
+
+                  <input
+                    type="text"
+                    maxLength={190}
+                    placeholder="Opsional, mis. nomor transfer"
+                    value={
+                      paymentReference
+                    }
+                    disabled={
+                      paymentSaving
+                    }
+                    onChange={
+                      (
+                        event,
+                      ) =>
+                        setPaymentReference(
+                          event.target.value,
+                        )
+                    }
+                  />
+                </label>
+
+                {paymentError ? (
+                  <div
+                    className={
+                      styles.formError
+                    }
+                    role="alert"
+                  >
+                    {apiErrorMessage(
+                      paymentError,
+                    )}
+                  </div>
+                ) : null}
+
+                <div
+                  className={
+                    styles.paymentEvidenceHint
+                  }
+                >
+                  Bukti transfer bersifat opsional dan dapat ditambahkan setelah pembayaran tersimpan.
+                </div>
+              </div>
+            </div>
+
+            <footer
+              className={
+                styles.dialogFooter
+              }
+            >
+              <Button
+                type="button"
+                variant="secondary"
+                disabled={
+                  paymentSaving
+                }
+                onClick={
+                  () =>
+                    setPaymentOpen(
+                      false,
+                    )
+                }
+              >
+                Batal
+              </Button>
+
+              <Button
+                type="submit"
+                loading={
+                  paymentSaving
+                }
+                loadingLabel="Menyimpan..."
+                disabled={
+                  cashAccounts.length ===
+                    0
+                }
+              >
+                Simpan Pembayaran
+              </Button>
+            </footer>
+          </form>
+        </div>
+      ) : null}
 
       {voidOpen ? (
         <div
