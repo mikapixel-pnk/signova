@@ -12,6 +12,7 @@ use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use Mockery\MockInterface;
 use Tests\TestCase;
 
 class InvoiceApiTest extends TestCase
@@ -2045,29 +2046,33 @@ class InvoiceApiTest extends TestCase
     }
 
 
-    public function test_invoice_pdf_renders_modern_template_from_snapshot(): void
+    public function test_invoice_pdf_uses_current_business_template_without_mutating_issue_snapshot(): void
     {
         $workspace =
             $this->workspace(
-                'invoice-pdf-modern@example.test',
-                'Invoice PDF Modern'
+                'invoice-pdf-current-template@example.test',
+                'Invoice PDF Current Template'
             );
 
         $customerId =
             $this->insertCustomer(
                 $workspace['tenant_id'],
-                'CUST-PDF-MODERN',
-                'Pelanggan PDF Modern'
+                'CUST-PDF-CURRENT-TEMPLATE',
+                'Pelanggan Current Template'
             );
 
         $invoiceId =
             $this->insertInvoice(
                 $workspace,
                 $customerId,
-                'INV-PDF-MODERN',
+                'INV-PDF-CURRENT-TEMPLATE',
                 'ISSUED'
             );
 
+        /*
+         * Metadata audit:
+         * invoice diterbitkan ketika Modern Emerald aktif.
+         */
         DB::table('invoices')
             ->where(
                 'id',
@@ -2087,93 +2092,190 @@ class InvoiceApiTest extends TestCase
         $this->insertInvoiceItem(
             $workspace['tenant_id'],
             $invoiceId,
-            'Jasa Modern',
+            'Jasa Template Dinamis',
             '350000.00'
         );
 
+        /*
+         * Template Business sekarang Minimal Slate.
+         */
+        DB::table(
+            'tenant_document_settings'
+        )->insert([
+            'id' =>
+                (string) Str::ulid(),
+
+            'tenant_id' =>
+                $workspace['tenant_id'],
+
+            'business_id' =>
+                $workspace['business_id'],
+
+            'invoice_template_key' =>
+                'minimal_slate',
+
+            'invoice_palette_key' =>
+                'slate',
+
+            'created_at' =>
+                now(),
+
+            'updated_at' =>
+                now(),
+        ]);
+
         $this->actingAsWorkspace(
             $workspace
         );
 
-        $response =
+        $this->mock(
+            \App\Services\Invoice\Document\InvoicePdfRenderer::class,
+            function (
+                MockInterface $mock
+            ): void {
+                $mock
+                    ->shouldReceive(
+                        'render'
+                    )
+                    ->once()
+                    ->withArgs(
+                        function (
+                            ?string $view,
+                            array $viewModel,
+                            ?string $viewPath
+                        ): bool {
+                            return $view
+                                === 'pdf.invoices.minimal'
+                                && $viewPath === null
+                                && (
+                                    $viewModel[
+                                        'template'
+                                    ]['key']
+                                    ?? null
+                                ) === 'minimal_slate';
+                        }
+                    )
+                    ->andReturn(
+                        '%PDF-minimal-current'
+                    );
+
+                $mock
+                    ->shouldReceive(
+                        'render'
+                    )
+                    ->once()
+                    ->withArgs(
+                        function (
+                            ?string $view,
+                            array $viewModel,
+                            ?string $viewPath
+                        ): bool {
+                            return $view === null
+                                && is_string(
+                                    $viewPath
+                                )
+                                && str_ends_with(
+                                    $viewPath,
+                                    '/starter/ocean-blue/view.blade.php'
+                                )
+                                && (
+                                    $viewModel[
+                                        'template'
+                                    ]['key']
+                                    ?? null
+                                ) === 'ocean_blue';
+                        }
+                    )
+                    ->andReturn(
+                        '%PDF-ocean-current'
+                    );
+            }
+        );
+
+        /*
+         * Render pertama:
+         * invoice lama harus mengikuti Minimal Slate.
+         */
+        $firstResponse =
             $this->get(
                 "/api/v1/invoices/{$invoiceId}/pdf"
-            )
-                ->assertOk()
-                ->assertHeader(
-                    'Content-Type',
-                    'application/pdf'
-                );
+            );
 
-        $this->assertStringStartsWith(
-            '%PDF',
-            $response->getContent()
+        $firstResponse
+            ->assertOk()
+            ->assertHeader(
+                'Content-Type',
+                'application/pdf'
+            );
+
+        $this->assertSame(
+            '%PDF-minimal-current',
+            $firstResponse->getContent()
         );
-    }
 
-    public function test_invoice_pdf_renders_minimal_template_from_snapshot(): void
-    {
-        $workspace =
-            $this->workspace(
-                'invoice-pdf-minimal@example.test',
-                'Invoice PDF Minimal'
-            );
-
-        $customerId =
-            $this->insertCustomer(
-                $workspace['tenant_id'],
-                'CUST-PDF-MINIMAL',
-                'Pelanggan PDF Minimal'
-            );
-
-        $invoiceId =
-            $this->insertInvoice(
-                $workspace,
-                $customerId,
-                'INV-PDF-MINIMAL',
-                'ISSUED'
-            );
-
-        DB::table('invoices')
+        /*
+         * Ganti template Business ke Ocean Blue.
+         */
+        DB::table(
+            'tenant_document_settings'
+        )
             ->where(
-                'id',
-                $invoiceId
+                'tenant_id',
+                $workspace['tenant_id']
+            )
+            ->where(
+                'business_id',
+                $workspace['business_id']
             )
             ->update([
                 'invoice_template_key' =>
-                    'minimal_slate',
+                    'ocean_blue',
 
                 'invoice_palette_key' =>
-                    'slate',
+                    'ocean',
+
+                'updated_at' =>
+                    now(),
+            ]);
+
+        /*
+         * Render invoice yang sama lagi.
+         */
+        $secondResponse =
+            $this->get(
+                "/api/v1/invoices/{$invoiceId}/pdf"
+            );
+
+        $secondResponse
+            ->assertOk()
+            ->assertHeader(
+                'Content-Type',
+                'application/pdf'
+            );
+
+        $this->assertSame(
+            '%PDF-ocean-current',
+            $secondResponse->getContent()
+        );
+
+        /*
+         * Snapshot saat ISSUE tetap sebagai audit metadata.
+         */
+        $this->assertDatabaseHas(
+            'invoices',
+            [
+                'id' =>
+                    $invoiceId,
+
+                'invoice_template_key' =>
+                    'modern_emerald',
+
+                'invoice_palette_key' =>
+                    'emerald',
 
                 'invoice_template_version' =>
                     1,
-            ]);
-
-        $this->insertInvoiceItem(
-            $workspace['tenant_id'],
-            $invoiceId,
-            'Jasa Minimal',
-            '275000.00'
-        );
-
-        $this->actingAsWorkspace(
-            $workspace
-        );
-
-        $response =
-            $this->get(
-                "/api/v1/invoices/{$invoiceId}/pdf"
-            )
-                ->assertOk()
-                ->assertHeader(
-                    'Content-Type',
-                    'application/pdf'
-                );
-
-        $this->assertStringStartsWith(
-            '%PDF',
-            $response->getContent()
+            ]
         );
     }
 

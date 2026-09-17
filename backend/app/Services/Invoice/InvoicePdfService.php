@@ -4,6 +4,7 @@ namespace App\Services\Invoice;
 
 use App\Services\Invoice\Document\InvoiceDocumentViewModelBuilder;
 use App\Services\Invoice\Document\InvoicePdfRenderer;
+use App\Services\Invoice\Document\InvoiceTemplateSnapshotService;
 use App\Services\Invoice\Document\InvoiceTemplateViewResolver;
 
 class InvoicePdfService
@@ -12,7 +13,8 @@ class InvoicePdfService
         private readonly InvoiceService $invoiceService,
         private readonly InvoiceDocumentViewModelBuilder $viewModelBuilder,
         private readonly InvoicePdfRenderer $renderer,
-        private readonly InvoiceTemplateViewResolver $templateResolver
+        private readonly InvoiceTemplateViewResolver $templateResolver,
+        private readonly InvoiceTemplateSnapshotService $templateSnapshotService
     ) {
     }
 
@@ -33,12 +35,22 @@ class InvoicePdfService
                     $invoiceId
                 );
 
+        $currentTemplate =
+            $this->templateSnapshotService
+                ->current();
+
         $resolvedTemplate =
             $this->templateResolver
                 ->resolveSnapshot(
-                    $invoice->invoice_template_key,
-                    $invoice->invoice_palette_key,
-                    $invoice->invoice_template_version
+                    $currentTemplate[
+                        'invoice_template_key'
+                    ],
+                    $currentTemplate[
+                        'invoice_palette_key'
+                    ],
+                    $currentTemplate[
+                        'invoice_template_version'
+                    ]
                 );
 
         $viewModel =
