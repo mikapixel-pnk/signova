@@ -582,6 +582,260 @@ class InvoiceTemplateSettingApiTest extends TestCase
         }
     }
 
+    public function test_preview_uses_active_business_branding(): void
+    {
+        $workspace =
+            $this->workspace(
+                'template-branding@example.test',
+                'Branding Preview'
+            );
+
+        $businessId =
+            DB::table(
+                'business_profiles'
+            )
+                ->where(
+                    'tenant_id',
+                    $workspace['tenant_id']
+                )
+                ->value('id');
+
+        $this->assertNotNull(
+            $businessId
+        );
+
+        DB::table(
+            'business_profiles'
+        )
+            ->where(
+                'tenant_id',
+                $workspace['tenant_id']
+            )
+            ->where(
+                'id',
+                $businessId
+            )
+            ->update([
+                'name' =>
+                    'CV Signova Visual',
+
+                'address' =>
+                    'Jl. Branding No. 17',
+
+                'phone' =>
+                    '081234567890',
+
+                'email' =>
+                    'halo@signova.test',
+
+                'tax_id' =>
+                    '12.345.678.9-012.345',
+
+                'updated_at' =>
+                    now(),
+            ]);
+
+        DB::table(
+            'tenant_document_settings'
+        )->insert([
+            'id' =>
+                (string) str()->ulid(),
+
+            'tenant_id' =>
+                $workspace['tenant_id'],
+
+            'business_id' =>
+                $businessId,
+
+            'invoice_footnote' =>
+                'Catatan pembayaran usaha aktif.',
+
+            'signature_name' =>
+                'Novel',
+
+            'signature_title' =>
+                'Pemilik',
+
+            'created_at' =>
+                now(),
+
+            'updated_at' =>
+                now(),
+        ]);
+
+        $this->actingAsWorkspace(
+            $workspace
+        );
+
+        $response =
+            $this->get(
+                '/api/v1/settings/invoice-templates/ocean_blue/preview'
+            )
+                ->assertOk();
+
+        $html =
+            $response->getContent();
+
+        $this->assertStringContainsString(
+            'CV Signova Visual',
+            $html
+        );
+
+        $this->assertStringContainsString(
+            'Jl. Branding No. 17',
+            $html
+        );
+
+        $this->assertStringContainsString(
+            'halo@signova.test',
+            $html
+        );
+
+        $this->assertStringContainsString(
+            'Catatan pembayaran usaha aktif.',
+            $html
+        );
+
+        $this->assertStringContainsString(
+            'Novel',
+            $html
+        );
+
+        $this->assertStringNotContainsString(
+            'PT Contoh Reklame',
+            $html
+        );
+    }
+
+    public function test_preview_uses_active_business_logo_and_signature(): void
+    {
+        \Illuminate\Support\Facades\Storage::fake(
+            'local'
+        );
+
+        config()->set(
+            'filesystems.private_disk',
+            'local'
+        );
+
+        $workspace =
+            $this->workspace(
+                'template-branding-image@example.test',
+                'Branding Image Preview'
+            );
+
+        $this->actingAsWorkspace(
+            $workspace
+        );
+
+        $this->post(
+            '/api/v1/settings/business-profile/logo',
+            [
+                'logo' =>
+                    \Illuminate\Http\UploadedFile::fake()
+                        ->image(
+                            'logo-preview.png',
+                            800,
+                            320
+                        ),
+            ]
+        )->assertOk();
+
+        $this->post(
+            '/api/v1/settings/document/signature',
+            [
+                'signature' =>
+                    \Illuminate\Http\UploadedFile::fake()
+                        ->image(
+                            'signature-preview.png',
+                            500,
+                            180
+                        ),
+            ]
+        )->assertOk();
+
+        $logoFile =
+            DB::table('files')
+                ->where(
+                    'tenant_id',
+                    $workspace['tenant_id']
+                )
+                ->where(
+                    'purpose',
+                    'BUSINESS_LOGO'
+                )
+                ->first();
+
+        $signatureFile =
+            DB::table('files')
+                ->where(
+                    'tenant_id',
+                    $workspace['tenant_id']
+                )
+                ->where(
+                    'purpose',
+                    'DOCUMENT_SIGNATURE'
+                )
+                ->first();
+
+        $this->assertNotNull(
+            $logoFile
+        );
+
+        $this->assertNotNull(
+            $signatureFile
+        );
+
+        $logoContents =
+            \Illuminate\Support\Facades\Storage::disk(
+                'local'
+            )->get(
+                $logoFile->object_key
+            );
+
+        $signatureContents =
+            \Illuminate\Support\Facades\Storage::disk(
+                'local'
+            )->get(
+                $signatureFile->object_key
+            );
+
+        $response =
+            $this->get(
+                '/api/v1/settings/invoice-templates/ocean_blue/preview'
+            )
+                ->assertOk();
+
+        $html =
+            $response->getContent();
+
+        $this->assertStringContainsString(
+            'data:image/png;base64,'
+            . base64_encode(
+                $logoContents
+            ),
+            $html
+        );
+
+        $this->assertStringContainsString(
+            'data:image/png;base64,'
+            . base64_encode(
+                $signatureContents
+            ),
+            $html
+        );
+
+        $this->assertStringContainsString(
+            'alt="Logo usaha"',
+            $html
+        );
+
+        $this->assertStringContainsString(
+            'alt="Tanda tangan"',
+            $html
+        );
+    }
+
     public function test_preview_does_not_create_document_setting_row(): void
     {
         $workspace =

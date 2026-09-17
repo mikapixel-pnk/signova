@@ -5,7 +5,8 @@ namespace App\Services\Invoice\Document;
 class InvoicePreviewViewModelFactory
 {
     public function make(
-        array $resolvedTemplate
+        array $resolvedTemplate,
+        ?array $branding = null
     ): array {
         return [
             'document' => [
@@ -101,37 +102,38 @@ class InvoicePreviewViewModelFactory
                     '3.330.000,00',
             ],
 
-            'branding' => [
-                'business_name' =>
-                    'PT Contoh Reklame',
+            'branding' =>
+                $branding ?? [
+                    'business_name' =>
+                        'PT Contoh Reklame',
 
-                'address' =>
-                    'Jl. Contoh Bisnis No. 10',
+                    'address' =>
+                        'Jl. Contoh Bisnis No. 10',
 
-                'phone' =>
-                    '0812-3456-7890',
+                    'phone' =>
+                        '0812-3456-7890',
 
-                'email' =>
-                    'halo@contoh.test',
+                    'email' =>
+                        'halo@contoh.test',
 
-                'tax_id' =>
-                    '01.234.567.8-999.000',
+                    'tax_id' =>
+                        '01.234.567.8-999.000',
 
-                'logo_data_uri' =>
-                    null,
+                    'logo_data_uri' =>
+                        null,
 
-                'invoice_footnote' =>
-                    'Pembayaran dapat dilakukan sesuai informasi yang telah disepakati.',
+                    'invoice_footnote' =>
+                        'Pembayaran dapat dilakukan sesuai informasi yang telah disepakati.',
 
-                'signature_name' =>
-                    'Budi Santoso',
+                    'signature_name' =>
+                        'Budi Santoso',
 
-                'signature_title' =>
-                    'Finance Manager',
+                    'signature_title' =>
+                        'Finance Manager',
 
-                'signature_image_data_uri' =>
-                    null,
-            ],
+                    'signature_image_data_uri' =>
+                        null,
+                ],
 
             'template' =>
                 $resolvedTemplate[

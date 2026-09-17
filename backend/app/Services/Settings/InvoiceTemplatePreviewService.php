@@ -2,6 +2,7 @@
 
 namespace App\Services\Settings;
 
+use App\Services\Invoice\Document\InvoiceBrandingResolver;
 use App\Services\Invoice\Document\InvoicePdfRenderer;
 use App\Services\Invoice\Document\InvoicePreviewViewModelFactory;
 use App\Services\Invoice\Document\InvoiceTemplateViewResolver;
@@ -11,6 +12,7 @@ class InvoiceTemplatePreviewService
     public function __construct(
         private readonly InvoiceTemplateViewResolver $resolver,
         private readonly InvoicePreviewViewModelFactory $viewModelFactory,
+        private readonly InvoiceBrandingResolver $brandingResolver,
         private readonly InvoicePdfRenderer $renderer
     ) {
     }
@@ -27,7 +29,9 @@ class InvoiceTemplatePreviewService
 
         $viewModel =
             $this->viewModelFactory->make(
-                $resolved
+                $resolved,
+                $this->brandingResolver
+                    ->resolve()
             );
 
         return $this->renderer->renderHtml(

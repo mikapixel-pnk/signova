@@ -2,56 +2,19 @@
 
 namespace App\Services\Invoice\Document;
 
-use App\Models\BusinessProfile;
-use App\Models\FileAsset;
 use App\Models\Invoice;
-use App\Models\TenantDocumentSetting;
 use App\Support\Localization\CanonicalLabel;
-use App\Tenancy\BusinessContext;
-use App\Tenancy\TenantContext;
-use Illuminate\Support\Facades\Storage;
 
 class InvoiceDocumentViewModelBuilder
 {
     public function __construct(
-        private readonly TenantContext $tenantContext,
-        private readonly BusinessContext $businessContext
+        private readonly InvoiceBrandingResolver $brandingResolver
     ) {
     }
 
     public function build(
         Invoice $invoice
     ): array {
-        $tenantId =
-            $this->tenantContext->tenantId();
-
-        $businessId =
-            $this->businessContext->businessId();
-
-        $business =
-            BusinessProfile::query()
-                ->where(
-                    'tenant_id',
-                    $tenantId
-                )
-                ->where(
-                    'id',
-                    $businessId
-                )
-                ->firstOrFail();
-
-        $settings =
-            TenantDocumentSetting::query()
-                ->where(
-                    'tenant_id',
-                    $tenantId
-                )
-                ->where(
-                    'business_id',
-                    $businessId
-                )
-                ->first();
-
         return [
             'document' => [
                 'title' =>
@@ -150,46 +113,9 @@ class InvoiceDocumentViewModelBuilder
                     ),
             ],
 
-            'branding' => [
-                'business_name' =>
-                    $business->name,
-
-                'address' =>
-                    $business->address,
-
-                'phone' =>
-                    $business->phone,
-
-                'email' =>
-                    $business->email,
-
-                'tax_id' =>
-                    $business->tax_id,
-
-                'logo_data_uri' =>
-                    $this->privateImageDataUri(
-                        $tenantId,
-                        $business->logo_file_id,
-                        'BUSINESS_LOGO'
-                    ),
-
-                'invoice_footnote' =>
-                    $settings?->invoice_footnote,
-
-                'signature_name' =>
-                    $settings?->signature_name,
-
-                'signature_title' =>
-                    $settings?->signature_title,
-
-                'signature_image_data_uri' =>
-                    $this->privateImageDataUri(
-                        $tenantId,
-                        $settings
-                            ?->signature_image_file_id,
-                        'DOCUMENT_SIGNATURE'
-                    ),
-            ],
+            'branding' =>
+                $this->brandingResolver
+                    ->resolve(),
         ];
     }
 
@@ -221,68 +147,5 @@ class InvoiceDocumentViewModelBuilder
         );
     }
 
-    private function privateImageDataUri(
-        string $tenantId,
-        ?string $fileId,
-        string $purpose
-    ): ?string {
-        if ($fileId === null) {
-            return null;
-        }
 
-        $file =
-            FileAsset::query()
-                ->where(
-                    'tenant_id',
-                    $tenantId
-                )
-                ->where(
-                    'id',
-                    $fileId
-                )
-                ->where(
-                    'purpose',
-                    $purpose
-                )
-                ->whereIn(
-                    'mime_type',
-                    [
-                        'image/png',
-                        'image/jpeg',
-                        'image/webp',
-                    ]
-                )
-                ->first();
-
-        if ($file === null) {
-            return null;
-        }
-
-        $disk =
-            Storage::disk(
-                $file->storage_disk
-            );
-
-        if (! $disk->exists(
-            $file->object_key
-        )) {
-            return null;
-        }
-
-        $contents =
-            $disk->get(
-                $file->object_key
-            );
-
-        if ($contents === '') {
-            return null;
-        }
-
-        return 'data:'
-            . $file->mime_type
-            . ';base64,'
-            . base64_encode(
-                $contents
-            );
-    }
 }
