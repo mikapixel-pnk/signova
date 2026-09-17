@@ -1,0 +1,437 @@
+.page {
+  display: grid;
+  gap: 18px;
+}
+
+.loading,
+.empty {
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  background: var(--surface);
+}
+
+.loading {
+  padding: 28px;
+  color: var(--muted-foreground);
+}
+
+.toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.toolbar > div {
+  display: grid;
+  gap: 2px;
+}
+
+.toolbar strong {
+  font-size: 15px;
+}
+
+.toolbar span {
+  color: var(--muted-foreground);
+  font-size: 12px;
+}
+
+.primaryButton,
+.secondaryButton,
+.dangerButton,
+.closeButton {
+  border-radius: 12px;
+  font: inherit;
+  font-weight: 650;
+  cursor: pointer;
+}
+
+.primaryButton,
+.secondaryButton,
+.dangerButton {
+  min-height: 42px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 9px 14px;
+}
+
+.primaryButton {
+  border: 0;
+  background: var(--foreground);
+  color: var(--background);
+}
+
+.secondaryButton {
+  border: 1px solid var(--border);
+  background: var(--background);
+  color: inherit;
+}
+
+.dangerButton {
+  border: 1px solid
+    color-mix(
+      in srgb,
+      #ef4444 34%,
+      var(--border)
+    );
+  background:
+    color-mix(
+      in srgb,
+      #ef4444 7%,
+      var(--background)
+    );
+  color: #ef4444;
+}
+
+.primaryButton:disabled,
+.secondaryButton:disabled,
+.dangerButton:disabled,
+.closeButton:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.empty {
+  padding: 34px 24px;
+  display: grid;
+  justify-items: center;
+  gap: 10px;
+  text-align: center;
+}
+
+.empty p {
+  max-width: 440px;
+  margin: 0 0 8px;
+  color: var(--muted-foreground);
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.accountGrid {
+  display: grid;
+  grid-template-columns:
+    repeat(
+      2,
+      minmax(0, 1fr)
+    );
+  gap: 14px;
+}
+
+.accountCard {
+  min-width: 0;
+  padding: 18px;
+  display: grid;
+  gap: 14px;
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  background: var(--surface);
+}
+
+.accountHeader {
+  display: flex;
+  align-items: flex-start;
+  gap: 11px;
+}
+
+.accountIcon {
+  width: 40px;
+  height: 40px;
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  border-radius: 13px;
+  background: var(--muted);
+}
+
+.accountTitle {
+  min-width: 0;
+  display: grid;
+  gap: 3px;
+  flex: 1;
+}
+
+.accountTitle strong {
+  overflow-wrap: anywhere;
+  font-size: 15px;
+}
+
+.accountTitle span,
+.accountOwner {
+  color: var(--muted-foreground);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.accountOwner {
+  margin: -3px 0 0;
+}
+
+.accountOwner strong {
+  color: var(--foreground);
+}
+
+.activeBadge,
+.inactiveBadge {
+  flex: 0 0 auto;
+  padding: 5px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.activeBadge {
+  background:
+    color-mix(
+      in srgb,
+      #16a34a 12%,
+      var(--muted)
+    );
+}
+
+.inactiveBadge {
+  background: var(--muted);
+  color: var(--muted-foreground);
+}
+
+.badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+
+.badges span {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 8px;
+  border-radius: 999px;
+  background: var(--muted);
+  font-size: 11px;
+  font-weight: 650;
+}
+
+.balance {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 13px 14px;
+  border-radius: 14px;
+  background: var(--muted);
+}
+
+.balance span {
+  color: var(--muted-foreground);
+  font-size: 12px;
+}
+
+.balance strong {
+  text-align: right;
+  overflow-wrap: anywhere;
+  font-size: 16px;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.actions button {
+  min-height: 38px;
+  padding: 7px 10px;
+  font-size: 12px;
+}
+
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  background: rgb(0 0 0 / 48%);
+}
+
+.sheet {
+  width: 100%;
+  max-height: 92dvh;
+  overflow: auto;
+  border: 1px solid var(--border);
+  border-bottom: 0;
+  border-radius: 22px 22px 0 0;
+  background: var(--background);
+  box-shadow: 0 -20px 60px rgb(0 0 0 / 22%);
+}
+
+.sheetHeader {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  padding: 18px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+  border-bottom: 1px solid var(--border);
+  background: var(--background);
+}
+
+.sheetHeader > div {
+  min-width: 0;
+}
+
+.sheetHeader > div > span {
+  color: var(--muted-foreground);
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.sheetHeader h2 {
+  margin: 4px 0 0;
+  font-size: 20px;
+}
+
+.sheetHeader p {
+  margin: 5px 0 0;
+  color: var(--muted-foreground);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.closeButton {
+  width: 38px;
+  height: 38px;
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: inherit;
+}
+
+.sheetBody {
+  padding: 18px;
+  display: grid;
+  gap: 15px;
+}
+
+.field {
+  display: grid;
+  gap: 7px;
+}
+
+.field > span {
+  font-size: 13px;
+  font-weight: 650;
+}
+
+.field input,
+.field select {
+  width: 100%;
+  min-height: 44px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 13px;
+  outline: 0;
+  background: var(--surface);
+  color: inherit;
+  font: inherit;
+}
+
+.field input:focus,
+.field select:focus {
+  border-color: var(--foreground);
+}
+
+.toggle {
+  padding: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  border-radius: 15px;
+  background: var(--muted);
+}
+
+.toggle > div {
+  display: grid;
+  gap: 3px;
+}
+
+.toggle strong {
+  font-size: 13px;
+}
+
+.toggle span {
+  color: var(--muted-foreground);
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+.toggle input {
+  width: 19px;
+  height: 19px;
+  flex: 0 0 auto;
+}
+
+.cashHint {
+  padding: 13px 14px;
+  border-radius: 14px;
+  background: var(--muted);
+  color: var(--muted-foreground);
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+.sheetFooter {
+  position: sticky;
+  bottom: 0;
+  padding: 14px 18px calc(14px + env(safe-area-inset-bottom));
+  display: flex;
+  justify-content: flex-end;
+  gap: 9px;
+  border-top: 1px solid var(--border);
+  background: var(--background);
+}
+
+@media (max-width: 720px) {
+  .accountGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .toolbar {
+    align-items: stretch;
+  }
+
+  .toolbar > div {
+    align-self: center;
+  }
+
+  .primaryButton {
+    min-height: 44px;
+  }
+
+  .accountCard {
+    padding: 16px;
+    border-radius: 18px;
+  }
+}
+
+@media (min-width: 721px) {
+  .overlay {
+    align-items: center;
+    padding: 20px;
+  }
+
+  .sheet {
+    width: min(100%, 560px);
+    border-bottom: 1px solid var(--border);
+    border-radius: 22px;
+    box-shadow: 0 22px 60px rgb(0 0 0 / 24%);
+  }
+}
