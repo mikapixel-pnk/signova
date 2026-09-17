@@ -67,6 +67,11 @@ class StoreCashAccountRequest extends FormRequest
                 'string',
                 'max:190',
             ],
+
+            'accepts_payments' => [
+                'sometimes',
+                'boolean',
+            ],
         ];
     }
 }

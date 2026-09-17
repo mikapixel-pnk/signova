@@ -21,11 +21,13 @@ class CashAccount extends Model
         'currency',
         'status',
         'is_default',
+        'accepts_payments',
         'created_by_user_id',
     ];
 
     protected $casts = [
         'is_default' => 'boolean',
+        'accepts_payments' => 'boolean',
     ];
 
     public function transactions(): HasMany

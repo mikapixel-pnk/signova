@@ -165,6 +165,20 @@ class CashAccountService
                             'is_default' =>
                                 ! $hasAccount,
 
+                            /*
+                             * Hanya rekening BANK yang dapat
+                             * dipublikasikan sebagai tujuan
+                             * pembayaran pelanggan.
+                             */
+                            'accepts_payments' =>
+                                $type === 'BANK'
+                                    ? (bool) (
+                                        $data[
+                                            'accepts_payments'
+                                        ] ?? false
+                                    )
+                                    : false,
+
                             'created_by_user_id' =>
                                 $this->tenantContext
                                     ->userId(),
@@ -284,6 +298,21 @@ class CashAccountService
                                 ?? $account->account_name
                             )
                             : null,
+
+                    'accepts_payments' =>
+                        $finalType === 'BANK'
+                            ? (
+                                array_key_exists(
+                                    'accepts_payments',
+                                    $data
+                                )
+                                    ? (bool) $data[
+                                        'accepts_payments'
+                                    ]
+                                    : (bool) $account
+                                        ->accepts_payments
+                            )
+                            : false,
                 ]);
 
                 $account->save();

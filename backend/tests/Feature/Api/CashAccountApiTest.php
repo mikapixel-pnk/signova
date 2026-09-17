@@ -193,6 +193,129 @@ class CashAccountApiTest extends TestCase
             ]);
     }
 
+    public function test_bank_can_be_marked_as_customer_payment_account(): void
+    {
+        $workspace =
+            $this->workspace(
+                'cash-customer-payment@example.test',
+                'Cash Customer Payment'
+            );
+
+        $this->actingAsWorkspace(
+            $workspace
+        );
+
+        $response =
+            $this->postJson(
+                '/api/v1/finance/cash-accounts',
+                [
+                    'name' =>
+                        'BCA Penerimaan',
+
+                    'type' =>
+                        'BANK',
+
+                    'bank_name' =>
+                        'BCA',
+
+                    'account_number' =>
+                        '7155181079',
+
+                    'account_name' =>
+                        'Novel Hari Keswono',
+
+                    'accepts_payments' =>
+                        true,
+                ]
+            );
+
+        $response
+            ->assertCreated()
+            ->assertJsonPath(
+                'data.accepts_payments',
+                true
+            )
+            ->assertJsonPath(
+                'data.type',
+                'BANK'
+            );
+
+        $this->assertDatabaseHas(
+            'cash_accounts',
+            [
+                'tenant_id' =>
+                    $workspace['tenant_id'],
+
+                'business_id' =>
+                    $workspace['business_id'],
+
+                'bank_name' =>
+                    'BCA',
+
+                'account_number' =>
+                    '7155181079',
+
+                'accepts_payments' =>
+                    true,
+            ]
+        );
+    }
+
+    public function test_cash_account_cannot_be_exposed_as_customer_payment_account(): void
+    {
+        $workspace =
+            $this->workspace(
+                'cash-no-public@example.test',
+                'Cash No Public'
+            );
+
+        $this->actingAsWorkspace(
+            $workspace
+        );
+
+        $response =
+            $this->postJson(
+                '/api/v1/finance/cash-accounts',
+                [
+                    'name' =>
+                        'Kas Toko',
+
+                    'type' =>
+                        'CASH',
+
+                    'accepts_payments' =>
+                        true,
+                ]
+            );
+
+        $response
+            ->assertCreated()
+            ->assertJsonPath(
+                'data.accepts_payments',
+                false
+            );
+
+        $this->assertDatabaseHas(
+            'cash_accounts',
+            [
+                'tenant_id' =>
+                    $workspace['tenant_id'],
+
+                'business_id' =>
+                    $workspace['business_id'],
+
+                'name' =>
+                    'Kas Toko',
+
+                'type' =>
+                    'CASH',
+
+                'accepts_payments' =>
+                    false,
+            ]
+        );
+    }
+
     public function test_list_is_tenant_scoped_filterable_and_has_computed_balance(): void
     {
         $first = $this->workspace(

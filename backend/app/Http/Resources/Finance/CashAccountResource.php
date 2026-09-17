@@ -33,6 +33,9 @@ class CashAccountResource extends JsonResource
             'is_default' =>
                 (bool) $this->is_default,
 
+            'accepts_payments' =>
+                (bool) $this->accepts_payments,
+
             'balance' =>
                 number_format(
                     (float) ($this->balance ?? 0),
