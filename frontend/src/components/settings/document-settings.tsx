@@ -1587,7 +1587,27 @@ export function DocumentSettings() {
                   srcDoc={
                     previewHtml
                   }
-                  sandbox=""
+                  sandbox="allow-same-origin"
+                  onLoad={
+                    (event) => {
+                      const frame =
+                        event.currentTarget;
+
+                      try {
+                        const height =
+                          frame.contentDocument
+                            ?.documentElement
+                            .scrollHeight;
+
+                        if (height) {
+                          frame.style.height =
+                            `${height}px`;
+                        }
+                      } catch {
+                        // Fallback ke tinggi CSS default.
+                      }
+                    }
+                  }
                 />
               </div>
             ) : null}

@@ -573,7 +573,8 @@
   display: block;
 
   width: 100%;
-  height: 560px;
+  min-height: 560px;
+  height: auto;
 
   border: 0;
 
