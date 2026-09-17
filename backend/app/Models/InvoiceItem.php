@@ -27,6 +27,9 @@ class InvoiceItem extends Model
         'unit_code',
         'unit_name',
         'unit_symbol',
+        'pricing_method',
+        'pricing_config',
+        'pricing_quantity',
         'unit_price',
         'discount_amount',
         'tax_amount',
@@ -36,6 +39,8 @@ class InvoiceItem extends Model
 
     protected $casts = [
         'quantity' => 'decimal:4',
+        'pricing_config' => 'array',
+        'pricing_quantity' => 'decimal:4',
         'unit_price' => 'decimal:2',
         'discount_amount' => 'decimal:2',
         'tax_amount' => 'decimal:2',

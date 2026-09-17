@@ -90,6 +90,7 @@ class SignovaAccessControlSeeder extends Seeder
 
             ['invoice', 'invoice.view', 'Melihat Tagihan', false],
             ['invoice', 'invoice.create', 'Membuat Tagihan', false],
+            ['invoice', 'invoice.update', 'Mengubah Tagihan', false],
             ['invoice', 'invoice.issue', 'Menerbitkan Tagihan', false],
             ['invoice', 'invoice.void', 'Membatalkan Tagihan', true],
 
@@ -232,6 +233,7 @@ class SignovaAccessControlSeeder extends Seeder
                 'customer.view',
                 'invoice.view',
                 'invoice.create',
+                'invoice.update',
                 'invoice.issue',
                 'invoice.void',
                 'payment.view',

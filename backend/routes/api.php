@@ -266,6 +266,14 @@ Route::prefix('v1')->group(function () {
             'capability:invoice.create',
         ]);
 
+        Route::patch(
+            '/invoices/{invoiceId}',
+            [InvoiceController::class, 'update']
+        )->middleware([
+            'business.context',
+            'capability:invoice.update',
+        ]);
+
         Route::post(
             '/invoices/{invoiceId}/actions/issue',
             [InvoiceController::class, 'issue']

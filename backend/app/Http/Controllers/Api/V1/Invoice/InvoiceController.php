@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\V1\Invoice;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Invoice\ListInvoicesRequest;
 use App\Http\Requests\Invoice\StoreInvoiceRequest;
+use App\Http\Requests\Invoice\UpdateInvoiceRequest;
 use App\Http\Requests\Invoice\VoidInvoiceRequest;
 use App\Http\Resources\Invoice\InvoiceResource;
 use App\Services\Invoice\InvoicePdfService;
@@ -69,6 +70,17 @@ class InvoiceController extends Controller
         $data =
             $request->validated();
 
+        $adjustments =
+            array_intersect_key(
+                $data,
+                array_flip([
+                    'global_discount_type',
+                    'global_discount_value',
+                    'tax_enabled',
+                    'tax_rate',
+                ])
+            );
+
         $invoice =
             $service->createDraft(
                 $data['customer_id'],
@@ -76,7 +88,10 @@ class InvoiceController extends Controller
                 $data['due_at']
                     ?? null,
                 $data['notes']
-                    ?? null
+                    ?? null,
+                $adjustments !== []
+                    ? $adjustments
+                    : null
             );
 
         return ApiResponse::success(
@@ -86,6 +101,27 @@ class InvoiceController extends Controller
             ))->resolve($request),
             201,
             'Tagihan berhasil dibuat.'
+        );
+    }
+
+    public function update(
+        UpdateInvoiceRequest $request,
+        string $invoiceId,
+        InvoiceService $service
+    ): JsonResponse {
+        $invoice =
+            $service->updateDraft(
+                $invoiceId,
+                $request->validated()
+            );
+
+        return ApiResponse::success(
+            $request,
+            (new InvoiceResource(
+                $invoice
+            ))->resolve($request),
+            200,
+            'Tagihan berhasil diperbarui.'
         );
     }
 

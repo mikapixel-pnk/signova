@@ -95,6 +95,21 @@ class InvoicePreviewViewModelFactory
                 'discount_total' =>
                     '0,00',
 
+                'show_global_discount' =>
+                    false,
+
+                'global_discount_label' =>
+                    'Diskon Global',
+
+                'global_discount_amount' =>
+                    '0,00',
+
+                'show_tax' =>
+                    true,
+
+                'tax_label' =>
+                    'Pajak 11%',
+
                 'tax_total' =>
                     '330.000,00',
 

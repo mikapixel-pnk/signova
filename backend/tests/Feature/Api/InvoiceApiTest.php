@@ -2760,6 +2760,188 @@ class InvoiceApiTest extends TestCase
         );
     }
 
+    public function test_manual_area_invoice_snapshots_calculated_pricing_quantity(): void
+    {
+        $workspace =
+            $this->workspace(
+                'invoice-area-pricing@example.test',
+                'Invoice Area Pricing'
+            );
+
+        $customerId =
+            $this->insertCustomer(
+                $workspace['tenant_id'],
+                'CUST-AREA-PRICING',
+                'Pelanggan Area Pricing'
+            );
+
+        $this->actingAsWorkspace(
+            $workspace
+        );
+
+        $response =
+            $this->postJson(
+                '/api/v1/invoices',
+                [
+                    'customer_id' =>
+                        $customerId,
+
+                    'items' => [
+                        [
+                            'item_type' =>
+                                'SERVICE',
+
+                            'code' =>
+                                'CUT-ACR-5MM',
+
+                            'name' =>
+                                'Cutting Akrilik 5mm',
+
+                            'quantity' =>
+                                4,
+
+                            'pricing_method' =>
+                                'AREA',
+
+                            'pricing_config' => [
+                                'width' =>
+                                    40,
+
+                                'height' =>
+                                    25,
+                            ],
+
+                            'unit_price' =>
+                                32,
+
+                            'discount_amount' =>
+                                0,
+
+                            'tax_rate' =>
+                                0,
+                        ],
+                    ],
+                ]
+            );
+
+        $response
+            ->assertCreated()
+            ->assertJsonPath(
+                'data.subtotal',
+                '128000.00'
+            )
+            ->assertJsonPath(
+                'data.total',
+                '128000.00'
+            )
+            ->assertJsonPath(
+                'data.items.0.quantity',
+                '4.0000'
+            )
+            ->assertJsonPath(
+                'data.items.0.pricing_method',
+                'AREA'
+            )
+            ->assertJsonPath(
+                'data.items.0.pricing_config.width',
+                '40.0000'
+            )
+            ->assertJsonPath(
+                'data.items.0.pricing_config.height',
+                '25.0000'
+            )
+            ->assertJsonPath(
+                'data.items.0.pricing_quantity',
+                '4000.0000'
+            )
+            ->assertJsonPath(
+                'data.items.0.pricing_display.formula',
+                'P × L × Qty: 40 × 25 × 4'
+            )
+            ->assertJsonPath(
+                'data.items.0.pricing_display.result_label',
+                'Luas total'
+            )
+            ->assertJsonPath(
+                'data.items.0.pricing_display.display_quantity',
+                '4.000'
+            )
+            ->assertJsonPath(
+                'data.items.0.pricing_display.display_unit',
+                null
+            )
+            ->assertJsonPath(
+                'data.items.0.unit_price',
+                '32.00'
+            )
+            ->assertJsonPath(
+                'data.items.0.amount',
+                '128000.00'
+            );
+
+        $invoiceId =
+            $response->json(
+                'data.id'
+            );
+
+        $this->assertDatabaseHas(
+            'invoice_items',
+            [
+                'invoice_id' =>
+                    $invoiceId,
+
+                'name' =>
+                    'Cutting Akrilik 5mm',
+
+                'quantity' =>
+                    '4.0000',
+
+                'pricing_method' =>
+                    'AREA',
+
+                'pricing_quantity' =>
+                    '4000.0000',
+
+                'unit_price' =>
+                    '32.00',
+
+                'amount' =>
+                    '128000.00',
+            ]
+        );
+
+        $item =
+            DB::table(
+                'invoice_items'
+            )
+                ->where(
+                    'invoice_id',
+                    $invoiceId
+                )
+                ->first();
+
+        $this->assertNotNull(
+            $item
+        );
+
+        $config =
+            json_decode(
+                $item->pricing_config,
+                true
+            );
+
+        $this->assertSame(
+            '40.0000',
+            $config['width']
+        );
+
+        $this->assertSame(
+            '25.0000',
+            $config['height']
+        );
+    }
+
+
     public function test_manual_invoice_number_is_generated_sequentially(): void
     {
         $workspace =
@@ -3647,6 +3829,815 @@ class InvoiceApiTest extends TestCase
         $this->assertNotSame(
             $invoiceA->business_id,
             $invoiceB->business_id
+        );
+    }
+
+
+    public function test_owner_can_update_manual_draft_header_without_changing_items_or_totals(): void
+    {
+        $workspace = $this->workspace(
+            'invoice-update-header@example.test',
+            'Invoice Update Header'
+        );
+
+        $customerId = $this->insertCustomer(
+            $workspace['tenant_id'],
+            'CUST-UPDATE-HEADER',
+            'Pelanggan Update Header'
+        );
+
+        $this->actingAsWorkspace(
+            $workspace
+        );
+
+        $created =
+            $this->postJson(
+                '/api/v1/invoices',
+                [
+                    'customer_id' =>
+                        $customerId,
+
+                    'items' => [
+                        [
+                            'name' =>
+                                'Jasa Awal',
+
+                            'quantity' =>
+                                2,
+
+                            'pricing_method' =>
+                                'MANUAL',
+
+                            'unit_price' =>
+                                125000,
+                        ],
+                    ],
+                ]
+            )
+                ->assertCreated();
+
+        $invoiceId =
+            $created->json(
+                'data.id'
+            );
+
+        $invoiceNumber =
+            $created->json(
+                'data.invoice_number'
+            );
+
+        $itemId =
+            $created->json(
+                'data.items.0.id'
+            );
+
+        $this->patchJson(
+            "/api/v1/invoices/{$invoiceId}",
+            [
+                'notes' =>
+                    'Catatan tagihan diperbarui.',
+            ]
+        )
+            ->assertOk()
+            ->assertJsonPath(
+                'data.id',
+                $invoiceId
+            )
+            ->assertJsonPath(
+                'data.invoice_number',
+                $invoiceNumber
+            )
+            ->assertJsonPath(
+                'data.notes',
+                'Catatan tagihan diperbarui.'
+            )
+            ->assertJsonPath(
+                'data.total',
+                '250000.00'
+            )
+            ->assertJsonPath(
+                'data.items.0.id',
+                $itemId
+            )
+            ->assertJsonPath(
+                'data.items.0.name',
+                'Jasa Awal'
+            );
+
+        $this->assertDatabaseHas(
+            'invoice_items',
+            [
+                'id' =>
+                    $itemId,
+
+                'invoice_id' =>
+                    $invoiceId,
+
+                'amount' =>
+                    '250000.00',
+            ]
+        );
+    }
+
+
+    public function test_owner_can_replace_manual_draft_items_and_recalculate_area_pricing(): void
+    {
+        $workspace = $this->workspace(
+            'invoice-update-items@example.test',
+            'Invoice Update Items'
+        );
+
+        $customerId = $this->insertCustomer(
+            $workspace['tenant_id'],
+            'CUST-UPDATE-ITEMS',
+            'Pelanggan Update Items'
+        );
+
+        $this->actingAsWorkspace(
+            $workspace
+        );
+
+        $created =
+            $this->postJson(
+                '/api/v1/invoices',
+                [
+                    'customer_id' =>
+                        $customerId,
+
+                    'items' => [
+                        [
+                            'name' =>
+                                'Jasa Lama',
+
+                            'quantity' =>
+                                1,
+
+                            'pricing_method' =>
+                                'MANUAL',
+
+                            'unit_price' =>
+                                50000,
+                        ],
+                    ],
+                ]
+            )
+                ->assertCreated();
+
+        $invoiceId =
+            $created->json(
+                'data.id'
+            );
+
+        $invoiceNumber =
+            $created->json(
+                'data.invoice_number'
+            );
+
+        $oldItemId =
+            $created->json(
+                'data.items.0.id'
+            );
+
+        $this->patchJson(
+            "/api/v1/invoices/{$invoiceId}",
+            [
+                'items' => [
+                    [
+                        'name' =>
+                            'Cutting Akrilik 5mm',
+
+                        'quantity' =>
+                            4,
+
+                        'pricing_method' =>
+                            'AREA',
+
+                        'pricing_config' => [
+                            'width' =>
+                                40,
+
+                            'height' =>
+                                25,
+                        ],
+
+                        'unit_price' =>
+                            32,
+
+                        'discount_amount' =>
+                            0,
+
+                        'tax_rate' =>
+                            0,
+                    ],
+                ],
+            ]
+        )
+            ->assertOk()
+            ->assertJsonPath(
+                'data.invoice_number',
+                $invoiceNumber
+            )
+            ->assertJsonPath(
+                'data.subtotal',
+                '128000.00'
+            )
+            ->assertJsonPath(
+                'data.total',
+                '128000.00'
+            )
+            ->assertJsonPath(
+                'data.paid_amount',
+                '0.00'
+            )
+            ->assertJsonPath(
+                'data.outstanding_amount',
+                '0.00'
+            )
+            ->assertJsonPath(
+                'data.items.0.quantity',
+                '4.0000'
+            )
+            ->assertJsonPath(
+                'data.items.0.pricing_method',
+                'AREA'
+            )
+            ->assertJsonPath(
+                'data.items.0.pricing_quantity',
+                '4000.0000'
+            )
+            ->assertJsonPath(
+                'data.items.0.pricing_display.formula',
+                'P × L × Qty: 40 × 25 × 4'
+            )
+            ->assertJsonPath(
+                'data.items.0.pricing_display.display_quantity',
+                '4.000'
+            )
+            ->assertJsonPath(
+                'data.items.0.amount',
+                '128000.00'
+            );
+
+        $this->assertDatabaseMissing(
+            'invoice_items',
+            [
+                'id' =>
+                    $oldItemId,
+            ]
+        );
+
+        $this->assertDatabaseHas(
+            'invoice_items',
+            [
+                'invoice_id' =>
+                    $invoiceId,
+
+                'name' =>
+                    'Cutting Akrilik 5mm',
+
+                'pricing_method' =>
+                    'AREA',
+
+                'pricing_quantity' =>
+                    '4000.0000',
+
+                'amount' =>
+                    '128000.00',
+            ]
+        );
+    }
+
+
+    public function test_non_draft_invoice_cannot_be_updated(): void
+    {
+        $workspace = $this->workspace(
+            'invoice-update-issued@example.test',
+            'Invoice Update Issued'
+        );
+
+        $customerId = $this->insertCustomer(
+            $workspace['tenant_id'],
+            'CUST-UPDATE-ISSUED',
+            'Pelanggan Update Issued'
+        );
+
+        $invoiceId = $this->insertInvoice(
+            $workspace,
+            $customerId,
+            'INV-UPDATE-ISSUED',
+            'ISSUED'
+        );
+
+        $this->actingAsWorkspace(
+            $workspace
+        );
+
+        $this->patchJson(
+            "/api/v1/invoices/{$invoiceId}",
+            [
+                'notes' =>
+                    'Tidak boleh berubah.',
+            ]
+        )
+            ->assertStatus(409)
+            ->assertJsonPath(
+                'success',
+                false
+            )
+            ->assertJsonPath(
+                'error.code',
+                'INVALID_TRANSITION'
+            );
+
+        $this->assertDatabaseHas(
+            'invoices',
+            [
+                'id' =>
+                    $invoiceId,
+
+                'status' =>
+                    'ISSUED',
+
+                'notes' =>
+                    null,
+            ]
+        );
+    }
+
+
+    public function test_manual_draft_update_rejects_customer_from_other_business_in_same_tenant(): void
+    {
+        $workspace = $this->workspace(
+            'invoice-update-business@example.test',
+            'Invoice Update Business'
+        );
+
+        $localCustomerId =
+            $this->insertCustomer(
+                $workspace['tenant_id'],
+                'CUST-UPDATE-LOCAL',
+                'Pelanggan Lokal'
+            );
+
+        $secondBusinessId =
+            $this->createBusiness(
+                $workspace['tenant_id'],
+                'Usaha Kedua'
+            );
+
+        $foreignCustomerId =
+            $this->insertCustomer(
+                $workspace['tenant_id'],
+                'CUST-UPDATE-FOREIGN',
+                'Pelanggan Usaha Kedua',
+                $secondBusinessId
+            );
+
+        $invoiceId = $this->insertInvoice(
+            $workspace,
+            $localCustomerId,
+            'INV-UPDATE-BUSINESS',
+            'DRAFT'
+        );
+
+        $this->actingAsWorkspace(
+            $workspace
+        );
+
+        $this->patchJson(
+            "/api/v1/invoices/{$invoiceId}",
+            [
+                'customer_id' =>
+                    $foreignCustomerId,
+            ]
+        )
+            ->assertStatus(422);
+
+        $this->assertDatabaseHas(
+            'invoices',
+            [
+                'id' =>
+                    $invoiceId,
+
+                'customer_id' =>
+                    $localCustomerId,
+            ]
+        );
+    }
+
+
+    public function test_missing_invoice_update_capability_blocks_manual_draft_update(): void
+    {
+        $workspace = $this->workspace(
+            'invoice-update-denied@example.test',
+            'Invoice Update Denied'
+        );
+
+        $customerId = $this->insertCustomer(
+            $workspace['tenant_id'],
+            'CUST-UPDATE-DENIED',
+            'Pelanggan Update Denied'
+        );
+
+        $invoiceId = $this->insertInvoice(
+            $workspace,
+            $customerId,
+            'INV-UPDATE-DENIED',
+            'DRAFT'
+        );
+
+        $this->actingAsWorkspace(
+            $workspace
+        );
+
+        $this->denyCapability(
+            $workspace,
+            'invoice.update'
+        );
+
+        $this->patchJson(
+            "/api/v1/invoices/{$invoiceId}",
+            [
+                'notes' =>
+                    'Tidak boleh tersimpan.',
+            ]
+        )
+            ->assertForbidden()
+            ->assertJsonPath(
+                'error.code',
+                'FORBIDDEN_CAPABILITY'
+            );
+
+        $this->assertDatabaseHas(
+            'invoices',
+            [
+                'id' =>
+                    $invoiceId,
+
+                'notes' =>
+                    null,
+            ]
+        );
+    }
+
+
+    public function test_quotation_derived_draft_invoice_cannot_be_manually_updated(): void
+    {
+        $workspace = $this->workspace(
+            'invoice-update-quotation@example.test',
+            'Invoice Update Quotation'
+        );
+
+        $customerId = $this->insertCustomer(
+            $workspace['tenant_id'],
+            'CUST-UPDATE-QUOTATION',
+            'Pelanggan Update Quotation'
+        );
+
+        app(TenantContext::class)->set(
+            $workspace['tenant_id'],
+            $workspace['user_id']
+        );
+
+        app(BusinessContext::class)->set(
+            $workspace['tenant_id'],
+            $workspace['business_id'],
+            $workspace['user_id']
+        );
+
+        $quotation =
+            app(
+                \App\Services\Quotation\QuotationService::class
+            )->createDraft(
+                [
+                    'customer_id' =>
+                        $customerId,
+                ],
+                [],
+                [
+                    [
+                        'name' =>
+                            'Jasa Dari Penawaran',
+
+                        'pricing_method' =>
+                            'MANUAL',
+
+                        'quantity' =>
+                            1,
+
+                        'unit_price' =>
+                            175000,
+                    ],
+                ]
+            );
+
+        DB::table('quotations')
+            ->where(
+                'id',
+                $quotation->id
+            )
+            ->update([
+                'status' =>
+                    'APPROVED',
+
+                'updated_at' =>
+                    now(),
+            ]);
+
+        $invoice =
+            app(
+                \App\Services\Invoice\QuotationToInvoiceService::class
+            )->convert(
+                $quotation->id
+            );
+
+        $this->assertSame(
+            'DRAFT',
+            $invoice->status
+        );
+
+        $this->assertSame(
+            $quotation->id,
+            $invoice->source_quotation_id
+        );
+
+        $this->assertNotNull(
+            $invoice->source_quotation_version_id
+        );
+
+        $originalItem =
+            DB::table('invoice_items')
+                ->where(
+                    'invoice_id',
+                    $invoice->id
+                )
+                ->first();
+
+        $this->assertNotNull(
+            $originalItem
+        );
+
+        $this->actingAsWorkspace(
+            $workspace
+        );
+
+        $this->patchJson(
+            "/api/v1/invoices/{$invoice->id}",
+            [
+                'notes' =>
+                    'Percobaan edit manual.',
+
+                'items' => [
+                    [
+                        'name' =>
+                            'Item Tidak Boleh Masuk',
+
+                        'quantity' =>
+                            1,
+
+                        'pricing_method' =>
+                            'MANUAL',
+
+                        'unit_price' =>
+                            999999,
+                    ],
+                ],
+            ]
+        )
+            ->assertStatus(409)
+            ->assertJsonPath(
+                'success',
+                false
+            )
+            ->assertJsonPath(
+                'error.code',
+                'INVALID_TRANSITION'
+            );
+
+        $this->assertDatabaseHas(
+            'invoices',
+            [
+                'id' =>
+                    $invoice->id,
+
+                'source_quotation_id' =>
+                    $quotation->id,
+
+                'source_quotation_version_id' =>
+                    $invoice->source_quotation_version_id,
+
+                'notes' =>
+                    $invoice->notes,
+            ]
+        );
+
+        $this->assertDatabaseHas(
+            'invoice_items',
+            [
+                'id' =>
+                    $originalItem->id,
+
+                'invoice_id' =>
+                    $invoice->id,
+
+                'name' =>
+                    $originalItem->name,
+
+                'amount' =>
+                    $originalItem->amount,
+            ]
+        );
+
+        $this->assertDatabaseMissing(
+            'invoice_items',
+            [
+                'invoice_id' =>
+                    $invoice->id,
+
+                'name' =>
+                    'Item Tidak Boleh Masuk',
+            ]
+        );
+    }
+
+
+    public function test_manual_invoice_applies_global_discount_and_optional_global_tax(): void
+    {
+        $workspace =
+            $this->workspace(
+                'invoice-global-adjustment@example.test',
+                'Invoice Global Adjustment'
+            );
+
+        $customerId =
+            $this->insertCustomer(
+                $workspace['tenant_id'],
+                'CUST-GLOBAL-ADJUSTMENT',
+                'Pelanggan Global Adjustment'
+            );
+
+        $this->actingAsWorkspace(
+            $workspace
+        );
+
+        $response =
+            $this->postJson(
+                '/api/v1/invoices',
+                [
+                    'customer_id' =>
+                        $customerId,
+
+                    'global_discount_type' =>
+                        'PERCENT',
+
+                    'global_discount_value' =>
+                        10,
+
+                    'tax_enabled' =>
+                        true,
+
+                    'tax_rate' =>
+                        11,
+
+                    'items' => [
+                        [
+                            'item_type' =>
+                                'SERVICE',
+
+                            'name' =>
+                                'Jasa Global Adjustment',
+
+                            'quantity' =>
+                                1,
+
+                            'pricing_method' =>
+                                'MANUAL',
+
+                            'unit_price' =>
+                                100000,
+
+                            'discount_amount' =>
+                                10000,
+
+                            /*
+                             * Harus diabaikan pada mode
+                             * pajak global invoice.
+                             */
+                            'tax_rate' =>
+                                25,
+                        ],
+                    ],
+                ]
+            );
+
+        $response
+            ->assertCreated()
+
+            ->assertJsonPath(
+                'data.subtotal',
+                '100000.00'
+            )
+
+            ->assertJsonPath(
+                'data.item_discount_total',
+                '10000.00'
+            )
+
+            ->assertJsonPath(
+                'data.global_discount_type',
+                'PERCENT'
+            )
+
+            ->assertJsonPath(
+                'data.global_discount_value',
+                '10.0000'
+            )
+
+            ->assertJsonPath(
+                'data.global_discount_amount',
+                '9000.00'
+            )
+
+            ->assertJsonPath(
+                'data.discount_total',
+                '19000.00'
+            )
+
+            ->assertJsonPath(
+                'data.tax_enabled',
+                true
+            )
+
+            ->assertJsonPath(
+                'data.tax_rate',
+                '11.0000'
+            )
+
+            ->assertJsonPath(
+                'data.tax_total',
+                '8910.00'
+            )
+
+            ->assertJsonPath(
+                'data.total',
+                '89910.00'
+            )
+
+            ->assertJsonPath(
+                'data.items.0.discount_amount',
+                '10000.00'
+            )
+
+            ->assertJsonPath(
+                'data.items.0.tax_amount',
+                '0.00'
+            )
+
+            ->assertJsonPath(
+                'data.items.0.pricing_config.tax_rate',
+                '0.0000'
+            )
+
+            ->assertJsonPath(
+                'data.items.0.amount',
+                '90000.00'
+            );
+
+        $invoiceId =
+            $response->json(
+                'data.id'
+            );
+
+        $this->assertDatabaseHas(
+            'invoices',
+            [
+                'id' =>
+                    $invoiceId,
+
+                'subtotal' =>
+                    '100000.00',
+
+                'item_discount_total' =>
+                    '10000.00',
+
+                'global_discount_type' =>
+                    'PERCENT',
+
+                'global_discount_amount' =>
+                    '9000.00',
+
+                'discount_total' =>
+                    '19000.00',
+
+                'tax_enabled' =>
+                    true,
+
+                'tax_total' =>
+                    '8910.00',
+
+                'total' =>
+                    '89910.00',
+            ]
         );
     }
 

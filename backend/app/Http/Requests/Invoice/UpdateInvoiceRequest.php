@@ -2,58 +2,132 @@
 
 namespace App\Http\Requests\Invoice;
 
+use App\Tenancy\BusinessContext;
 use App\Tenancy\TenantContext;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
-class StoreInvoiceRequest extends FormRequest
+class UpdateInvoiceRequest extends FormRequest
 {
     protected function prepareForValidation(): void
     {
         $data = [];
 
-        foreach (
-            [
-                'notes',
-            ] as $field
-        ) {
-            if ($this->exists($field)) {
-                $data[$field] =
-                    is_string($this->$field)
-                        ? trim($this->$field)
-                        : $this->$field;
-            }
+        if ($this->exists('notes')) {
+            $data['notes'] =
+                is_string($this->notes)
+                    ? trim($this->notes)
+                    : $this->notes;
         }
 
         $this->merge($data);
     }
 
+    public function after(): array
+    {
+        return [
+            function ($validator): void {
+                if (
+                    ! $this->exists('customer_id')
+                    && ! $this->exists('due_at')
+                    && ! $this->exists('notes')
+                    && ! $this->exists('items')
+                    && ! $this->exists('global_discount_type')
+                    && ! $this->exists('global_discount_value')
+                    && ! $this->exists('tax_enabled')
+                    && ! $this->exists('tax_rate')
+                ) {
+                    $validator->errors()->add(
+                        'invoice',
+                        'Minimal satu data tagihan harus diubah.'
+                    );
+                }
+
+                $adjustmentChanged =
+                    $this->exists(
+                        'global_discount_type'
+                    )
+                    || $this->exists(
+                        'global_discount_value'
+                    )
+                    || $this->exists(
+                        'tax_enabled'
+                    )
+                    || $this->exists(
+                        'tax_rate'
+                    );
+
+                if (
+                    $adjustmentChanged
+                    && ! $this->exists(
+                        'items'
+                    )
+                ) {
+                    $validator->errors()->add(
+                        'items',
+                        'Item tagihan harus dikirim ulang saat diskon global atau pajak diubah.'
+                    );
+                }
+
+                if (
+                    $this->exists(
+                        'global_discount_value'
+                    )
+                    && $this->input(
+                        'global_discount_value'
+                    ) !== null
+                    && $this->input(
+                        'global_discount_value'
+                    ) !== ''
+                    && ! $this->filled(
+                        'global_discount_type'
+                    )
+                ) {
+                    $validator->errors()->add(
+                        'global_discount_type',
+                        'Pilih jenis diskon global.'
+                    );
+                }
+            },
+        ];
+    }
+
     public function rules(): array
     {
-        $tenantId = app(
-            TenantContext::class
-        )->tenantId();
+        $tenantId =
+            app(TenantContext::class)
+                ->tenantId();
+
+        $businessId =
+            app(BusinessContext::class)
+                ->businessId();
 
         $pricingMethods =
             'STANDARD,AREA,LENGTH,VOLUME,TIME,PACKAGE,MANUAL';
 
         return [
             'customer_id' => [
-                'required',
+                'sometimes',
                 'string',
                 Rule::exists(
                     'customers',
                     'id'
                 )->where(
                     fn ($query) =>
-                        $query->where(
-                            'tenant_id',
-                            $tenantId
-                        )
+                        $query
+                            ->where(
+                                'tenant_id',
+                                $tenantId
+                            )
+                            ->where(
+                                'business_id',
+                                $businessId
+                            )
                 ),
             ],
 
             'due_at' => [
+                'sometimes',
                 'nullable',
                 'date',
             ],
@@ -103,7 +177,7 @@ class StoreInvoiceRequest extends FormRequest
             ],
 
             'items' => [
-                'required',
+                'sometimes',
                 'array',
                 'min:1',
             ],
@@ -117,10 +191,15 @@ class StoreInvoiceRequest extends FormRequest
                     'id'
                 )->where(
                     fn ($query) =>
-                        $query->where(
-                            'tenant_id',
-                            $tenantId
-                        )
+                        $query
+                            ->where(
+                                'tenant_id',
+                                $tenantId
+                            )
+                            ->where(
+                                'business_id',
+                                $businessId
+                            )
                 ),
             ],
 
@@ -133,10 +212,15 @@ class StoreInvoiceRequest extends FormRequest
                     'id'
                 )->where(
                     fn ($query) =>
-                        $query->where(
-                            'tenant_id',
-                            $tenantId
-                        )
+                        $query
+                            ->where(
+                                'tenant_id',
+                                $tenantId
+                            )
+                            ->where(
+                                'business_id',
+                                $businessId
+                            )
                 ),
             ],
 
@@ -240,10 +324,8 @@ class StoreInvoiceRequest extends FormRequest
                 'min:0',
             ],
 
-            /*
-             * Backend-owned fields.
-             */
             'tenant_id' => ['prohibited'],
+            'business_id' => ['prohibited'],
             'invoice_number' => ['prohibited'],
             'project_id' => ['prohibited'],
             'source_quotation_id' => ['prohibited'],
@@ -257,6 +339,12 @@ class StoreInvoiceRequest extends FormRequest
             'total' => ['prohibited'],
             'paid_amount' => ['prohibited'],
             'outstanding_amount' => ['prohibited'],
+            'invoice_template_key' => ['prohibited'],
+            'invoice_palette_key' => ['prohibited'],
+            'invoice_template_version' => ['prohibited'],
+            'branding_snapshot' => ['prohibited'],
+            'branding_logo_file_id' => ['prohibited'],
+            'branding_signature_file_id' => ['prohibited'],
 
             'items.*.tax_amount' => [
                 'prohibited',

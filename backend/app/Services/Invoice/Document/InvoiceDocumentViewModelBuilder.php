@@ -3,12 +3,14 @@
 namespace App\Services\Invoice\Document;
 
 use App\Models\Invoice;
+use App\Services\Invoice\InvoiceItemPricingPresenter;
 use App\Support\Localization\CanonicalLabel;
 
 class InvoiceDocumentViewModelBuilder
 {
     public function __construct(
-        private readonly InvoiceBrandingSnapshotService $brandingSnapshotService
+        private readonly InvoiceBrandingSnapshotService $brandingSnapshotService,
+        private readonly InvoiceItemPricingPresenter $pricingPresenter
     ) {
     }
 
@@ -67,9 +69,28 @@ class InvoiceDocumentViewModelBuilder
                             'description' =>
                                 $item->description,
 
-                            'quantity' =>
+                            'input_quantity' =>
                                 $this->quantity(
                                     $item->quantity
+                                ),
+
+                            'pricing_method' =>
+                                $item->pricing_method,
+
+                            'pricing_config' =>
+                                $item->pricing_config,
+
+                            'pricing_quantity' =>
+                                $item->pricing_quantity !== null
+                                    ? $this->quantity(
+                                        $item->pricing_quantity
+                                    )
+                                    : null,
+
+                            'quantity' =>
+                                $this->quantity(
+                                    $item->pricing_quantity
+                                    ?? $item->quantity
                                 ),
 
                             'unit' =>
@@ -92,15 +113,79 @@ class InvoiceDocumentViewModelBuilder
                     ->all(),
 
             'summary' => [
+                /*
+                 * Customer-facing subtotal.
+                 *
+                 * Item discount sudah tercermin
+                 * pada subtotal ini sehingga tidak
+                 * perlu diekspos sebagai baris
+                 * diskon terpisah pada dokumen.
+                 *
+                 * Invoice legacy belum memiliki
+                 * item_discount_total sehingga
+                 * menggunakan discount_total lama.
+                 */
                 'subtotal' =>
                     $this->money(
-                        $invoice->subtotal
+                        \Brick\Math\BigDecimal::of(
+                            (string) $invoice->subtotal
+                        )
+                            ->minus(
+                                (string) (
+                                    $invoice->item_discount_total
+                                    ?? $invoice->discount_total
+                                )
+                            )
+                            ->__toString()
                     ),
 
+                /*
+                 * Tetap tersedia untuk kompatibilitas
+                 * internal/template lama.
+                 */
                 'discount_total' =>
                     $this->money(
                         $invoice->discount_total
                     ),
+
+                'show_global_discount' =>
+                    $invoice->global_discount_type !== null
+                    && (float) (
+                        $invoice->global_discount_amount
+                        ?? 0
+                    ) > 0,
+
+                'global_discount_label' =>
+                    $invoice->global_discount_type
+                        === 'PERCENT'
+                        && $invoice->global_discount_value
+                            !== null
+                            ? 'Diskon '
+                                . $this->quantity(
+                                    $invoice->global_discount_value
+                                )
+                                . '%'
+                            : 'Diskon Global',
+
+                'global_discount_amount' =>
+                    $this->money(
+                        $invoice->global_discount_amount
+                        ?? 0
+                    ),
+
+                'show_tax' =>
+                    (float) $invoice->tax_total
+                        > 0,
+
+                'tax_label' =>
+                    $invoice->tax_enabled === true
+                    && $invoice->tax_rate !== null
+                        ? 'Pajak '
+                            . $this->quantity(
+                                $invoice->tax_rate
+                            )
+                            . '%'
+                        : 'Pajak',
 
                 'tax_total' =>
                     $this->money(

@@ -137,8 +137,12 @@ class QuotationPricingCalculator
             $config
         );
 
-        $gross = $quantity
-            ->multipliedBy($factor)
+        $pricingQuantity =
+            $quantity->multipliedBy(
+                $factor
+            );
+
+        $gross = $pricingQuantity
             ->multipliedBy($unitPrice)
             ->toScale(
                 2,
@@ -227,6 +231,14 @@ class QuotationPricingCalculator
 
                 'pricing_config' =>
                     $snapshotConfig,
+
+                'pricing_quantity' =>
+                    $pricingQuantity
+                        ->toScale(
+                            4,
+                            RoundingMode::HalfUp
+                        )
+                        ->__toString(),
 
                 'unit_price' =>
                     $this->money(

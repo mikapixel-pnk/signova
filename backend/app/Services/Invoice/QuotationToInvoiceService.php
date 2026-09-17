@@ -6,6 +6,7 @@ use App\Models\Invoice;
 use App\Models\InvoiceItem;
 use App\Models\InvoiceStatusHistory;
 use App\Services\Document\DocumentNumberService;
+use App\Services\Quotation\QuotationPricingCalculator;
 use App\Services\Quotation\QuotationService;
 use App\Tenancy\BusinessContext;
 use App\Tenancy\TenantContext;
@@ -19,6 +20,7 @@ class QuotationToInvoiceService
         private readonly TenantContext $tenantContext,
         private readonly BusinessContext $businessContext,
         private readonly QuotationService $quotationService,
+        private readonly QuotationPricingCalculator $pricingCalculator,
         private readonly DocumentNumberService $documentNumberService,
     ) {
     }
@@ -195,6 +197,31 @@ class QuotationToInvoiceService
                 foreach (
                     $version->items as $item
                 ) {
+                    $calculatedItem =
+                        $this->pricingCalculator
+                            ->calculateLine([
+                                'pricing_method' =>
+                                    $item->pricing_method,
+
+                                'pricing_config' =>
+                                    $item->pricing_config,
+
+                                'quantity' =>
+                                    $item->quantity,
+
+                                'unit_price' =>
+                                    $item->unit_price,
+
+                                'discount_amount' =>
+                                    $item->discount_amount,
+
+                                'tax_rate' =>
+                                    $item->pricing_config[
+                                        'tax_rate'
+                                    ]
+                                    ?? 0,
+                            ]);
+
                     InvoiceItem::query()
                         ->create([
                             'id' =>
@@ -225,6 +252,14 @@ class QuotationToInvoiceService
                                 $item->unit_name,
                             'unit_symbol' =>
                                 $item->unit_symbol,
+                            'pricing_method' =>
+                                $item->pricing_method,
+                            'pricing_config' =>
+                                $item->pricing_config,
+                            'pricing_quantity' =>
+                                $calculatedItem[
+                                    'pricing_quantity'
+                                ],
                             'unit_price' =>
                                 $item->unit_price,
                             'discount_amount' =>

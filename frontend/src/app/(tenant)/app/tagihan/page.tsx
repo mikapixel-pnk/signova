@@ -13,6 +13,12 @@ import {
 import Link from "next/link";
 
 import {
+  useRouter,
+  useSearchParams,
+} from "next/navigation";
+
+import {
+  Suspense,
   useCallback,
   useEffect,
   useMemo,
@@ -54,7 +60,9 @@ import {
 
 import {
   createInvoice,
+  getInvoice,
   listInvoices,
+  updateInvoice,
 } from "@/lib/invoice/service";
 
 import {
@@ -104,10 +112,30 @@ type LineForm = {
   duration: string;
 };
 
+type GlobalDiscountType =
+  | "PERCENT"
+  | "NOMINAL";
+
 type FormState = {
   customerId: string;
   dueAt: string;
   notes: string;
+
+  globalDiscountEnabled: boolean;
+
+  globalDiscountType:
+    GlobalDiscountType;
+
+  globalDiscountValue:
+    string;
+
+  taxEnabled:
+    | boolean
+    | null;
+
+  taxRate:
+    string;
+
   lines: LineForm[];
 };
 
@@ -170,11 +198,153 @@ function emptyForm(): FormState {
     customerId: "",
     dueAt: "",
     notes: "",
+
+    globalDiscountEnabled:
+      false,
+
+    globalDiscountType:
+      "PERCENT",
+
+    globalDiscountValue:
+      "",
+
+    taxEnabled:
+      false,
+
+    taxRate:
+      "",
+
     lines: [
       emptyLine(),
     ],
   };
 }
+
+function formFromInvoice(
+  invoice: Invoice,
+): FormState {
+  const lines =
+    invoice.items?.map(
+      (item) => {
+        const config =
+          item.pricing_config ?? {};
+
+        return {
+          key: lineKey(),
+
+          catalogItemId:
+            item.catalog_item_id
+            ?? "",
+
+          quantity:
+            String(
+              item.quantity
+            ),
+
+          unitPrice:
+            String(
+              item.unit_price
+            ),
+
+          discountAmount:
+            String(
+              item.discount_amount
+            ),
+
+          taxRate:
+            String(
+              config.tax_rate
+              ?? 0
+            ),
+
+          width:
+            config.width == null
+              ? ""
+              : String(
+                  config.width
+                ),
+
+          height:
+            config.height == null
+              ? ""
+              : String(
+                  config.height
+                ),
+
+          depth:
+            config.depth == null
+              ? ""
+              : String(
+                  config.depth
+                ),
+
+          length:
+            config.length == null
+              ? ""
+              : String(
+                  config.length
+                ),
+
+          duration:
+            config.duration == null
+              ? ""
+              : String(
+                  config.duration
+                ),
+        };
+      },
+    ) ?? [];
+
+  return {
+    customerId:
+      invoice.customer_id,
+
+    dueAt:
+      invoice.due_at
+        ? invoice.due_at.slice(
+            0,
+            10,
+          )
+        : "",
+
+    notes:
+      invoice.notes ?? "",
+
+    globalDiscountEnabled:
+      invoice.global_discount_type
+        !== null,
+
+    globalDiscountType:
+      invoice.global_discount_type
+        ?? "PERCENT",
+
+    globalDiscountValue:
+      invoice.global_discount_value
+        == null
+        ? ""
+        : String(
+            invoice.global_discount_value
+          ),
+
+    taxEnabled:
+      invoice.tax_enabled,
+
+    taxRate:
+      invoice.tax_rate == null
+        ? ""
+        : String(
+            invoice.tax_rate
+          ),
+
+    lines:
+      lines.length > 0
+        ? lines
+        : [
+            emptyLine(),
+          ],
+  };
+}
+
 
 function numeric(
   value: string,
@@ -440,7 +610,18 @@ function estimateLine(
   };
 }
 
-export default function InvoicePage() {
+function InvoicePageContent() {
+  const router =
+    useRouter();
+
+  const searchParams =
+    useSearchParams();
+
+  const editInvoiceId =
+    searchParams.get(
+      "edit"
+    );
+
   const moduleDef =
     getModule("invoices");
 
@@ -525,6 +706,13 @@ export default function InvoicePage() {
     editorOpen,
     setEditorOpen,
   ] = useState(false);
+
+  const [
+    editingInvoice,
+    setEditingInvoice,
+  ] = useState<
+    Invoice | null
+  >(null);
 
   const [
     form,
@@ -715,6 +903,58 @@ export default function InvoicePage() {
 
 
   useEffect(() => {
+    if (!editInvoiceId) {
+      return;
+    }
+
+    const invoiceId =
+      editInvoiceId;
+
+    let cancelled =
+      false;
+
+    async function loadEditInvoice() {
+      setSaveError(null);
+
+      try {
+        const response =
+          await getInvoice(
+            invoiceId
+          );
+
+        if (cancelled) {
+          return;
+        }
+
+        setEditingInvoice(
+          response.data
+        );
+
+        setForm(
+          formFromInvoice(
+            response.data
+          )
+        );
+
+        setEditorOpen(true);
+      } catch (caught) {
+        if (!cancelled) {
+          setSaveError(caught);
+        }
+      }
+    }
+
+    void loadEditInvoice();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    editInvoiceId,
+  ]);
+
+
+  useEffect(() => {
     if (!success) {
       return;
     }
@@ -740,9 +980,8 @@ export default function InvoicePage() {
     useMemo(
       () => {
         let subtotal = 0;
-        let discount = 0;
-        let tax = 0;
-        let totalValue = 0;
+        let itemDiscount = 0;
+        let legacyTax = 0;
 
         for (
           const line
@@ -759,37 +998,130 @@ export default function InvoicePage() {
           subtotal +=
             estimate.subtotal;
 
-          discount +=
+          itemDiscount +=
             estimate.discount;
 
-          tax +=
+          legacyTax +=
             estimate.tax;
-
-          totalValue +=
-            estimate.total;
         }
+
+        const netSubtotal =
+          Math.max(
+            subtotal -
+              itemDiscount,
+            0,
+          );
+
+        let globalDiscount =
+          0;
+
+        if (
+          form.globalDiscountEnabled
+        ) {
+          const value =
+            Math.max(
+              numeric(
+                form.globalDiscountValue,
+              ),
+              0,
+            );
+
+          if (
+            form.globalDiscountType
+              === "PERCENT"
+          ) {
+            globalDiscount =
+              netSubtotal *
+              (
+                Math.min(
+                  value,
+                  100,
+                ) /
+                100
+              );
+          } else {
+            globalDiscount =
+              Math.min(
+                value,
+                netSubtotal,
+              );
+          }
+        }
+
+        const taxableBase =
+          Math.max(
+            netSubtotal -
+              globalDiscount,
+            0,
+          );
+
+        const adjustmentMode =
+          form.taxEnabled !== null
+          || form.globalDiscountEnabled;
+
+        const tax =
+          adjustmentMode
+            ? (
+                form.taxEnabled
+                  === true
+                  ? taxableBase *
+                    (
+                      Math.max(
+                        numeric(
+                          form.taxRate,
+                        ),
+                        0,
+                      ) /
+                      100
+                    )
+                  : 0
+              )
+            : legacyTax;
 
         return {
           subtotal,
-          discount,
+
+          itemDiscount,
+
+          globalDiscount,
+
+          discount:
+            itemDiscount +
+            globalDiscount,
+
           tax,
+
           total:
-            totalValue,
+            taxableBase +
+            tax,
         };
       },
       [
+        form.globalDiscountEnabled,
+        form.globalDiscountType,
+        form.globalDiscountValue,
         form.lines,
+        form.taxEnabled,
+        form.taxRate,
         itemMap,
       ],
     );
 
   function openEditor() {
+    setEditingInvoice(null);
+
     setForm(
       emptyForm(),
     );
 
     setSaveError(null);
     setEditorOpen(true);
+
+    if (editInvoiceId) {
+      router.replace(
+        "/app/tagihan"
+      );
+    }
   }
 
   function closeEditor() {
@@ -798,7 +1130,14 @@ export default function InvoicePage() {
     }
 
     setEditorOpen(false);
+    setEditingInvoice(null);
     setSaveError(null);
+
+    if (editInvoiceId) {
+      router.replace(
+        "/app/tagihan"
+      );
+    }
   }
 
   function patchLine(
@@ -975,6 +1314,63 @@ export default function InvoicePage() {
       }
     }
 
+    if (
+      form.globalDiscountEnabled
+      && numeric(
+        form.globalDiscountValue
+      ) <= 0
+    ) {
+      setSaveError(
+        new Error(
+          "Nilai diskon global harus lebih dari 0."
+        ),
+      );
+
+      return;
+    }
+
+    if (
+      form.globalDiscountEnabled
+      && form.globalDiscountType
+        === "PERCENT"
+      && numeric(
+        form.globalDiscountValue
+      ) > 100
+    ) {
+      setSaveError(
+        new Error(
+          "Persentase diskon global tidak boleh lebih dari 100%."
+        ),
+      );
+
+      return;
+    }
+
+    if (
+      form.taxEnabled === true
+      && (
+        numeric(
+          form.taxRate
+        ) <= 0
+        || numeric(
+          form.taxRate
+        ) > 100
+      )
+    ) {
+      setSaveError(
+        new Error(
+          "Tarif pajak harus lebih dari 0 dan maksimal 100%."
+        ),
+      );
+
+      return;
+    }
+
+    const adjustmentMode =
+      form.taxEnabled !== null
+      || form.globalDiscountEnabled;
+
+
     const payload:
       InvoiceCreatePayload = {
         customer_id:
@@ -987,6 +1383,36 @@ export default function InvoicePage() {
         notes:
           form.notes.trim()
             || null,
+
+        ...(
+          adjustmentMode
+            ? {
+                global_discount_type:
+                  form.globalDiscountEnabled
+                    ? form.globalDiscountType
+                    : null,
+
+                global_discount_value:
+                  form.globalDiscountEnabled
+                    ? numeric(
+                        form.globalDiscountValue
+                      )
+                    : null,
+
+                tax_enabled:
+                  form.taxEnabled
+                    === true,
+
+                tax_rate:
+                  form.taxEnabled
+                    === true
+                    ? numeric(
+                        form.taxRate
+                      )
+                    : null,
+              }
+            : {}
+        ),
 
         items:
           form.lines.map(
@@ -1040,9 +1466,11 @@ export default function InvoicePage() {
                   ),
 
                 tax_rate:
-                  numeric(
-                    line.taxRate,
-                  ),
+                  adjustmentMode
+                    ? 0
+                    : numeric(
+                        line.taxRate,
+                      ),
 
                 pricing_config:
                   dimensions.length > 0
@@ -1059,6 +1487,20 @@ export default function InvoicePage() {
     setSaving(true);
 
     try {
+      if (editingInvoice) {
+        const response =
+          await updateInvoice(
+            editingInvoice.id,
+            payload,
+          );
+
+        router.push(
+          `/app/tagihan/${response.data.id}`
+        );
+
+        return;
+      }
+
       const response =
         await createInvoice(
           payload,
@@ -1069,6 +1511,8 @@ export default function InvoicePage() {
       );
 
       setEditorOpen(false);
+      setEditingInvoice(null);
+
       setForm(
         emptyForm(),
       );
@@ -1539,20 +1983,23 @@ export default function InvoicePage() {
             >
               <div>
                 <span>
-                  Tagihan Baru
+                  {editingInvoice
+                    ? "Ubah Draf"
+                    : "Tagihan Baru"}
                 </span>
 
                 <h2
                   id="invoice-editor-title"
                 >
-                  Buat Tagihan
+                  {editingInvoice
+                    ? `Ubah ${editingInvoice.invoice_number}`
+                    : "Buat Tagihan"}
                 </h2>
 
                 <p>
-                  Pilih pelanggan lalu
-                  tambahkan barang atau
-                  jasa dari katalog
-                  usaha aktif.
+                  {editingInvoice
+                    ? "Perbarui pelanggan, jatuh tempo, catatan, atau item tagihan sebelum diterbitkan."
+                    : "Pilih pelanggan lalu tambahkan barang atau jasa dari katalog usaha aktif."}
                 </p>
               </div>
 
@@ -1722,20 +2169,6 @@ export default function InvoicePage() {
                   </p>
                 </div>
 
-                <Button
-                  type="button"
-                  variant="secondary"
-                  leadingIcon={
-                    <Plus
-                      size={17}
-                    />
-                  }
-                  onClick={
-                    addLine
-                  }
-                >
-                  Tambah Item
-                </Button>
               </div>
 
               <div
@@ -2065,39 +2498,6 @@ export default function InvoicePage() {
                             />
                           </label>
 
-                          <label
-                            className={
-                              styles.field
-                            }
-                          >
-                            <span>
-                              Pajak %
-                            </span>
-
-                            <input
-                              type="number"
-                              min="0"
-                              max="100"
-                              step="any"
-                              value={
-                                line.taxRate
-                              }
-                              onChange={
-                                (
-                                  event,
-                                ) =>
-                                  patchLine(
-                                    line.key,
-                                    {
-                                      taxRate:
-                                        event
-                                          .target
-                                          .value,
-                                    },
-                                  )
-                              }
-                            />
-                          </label>
                         </div>
 
                         <div
@@ -2121,6 +2521,268 @@ export default function InvoicePage() {
                   },
                 )}
               </div>
+
+              <div
+                className={
+                  styles.addItemRow
+                }
+              >
+                <Button
+                  type="button"
+                  variant="secondary"
+                  leadingIcon={
+                    <Plus
+                      size={17}
+                    />
+                  }
+                  onClick={
+                    addLine
+                  }
+                >
+                  Tambah Item
+                </Button>
+              </div>
+
+              <section
+                className={
+                  styles.adjustments
+                }
+              >
+                <div
+                  className={
+                    styles.adjustmentCard
+                  }
+                >
+                  <label
+                    className={
+                      styles.toggleRow
+                    }
+                  >
+                    <span
+                      className={
+                        styles.toggleCopy
+                      }
+                    >
+                      <strong>
+                        Diskon Global
+                      </strong>
+
+                      <small>
+                        Terapkan diskon ke total tagihan.
+                      </small>
+                    </span>
+
+                    <input
+                      type="checkbox"
+                      checked={
+                        form.globalDiscountEnabled
+                      }
+                      onChange={
+                        (event) =>
+                          setForm(
+                            (
+                              current,
+                            ) => ({
+                              ...current,
+
+                              globalDiscountEnabled:
+                                event.target
+                                  .checked,
+                            }),
+                          )
+                      }
+                    />
+                  </label>
+
+                  {form.globalDiscountEnabled ? (
+                    <div
+                      className={
+                        styles.adjustmentGrid
+                      }
+                    >
+                      <label
+                        className={
+                          styles.field
+                        }
+                      >
+                        <span>
+                          Jenis
+                        </span>
+
+                        <select
+                          value={
+                            form.globalDiscountType
+                          }
+                          onChange={
+                            (event) =>
+                              setForm(
+                                (
+                                  current,
+                                ) => ({
+                                  ...current,
+
+                                  globalDiscountType:
+                                    event.target
+                                      .value as GlobalDiscountType,
+                                }),
+                              )
+                          }
+                        >
+                          <option value="PERCENT">
+                            Persentase
+                          </option>
+
+                          <option value="NOMINAL">
+                            Nominal
+                          </option>
+                        </select>
+                      </label>
+
+                      <label
+                        className={
+                          styles.field
+                        }
+                      >
+                        <span>
+                          {form.globalDiscountType
+                            === "PERCENT"
+                            ? "Nilai (%)"
+                            : "Nominal"}
+                        </span>
+
+                        <input
+                          type="number"
+                          min="0"
+                          max={
+                            form.globalDiscountType
+                              === "PERCENT"
+                              ? "100"
+                              : undefined
+                          }
+                          step="any"
+                          value={
+                            form.globalDiscountValue
+                          }
+                          onChange={
+                            (event) =>
+                              setForm(
+                                (
+                                  current,
+                                ) => ({
+                                  ...current,
+
+                                  globalDiscountValue:
+                                    event.target
+                                      .value,
+                                }),
+                              )
+                          }
+                        />
+                      </label>
+                    </div>
+                  ) : null}
+                </div>
+
+                <div
+                  className={
+                    styles.adjustmentCard
+                  }
+                >
+                  <label
+                    className={
+                      styles.toggleRow
+                    }
+                  >
+                    <span
+                      className={
+                        styles.toggleCopy
+                      }
+                    >
+                      <strong>
+                        Pajak
+                      </strong>
+
+                      <small>
+                        Aktifkan hanya jika tagihan menggunakan pajak.
+                      </small>
+                    </span>
+
+                    <input
+                      type="checkbox"
+                      checked={
+                        form.taxEnabled
+                          === true
+                      }
+                      onChange={
+                        (event) =>
+                          setForm(
+                            (
+                              current,
+                            ) => ({
+                              ...current,
+
+                              taxEnabled:
+                                event.target
+                                  .checked,
+                            }),
+                          )
+                      }
+                    />
+                  </label>
+
+                  {form.taxEnabled === true ? (
+                    <div
+                      className={
+                        styles.adjustmentGrid
+                      }
+                    >
+                      <label
+                        className={
+                          styles.field
+                        }
+                      >
+                        <span>
+                          Tarif Pajak (%)
+                        </span>
+
+                        <input
+                          type="number"
+                          min="0"
+                          max="100"
+                          step="any"
+                          value={
+                            form.taxRate
+                          }
+                          onChange={
+                            (event) =>
+                              setForm(
+                                (
+                                  current,
+                                ) => ({
+                                  ...current,
+
+                                  taxRate:
+                                    event.target
+                                      .value,
+                                }),
+                              )
+                          }
+                        />
+                      </label>
+                    </div>
+                  ) : null}
+
+                  {form.taxEnabled === null ? (
+                    <p
+                      className={
+                        styles.adjustmentHint
+                      }
+                    >
+                      Pajak item dari draf lama tetap dipertahankan sampai pengaturan pajak ini diubah.
+                    </p>
+                  ) : null}
+                </div>
+              </section>
 
               <label
                 className={
@@ -2171,32 +2833,70 @@ export default function InvoicePage() {
                   </strong>
                 </div>
 
-                <div>
-                  <span>
-                    Diskon
-                  </span>
+                {estimatedTotals
+                  .itemDiscount > 0 ? (
+                    <div>
+                      <span>
+                        Diskon Item
+                      </span>
 
-                  <strong>
-                    -{" "}
-                    {rupiah(
-                      estimatedTotals
-                        .discount,
-                    )}
-                  </strong>
-                </div>
+                      <strong>
+                        -{" "}
+                        {rupiah(
+                          estimatedTotals
+                            .itemDiscount,
+                        )}
+                      </strong>
+                    </div>
+                  ) : null}
 
-                <div>
-                  <span>
-                    Pajak
-                  </span>
+                {form.globalDiscountEnabled ? (
+                  <div>
+                    <span>
+                      Diskon Global
+                      {form.globalDiscountType
+                        === "PERCENT"
+                        ? ` ${numeric(
+                            form.globalDiscountValue,
+                          )}%`
+                        : ""}
+                    </span>
 
-                  <strong>
-                    {rupiah(
-                      estimatedTotals
-                        .tax,
-                    )}
-                  </strong>
-                </div>
+                    <strong>
+                      -{" "}
+                      {rupiah(
+                        estimatedTotals
+                          .globalDiscount,
+                      )}
+                    </strong>
+                  </div>
+                ) : null}
+
+                {(
+                  form.taxEnabled === true
+                  || (
+                    form.taxEnabled === null
+                    && estimatedTotals.tax > 0
+                  )
+                ) ? (
+                  <div>
+                    <span>
+                      Pajak
+                      {form.taxEnabled === true
+                        ? ` ${numeric(
+                            form.taxRate,
+                          )}%`
+                        : ""}
+                    </span>
+
+                    <strong>
+                      {rupiah(
+                        estimatedTotals
+                          .tax,
+                      )}
+                    </strong>
+                  </div>
+                ) : null}
 
                 <div
                   className={
@@ -2241,9 +2941,15 @@ export default function InvoicePage() {
                 <Button
                   type="submit"
                   loading={saving}
-                  loadingLabel="Menyimpan Tagihan..."
+                  loadingLabel={
+                    editingInvoice
+                      ? "Menyimpan Perubahan..."
+                      : "Menyimpan Tagihan..."
+                  }
                 >
-                  Simpan Draf
+                  {editingInvoice
+                    ? "Simpan Perubahan"
+                    : "Simpan Draf"}
                 </Button>
               </footer>
             </form>
@@ -2251,5 +2957,13 @@ export default function InvoicePage() {
         </div>
       ) : null}
     </TenantShell>
+  );
+}
+
+export default function InvoicePage() {
+  return (
+    <Suspense fallback={null}>
+      <InvoicePageContent />
+    </Suspense>
   );
 }

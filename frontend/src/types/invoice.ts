@@ -55,6 +55,40 @@ export type InvoiceItem = {
     | string
     | null;
 
+  pricing_method:
+    | CatalogPricingMethod
+    | string
+    | null;
+
+  pricing_config:
+    | Record<
+        string,
+        number | string
+      >
+    | null;
+
+  pricing_quantity:
+    | number
+    | string
+    | null;
+
+  pricing_display: {
+    input_quantity: string;
+    display_quantity: string;
+    display_unit:
+      | string
+      | null;
+    formula:
+      | string
+      | null;
+    result_label:
+      | string
+      | null;
+    result_text:
+      | string
+      | null;
+  };
+
   unit_price:
     number | string;
 
@@ -130,6 +164,35 @@ export type Invoice = {
 
   discount_total:
     number | string;
+
+  item_discount_total:
+    | number
+    | string
+    | null;
+
+  global_discount_type:
+    | "PERCENT"
+    | "NOMINAL"
+    | null;
+
+  global_discount_value:
+    | number
+    | string
+    | null;
+
+  global_discount_amount:
+    | number
+    | string
+    | null;
+
+  tax_enabled:
+    | boolean
+    | null;
+
+  tax_rate:
+    | number
+    | string
+    | null;
 
   tax_total:
     number | string;
@@ -245,9 +308,58 @@ export type InvoiceCreatePayload = {
     | string
     | null;
 
+  global_discount_type?:
+    | "PERCENT"
+    | "NOMINAL"
+    | null;
+
+  global_discount_value?:
+    | number
+    | null;
+
+  tax_enabled?:
+    boolean;
+
+  tax_rate?:
+    | number
+    | null;
+
   items:
     InvoiceItemPayload[];
 };
+
+export type InvoiceUpdatePayload = {
+  customer_id?:
+    string;
+
+  due_at?:
+    | string
+    | null;
+
+  notes?:
+    | string
+    | null;
+
+  global_discount_type?:
+    | "PERCENT"
+    | "NOMINAL"
+    | null;
+
+  global_discount_value?:
+    | number
+    | null;
+
+  tax_enabled?:
+    boolean;
+
+  tax_rate?:
+    | number
+    | null;
+
+  items?:
+    InvoiceItemPayload[];
+};
+
 
 export type InvoiceVoidPayload = {
   reason: string;

@@ -67,6 +67,24 @@ class InvoiceResource extends JsonResource
             'discount_total' =>
                 $this->discount_total,
 
+            'item_discount_total' =>
+                $this->item_discount_total,
+
+            'global_discount_type' =>
+                $this->global_discount_type,
+
+            'global_discount_value' =>
+                $this->global_discount_value,
+
+            'global_discount_amount' =>
+                $this->global_discount_amount,
+
+            'tax_enabled' =>
+                $this->tax_enabled,
+
+            'tax_rate' =>
+                $this->tax_rate,
+
             'tax_total' =>
                 $this->tax_total,
 
@@ -118,6 +136,22 @@ class InvoiceResource extends JsonResource
 
                                     'unit_symbol' =>
                                         $item->unit_symbol,
+
+                                    'pricing_method' =>
+                                        $item->pricing_method,
+
+                                    'pricing_config' =>
+                                        $item->pricing_config,
+
+                                    'pricing_quantity' =>
+                                        $item->pricing_quantity,
+
+                                    'pricing_display' =>
+                                        app(
+                                            \App\Services\Invoice\InvoiceItemPricingPresenter::class
+                                        )->present(
+                                            $item
+                                        ),
 
                                     'unit_price' =>
                                         $item->unit_price,

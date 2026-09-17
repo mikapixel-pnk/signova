@@ -269,6 +269,20 @@
                             {{ $item['description'] }}
                         </div>
                     @endif
+
+                    @if (! empty($item['pricing_display']['formula']))
+                        <div class="muted">
+                            {{ $item['pricing_display']['formula'] }}
+                        </div>
+
+                        @if (! empty($item['pricing_display']['result_text']))
+                            <div class="muted">
+                                <strong>
+                                    {{ $item['pricing_display']['result_text'] }}
+                                </strong>
+                            </div>
+                        @endif
+                    @endif
                 </td>
 
                 <td class="text-right">
@@ -300,22 +314,29 @@
                 {{ $summary['subtotal'] }}
             </td>
         </tr>
+        @if ($summary['show_global_discount'])
+            <tr>
+                <td>
+                    {{ $summary['global_discount_label'] }}
+                </td>
 
-        <tr>
-            <td>Diskon</td>
+                <td class="text-right">
+                    - {{ $summary['global_discount_amount'] }}
+                </td>
+            </tr>
+        @endif
 
-            <td class="text-right">
-                {{ $summary['discount_total'] }}
-            </td>
-        </tr>
+        @if ($summary['show_tax'])
+            <tr>
+                <td>
+                    {{ $summary['tax_label'] }}
+                </td>
 
-        <tr>
-            <td>Pajak</td>
-
-            <td class="text-right">
-                {{ $summary['tax_total'] }}
-            </td>
-        </tr>
+                <td class="text-right">
+                    {{ $summary['tax_total'] }}
+                </td>
+            </tr>
+        @endif
 
         <tr class="summary-total">
             <td>Total</td>

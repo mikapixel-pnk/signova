@@ -8,6 +8,7 @@ import type {
   InvoiceListResponse,
   InvoiceResponse,
   InvoiceStatus,
+  InvoiceUpdatePayload,
   InvoiceVoidPayload,
 } from "@/types/invoice";
 
@@ -103,6 +104,23 @@ export async function createInvoice(
     },
   );
 }
+
+export async function updateInvoice(
+  id: string,
+  payload:
+    InvoiceUpdatePayload,
+): Promise<InvoiceResponse> {
+  return authenticatedApiRequest<
+    InvoiceResponse
+  >(
+    `/invoices/${id}`,
+    {
+      method: "PATCH",
+      body: payload,
+    },
+  );
+}
+
 
 export async function getInvoice(
   id: string,

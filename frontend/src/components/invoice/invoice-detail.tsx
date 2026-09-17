@@ -6,6 +6,7 @@ import {
   CalendarDays,
   FileDown,
   FileText,
+  Pencil,
   ReceiptText,
   Send,
   UserRound,
@@ -21,6 +22,7 @@ import {
 
 import {
   useParams,
+  useRouter,
 } from "next/navigation";
 
 import {
@@ -172,6 +174,9 @@ export function InvoiceDetail() {
     useParams<{
       id: string;
     }>();
+
+  const router =
+    useRouter();
 
   const [
     invoice,
@@ -505,6 +510,14 @@ export function InvoiceDetail() {
     );
   }
 
+  const canEdit =
+    invoice.status ===
+      "DRAFT" &&
+    invoice.source_quotation_id ===
+      null &&
+    invoice.source_quotation_version_id ===
+      null;
+
   const canVoid =
     invoice.status ===
       "DRAFT" ||
@@ -630,6 +643,29 @@ export function InvoiceDetail() {
             styles.actions
           }
         >
+          {canEdit ? (
+            <Button
+              type="button"
+              variant="secondary"
+              disabled={
+                actionLoading
+              }
+              leadingIcon={
+                <Pencil
+                  size={17}
+                />
+              }
+              onClick={
+                () =>
+                  router.push(
+                    `/app/tagihan?edit=${invoice.id}`
+                  )
+              }
+            >
+              Ubah Tagihan
+            </Button>
+          ) : null}
+
           {invoice.status ===
           "DRAFT" ? (
             <Button
@@ -869,6 +905,35 @@ export function InvoiceDetail() {
                         }
                       </p>
                     ) : null}
+
+                    {item.pricing_display
+                      ?.formula ? (
+                      <div
+                        className={
+                          styles.pricingDetail
+                        }
+                      >
+                        <span>
+                          {
+                            item
+                              .pricing_display
+                              .formula
+                          }
+                        </span>
+
+                        {item
+                          .pricing_display
+                          .result_text ? (
+                          <strong>
+                            {
+                              item
+                                .pricing_display
+                                .result_text
+                            }
+                          </strong>
+                        ) : null}
+                      </div>
+                    ) : null}
                   </div>
                 </div>
 
@@ -880,8 +945,12 @@ export function InvoiceDetail() {
                   <span>
                     Jumlah
                     <strong>
-                      {item.quantity}{" "}
-                      {item.unit_symbol ??
+                      {item.pricing_display
+                        ?.display_quantity ??
+                        item.quantity}{" "}
+                      {item.pricing_display
+                        ?.display_unit ??
+                        item.unit_symbol ??
                         item.unit_name ??
                         ""}
                     </strong>
