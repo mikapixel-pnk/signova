@@ -52,7 +52,7 @@ const groups = [
     key: "finance",
     title: "Keuangan & Pembayaran",
     description:
-      "Rekening, pembayaran, dan pengaturan finansial.",
+      "Metode pembayaran dan pengaturan finansial.",
     keys: [
       "finance-settings",
     ],

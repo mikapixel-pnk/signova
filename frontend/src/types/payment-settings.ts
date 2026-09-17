@@ -7,9 +7,6 @@ export type PaymentQrMetadata = {
 
 export type PaymentSettings = {
   bank_transfer_enabled: boolean;
-  bank_name: string | null;
-  bank_account_number: string | null;
-  bank_account_name: string | null;
   static_qr_enabled: boolean;
   has_static_qr: boolean;
   static_qr: PaymentQrMetadata | null;
@@ -26,9 +23,6 @@ export type PaymentSettingsResponse = {
 
 export type PaymentSettingsPayload = {
   bank_transfer_enabled?: boolean;
-  bank_name?: string | null;
-  bank_account_number?: string | null;
-  bank_account_name?: string | null;
   static_qr_enabled?: boolean;
   partial_payment_enabled?: boolean;
 };

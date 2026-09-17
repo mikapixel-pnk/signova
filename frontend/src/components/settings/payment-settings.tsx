@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import Link from "next/link";
 
 import {
   Banknote,
@@ -50,9 +51,6 @@ import styles from "./payment-settings.module.css";
 
 const emptyForm = {
   bank_transfer_enabled: false,
-  bank_name: "",
-  bank_account_number: "",
-  bank_account_name: "",
   static_qr_enabled: false,
   partial_payment_enabled: true,
 };
@@ -153,20 +151,6 @@ export function PaymentSettings() {
             bank_transfer_enabled:
               response.data
                 .bank_transfer_enabled,
-
-            bank_name:
-              response.data
-                .bank_name ?? "",
-
-            bank_account_number:
-              response.data
-                .bank_account_number ??
-              "",
-
-            bank_account_name:
-              response.data
-                .bank_account_name ??
-              "",
 
             static_qr_enabled:
               response.data
@@ -278,15 +262,6 @@ export function PaymentSettings() {
         await updatePaymentSettings({
           bank_transfer_enabled:
             form.bank_transfer_enabled,
-
-          bank_name:
-            form.bank_name,
-
-          bank_account_number:
-            form.bank_account_number,
-
-          bank_account_name:
-            form.bank_account_name,
 
           static_qr_enabled:
             form.static_qr_enabled,
@@ -442,7 +417,7 @@ export function PaymentSettings() {
         icon={Banknote}
         eyebrow="Pengaturan"
         title="Pengaturan Keuangan"
-        description="Atur rekening penerimaan, QR pembayaran, dan kebijakan pembayaran untuk usaha aktif."
+        description="Atur metode pembayaran, QR, dan kebijakan pembayaran untuk usaha aktif."
       />
 
       {success ? (
@@ -475,11 +450,11 @@ export function PaymentSettings() {
 
           <div>
             <h2>
-              Rekening Penerimaan
+              Transfer Bank
             </h2>
 
             <p>
-              Rekening yang digunakan untuk menerima pembayaran pelanggan pada usaha aktif.
+              Aktifkan transfer bank sebagai metode pembayaran pelanggan.
             </p>
           </div>
         </header>
@@ -493,8 +468,9 @@ export function PaymentSettings() {
             <strong>
               Aktifkan transfer bank
             </strong>
+
             <span>
-              Tampilkan rekening sebagai metode pembayaran.
+              Pelanggan dapat menggunakan rekening penerimaan yang aktif.
             </span>
           </div>
 
@@ -520,90 +496,27 @@ export function PaymentSettings() {
 
         <div
           className={
-            styles.grid
+            styles.gateway
           }
         >
-          <label>
-            <span>
-              Nama bank
-            </span>
+          <div>
+            <strong>
+              Rekening Penerimaan
+            </strong>
 
-            <input
-              value={
-                form.bank_name
-              }
-              maxLength={100}
-              placeholder="Contoh: BCA"
-              onChange={
-                (event) =>
-                  setForm(
-                    (current) => ({
-                      ...current,
-                      bank_name:
-                        event.target
-                          .value,
-                    }),
-                  )
-              }
-            />
-          </label>
+            <p>
+              Tambah, ubah, aktifkan, atau tentukan rekening pembayaran pelanggan melalui Master Kas & Bank.
+            </p>
+          </div>
 
-          <label>
-            <span>
-              Nomor rekening
-            </span>
-
-            <input
-              value={
-                form
-                  .bank_account_number
-              }
-              maxLength={100}
-              inputMode="numeric"
-              placeholder="Nomor rekening"
-              onChange={
-                (event) =>
-                  setForm(
-                    (current) => ({
-                      ...current,
-                      bank_account_number:
-                        event.target
-                          .value,
-                    }),
-                  )
-              }
-            />
-          </label>
-
-          <label
+          <Link
+            href="/app/keuangan/kas-bank"
             className={
-              styles.full
+              styles.secondaryButton
             }
           >
-            <span>
-              Nama pemilik rekening
-            </span>
-
-            <input
-              value={
-                form
-                  .bank_account_name
-              }
-              maxLength={190}
-              placeholder="Nama sesuai rekening bank"
-              onChange={
-                (event) =>
-                  setForm(
-                    (current) => ({
-                      ...current,
-                      bank_account_name:
-                        event.target
-                          .value,
-                    }),
-                  )
-              }
-            />
-          </label>
+            Kelola Kas & Bank
+          </Link>
         </div>
       </section>
 
