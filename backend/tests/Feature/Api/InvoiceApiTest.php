@@ -845,6 +845,621 @@ class InvoiceApiTest extends TestCase
     }
 
 
+    public function test_issuing_invoice_captures_immutable_business_branding_snapshot(): void
+    {
+        Storage::fake('local');
+
+        config()->set(
+            'filesystems.private_disk',
+            'local'
+        );
+
+        $workspace =
+            $this->workspace(
+                'invoice-branding-snapshot@example.test',
+                'Invoice Branding Snapshot'
+            );
+
+        $customerId =
+            $this->insertCustomer(
+                $workspace['tenant_id'],
+                'CUST-BRANDING-SNAPSHOT',
+                'Pelanggan Branding Snapshot',
+                $workspace['business_id']
+            );
+
+        $invoiceId =
+            $this->insertInvoice(
+                $workspace,
+                $customerId,
+                'INV-BRANDING-SNAPSHOT',
+                'DRAFT'
+            );
+
+        DB::table('business_profiles')
+            ->where(
+                'tenant_id',
+                $workspace['tenant_id']
+            )
+            ->where(
+                'id',
+                $workspace['business_id']
+            )
+            ->update([
+                'name' =>
+                    'CV Branding Lama',
+
+                'address' =>
+                    'Jl. Histori No. 17',
+
+                'phone' =>
+                    '081211112222',
+
+                'email' =>
+                    'lama@branding.test',
+
+                'tax_id' =>
+                    '11.222.333.4-555.666',
+
+                'updated_at' =>
+                    now(),
+            ]);
+
+        $this->actingAsWorkspace(
+            $workspace
+        );
+
+        $this->post(
+            '/api/v1/settings/business-profile/logo',
+            [
+                'logo' =>
+                    UploadedFile::fake()->image(
+                        'logo-lama.png',
+                        900,
+                        360
+                    ),
+            ]
+        )->assertOk();
+
+        $this->post(
+            '/api/v1/settings/document/signature',
+            [
+                'signature' =>
+                    UploadedFile::fake()->image(
+                        'signature-lama.png',
+                        500,
+                        180
+                    ),
+            ]
+        )->assertOk();
+
+        DB::table('tenant_document_settings')
+            ->where(
+                'tenant_id',
+                $workspace['tenant_id']
+            )
+            ->where(
+                'business_id',
+                $workspace['business_id']
+            )
+            ->update([
+                'invoice_footnote' =>
+                    'Catatan histori invoice.',
+
+                'signature_name' =>
+                    'Novel Lama',
+
+                'signature_title' =>
+                    'Pemilik Lama',
+
+                'updated_at' =>
+                    now(),
+            ]);
+
+        $this->postJson(
+            "/api/v1/invoices/{$invoiceId}/actions/issue"
+        )->assertOk();
+
+        $invoice =
+            DB::table('invoices')
+                ->where(
+                    'id',
+                    $invoiceId
+                )
+                ->first();
+
+        $this->assertNotNull(
+            $invoice
+        );
+
+        $snapshot =
+            json_decode(
+                $invoice->branding_snapshot,
+                true,
+                512,
+                JSON_THROW_ON_ERROR
+            );
+
+        $this->assertSame(
+            1,
+            $snapshot['version']
+        );
+
+        $this->assertSame(
+            'CV Branding Lama',
+            $snapshot['business_name']
+        );
+
+        $this->assertSame(
+            'Jl. Histori No. 17',
+            $snapshot['address']
+        );
+
+        $this->assertSame(
+            '081211112222',
+            $snapshot['phone']
+        );
+
+        $this->assertSame(
+            'lama@branding.test',
+            $snapshot['email']
+        );
+
+        $this->assertSame(
+            '11.222.333.4-555.666',
+            $snapshot['tax_id']
+        );
+
+        $this->assertSame(
+            'Catatan histori invoice.',
+            $snapshot['invoice_footnote']
+        );
+
+        $this->assertSame(
+            'Novel Lama',
+            $snapshot['signature_name']
+        );
+
+        $this->assertSame(
+            'Pemilik Lama',
+            $snapshot['signature_title']
+        );
+
+        $this->assertNotNull(
+            $invoice->branding_logo_file_id
+        );
+
+        $this->assertNotNull(
+            $invoice->branding_signature_file_id
+        );
+
+        $logoSnapshot =
+            DB::table('files')
+                ->where(
+                    'tenant_id',
+                    $workspace['tenant_id']
+                )
+                ->where(
+                    'id',
+                    $invoice->branding_logo_file_id
+                )
+                ->first();
+
+        $signatureSnapshot =
+            DB::table('files')
+                ->where(
+                    'tenant_id',
+                    $workspace['tenant_id']
+                )
+                ->where(
+                    'id',
+                    $invoice->branding_signature_file_id
+                )
+                ->first();
+
+        $this->assertNotNull(
+            $logoSnapshot
+        );
+
+        $this->assertNotNull(
+            $signatureSnapshot
+        );
+
+        $this->assertSame(
+            'INVOICE_BRANDING_LOGO',
+            $logoSnapshot->purpose
+        );
+
+        $this->assertSame(
+            'INVOICE_BRANDING_SIGNATURE',
+            $signatureSnapshot->purpose
+        );
+
+        Storage::disk('local')
+            ->assertExists(
+                $logoSnapshot->object_key
+            );
+
+        Storage::disk('local')
+            ->assertExists(
+                $signatureSnapshot->object_key
+            );
+    }
+
+    public function test_changing_business_branding_after_issue_does_not_change_invoice_snapshot(): void
+    {
+        Storage::fake('local');
+
+        config()->set(
+            'filesystems.private_disk',
+            'local'
+        );
+
+        $workspace =
+            $this->workspace(
+                'invoice-branding-history@example.test',
+                'Invoice Branding History'
+            );
+
+        $customerId =
+            $this->insertCustomer(
+                $workspace['tenant_id'],
+                'CUST-BRANDING-HISTORY',
+                'Pelanggan Branding History',
+                $workspace['business_id']
+            );
+
+        $invoiceId =
+            $this->insertInvoice(
+                $workspace,
+                $customerId,
+                'INV-BRANDING-HISTORY',
+                'DRAFT'
+            );
+
+        DB::table('business_profiles')
+            ->where(
+                'tenant_id',
+                $workspace['tenant_id']
+            )
+            ->where(
+                'id',
+                $workspace['business_id']
+            )
+            ->update([
+                'name' =>
+                    'CV Identitas Lama',
+
+                'address' =>
+                    'Jl. Lama No. 1',
+
+                'updated_at' =>
+                    now(),
+            ]);
+
+        $this->actingAsWorkspace(
+            $workspace
+        );
+
+        $this->post(
+            '/api/v1/settings/business-profile/logo',
+            [
+                'logo' =>
+                    UploadedFile::fake()->image(
+                        'logo-history-old.png',
+                        900,
+                        360
+                    ),
+            ]
+        )->assertOk();
+
+        $this->post(
+            '/api/v1/settings/document/signature',
+            [
+                'signature' =>
+                    UploadedFile::fake()->image(
+                        'signature-history-old.png',
+                        500,
+                        180
+                    ),
+            ]
+        )->assertOk();
+
+        DB::table('tenant_document_settings')
+            ->where(
+                'tenant_id',
+                $workspace['tenant_id']
+            )
+            ->where(
+                'business_id',
+                $workspace['business_id']
+            )
+            ->update([
+                'invoice_footnote' =>
+                    'Footnote lama.',
+
+                'signature_name' =>
+                    'Penanda Tangan Lama',
+
+                'signature_title' =>
+                    'Direktur Lama',
+
+                'updated_at' =>
+                    now(),
+            ]);
+
+        $this->postJson(
+            "/api/v1/invoices/{$invoiceId}/actions/issue"
+        )->assertOk();
+
+        $issued =
+            DB::table('invoices')
+                ->where(
+                    'id',
+                    $invoiceId
+                )
+                ->first();
+
+        $this->assertNotNull(
+            $issued
+        );
+
+        $oldLogoSnapshot =
+            DB::table('files')
+                ->where(
+                    'id',
+                    $issued->branding_logo_file_id
+                )
+                ->first();
+
+        $oldSignatureSnapshot =
+            DB::table('files')
+                ->where(
+                    'id',
+                    $issued->branding_signature_file_id
+                )
+                ->first();
+
+        $this->assertNotNull(
+            $oldLogoSnapshot
+        );
+
+        $this->assertNotNull(
+            $oldSignatureSnapshot
+        );
+
+        $oldLogoContents =
+            Storage::disk('local')->get(
+                $oldLogoSnapshot->object_key
+            );
+
+        $oldSignatureContents =
+            Storage::disk('local')->get(
+                $oldSignatureSnapshot->object_key
+            );
+
+        DB::table('business_profiles')
+            ->where(
+                'tenant_id',
+                $workspace['tenant_id']
+            )
+            ->where(
+                'id',
+                $workspace['business_id']
+            )
+            ->update([
+                'name' =>
+                    'PT Identitas Baru',
+
+                'address' =>
+                    'Jl. Baru No. 99',
+
+                'updated_at' =>
+                    now(),
+            ]);
+
+        $this->post(
+            '/api/v1/settings/business-profile/logo',
+            [
+                'logo' =>
+                    UploadedFile::fake()->image(
+                        'logo-history-new.png',
+                        640,
+                        640
+                    ),
+            ]
+        )->assertOk();
+
+        $this->post(
+            '/api/v1/settings/document/signature',
+            [
+                'signature' =>
+                    UploadedFile::fake()->image(
+                        'signature-history-new.png',
+                        640,
+                        240
+                    ),
+            ]
+        )->assertOk();
+
+        DB::table('tenant_document_settings')
+            ->where(
+                'tenant_id',
+                $workspace['tenant_id']
+            )
+            ->where(
+                'business_id',
+                $workspace['business_id']
+            )
+            ->update([
+                'invoice_footnote' =>
+                    'Footnote baru.',
+
+                'signature_name' =>
+                    'Penanda Tangan Baru',
+
+                'signature_title' =>
+                    'Direktur Baru',
+
+                'updated_at' =>
+                    now(),
+            ]);
+
+        $afterChange =
+            DB::table('invoices')
+                ->where(
+                    'id',
+                    $invoiceId
+                )
+                ->first();
+
+        $this->assertSame(
+            $issued->branding_snapshot,
+            $afterChange->branding_snapshot
+        );
+
+        $this->assertSame(
+            $issued->branding_logo_file_id,
+            $afterChange->branding_logo_file_id
+        );
+
+        $this->assertSame(
+            $issued->branding_signature_file_id,
+            $afterChange->branding_signature_file_id
+        );
+
+        Storage::disk('local')
+            ->assertExists(
+                $oldLogoSnapshot->object_key
+            );
+
+        Storage::disk('local')
+            ->assertExists(
+                $oldSignatureSnapshot->object_key
+            );
+
+        $this->assertSame(
+            $oldLogoContents,
+            Storage::disk('local')->get(
+                $oldLogoSnapshot->object_key
+            )
+        );
+
+        $this->assertSame(
+            $oldSignatureContents,
+            Storage::disk('local')->get(
+                $oldSignatureSnapshot->object_key
+            )
+        );
+
+        app(TenantContext::class)->set(
+            $workspace['tenant_id'],
+            $workspace['user_id']
+        );
+
+        app(BusinessContext::class)->set(
+            $workspace['tenant_id'],
+            $workspace['business_id'],
+            $workspace['user_id']
+        );
+
+        $invoice =
+            \App\Models\Invoice::query()
+                ->where(
+                    'tenant_id',
+                    $workspace['tenant_id']
+                )
+                ->where(
+                    'business_id',
+                    $workspace['business_id']
+                )
+                ->where(
+                    'id',
+                    $invoiceId
+                )
+                ->firstOrFail();
+
+        $this->assertNotNull(
+            $invoice->branding_snapshot
+        );
+
+        $this->assertIsArray(
+            $invoice->branding_snapshot
+        );
+
+        $this->assertSame(
+            'CV Identitas Lama',
+            $invoice->branding_snapshot[
+                'business_name'
+            ]
+        );
+
+        $branding =
+            app(
+                \App\Services\Invoice\Document\InvoiceBrandingSnapshotService::class
+            )->resolve(
+                $invoice
+            );
+
+        $this->assertSame(
+            'CV Identitas Lama',
+            $branding['business_name']
+        );
+
+        $this->assertSame(
+            'Jl. Lama No. 1',
+            $branding['address']
+        );
+
+        $this->assertSame(
+            'Footnote lama.',
+            $branding['invoice_footnote']
+        );
+
+        $this->assertSame(
+            'Penanda Tangan Lama',
+            $branding['signature_name']
+        );
+
+        $this->assertSame(
+            'Direktur Lama',
+            $branding['signature_title']
+        );
+
+        $this->assertSame(
+            'data:image/png;base64,'
+            . base64_encode(
+                $oldLogoContents
+            ),
+            $branding['logo_data_uri']
+        );
+
+        $this->assertSame(
+            'data:image/png;base64,'
+            . base64_encode(
+                $oldSignatureContents
+            ),
+            $branding['signature_image_data_uri']
+        );
+
+        $response =
+            $this->get(
+                "/api/v1/invoices/{$invoiceId}/pdf"
+            );
+
+        $response
+            ->assertOk()
+            ->assertHeader(
+                'Content-Type',
+                'application/pdf'
+            );
+
+        $this->assertStringStartsWith(
+            '%PDF',
+            $response->getContent()
+        );
+    }
+
     public function test_non_draft_invoice_cannot_be_issued(): void
     {
         $workspace = $this->workspace(

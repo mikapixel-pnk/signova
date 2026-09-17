@@ -10,6 +10,7 @@ use App\Models\InvoiceItem;
 use App\Models\InvoiceStatusHistory;
 use App\Models\Unit;
 use App\Services\Document\DocumentNumberService;
+use App\Services\Invoice\Document\InvoiceBrandingSnapshotService;
 use App\Services\Invoice\Document\InvoiceTemplateSnapshotService;
 use App\Services\Quotation\QuotationPricingCalculator;
 use App\Tenancy\BusinessContext;
@@ -26,7 +27,8 @@ class InvoiceService
         private readonly BusinessContext $businessContext,
         private readonly DocumentNumberService $documentNumberService,
         private readonly QuotationPricingCalculator $pricingCalculator,
-        private readonly InvoiceTemplateSnapshotService $templateSnapshotService
+        private readonly InvoiceTemplateSnapshotService $templateSnapshotService,
+        private readonly InvoiceBrandingSnapshotService $brandingSnapshotService
     ) {
     }
 
@@ -551,7 +553,9 @@ class InvoiceService
                     array_merge(
                         $attributes,
                         $this->templateSnapshotService
-                            ->current()
+                            ->current(),
+                        $this->brandingSnapshotService
+                            ->capture()
                     );
             }
 

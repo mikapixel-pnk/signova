@@ -190,6 +190,148 @@ class FileService
         }
     }
 
+    public function copyPrivateImage(
+        FileAsset $source,
+        string $purpose,
+        string $folder
+    ): FileAsset {
+        $tenantId =
+            $this->tenantContext->tenantId();
+
+        $userId =
+            $this->tenantContext->userId();
+
+        if ($source->tenant_id !== $tenantId) {
+            throw new RuntimeException(
+                'Source file does not belong to active tenant.'
+            );
+        }
+
+        if (! array_key_exists(
+            $source->mime_type,
+            self::SIGNATURE_MIME_MAP
+        )) {
+            throw new RuntimeException(
+                'Unsupported image file type.'
+            );
+        }
+
+        $sourceDisk =
+            Storage::disk(
+                $source->storage_disk
+            );
+
+        if (! $sourceDisk->exists(
+            $source->object_key
+        )) {
+            throw new RuntimeException(
+                'Source private file does not exist.'
+            );
+        }
+
+        $contents =
+            $sourceDisk->get(
+                $source->object_key
+            );
+
+        if ($contents === '') {
+            throw new RuntimeException(
+                'Source private file is empty.'
+            );
+        }
+
+        $fileId =
+            (string) Str::ulid();
+
+        $extension =
+            self::SIGNATURE_MIME_MAP[
+                $source->mime_type
+            ];
+
+        $disk =
+            (string) config(
+                'filesystems.private_disk',
+                'local'
+            );
+
+        if ($disk === 'public') {
+            throw new RuntimeException(
+                'Public disk cannot be used for private files.'
+            );
+        }
+
+        $objectKey =
+            'tenants/'
+            . $tenantId
+            . '/'
+            . $folder
+            . '/'
+            . $fileId
+            . '.'
+            . $extension;
+
+        $stored =
+            Storage::disk($disk)->put(
+                $objectKey,
+                $contents,
+                [
+                    'visibility' => 'private',
+                ]
+            );
+
+        if (! $stored) {
+            throw new RuntimeException(
+                'Unable to copy private file.'
+            );
+        }
+
+        try {
+            return FileAsset::query()->create([
+                'id' =>
+                    $fileId,
+
+                'tenant_id' =>
+                    $tenantId,
+
+                'purpose' =>
+                    $purpose,
+
+                'storage_disk' =>
+                    $disk,
+
+                'object_key' =>
+                    $objectKey,
+
+                'original_name' =>
+                    $source->original_name,
+
+                'mime_type' =>
+                    $source->mime_type,
+
+                'size_bytes' =>
+                    strlen($contents),
+
+                'checksum_sha256' =>
+                    hash(
+                        'sha256',
+                        $contents
+                    ),
+
+                'visibility' =>
+                    'PRIVATE',
+
+                'uploaded_by_user_id' =>
+                    $userId,
+            ]);
+        } catch (\Throwable $exception) {
+            Storage::disk($disk)->delete(
+                $objectKey
+            );
+
+            throw $exception;
+        }
+    }
+
     public function deleteObject(
         FileAsset $file
     ): void {

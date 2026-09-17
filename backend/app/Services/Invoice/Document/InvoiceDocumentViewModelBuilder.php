@@ -8,7 +8,7 @@ use App\Support\Localization\CanonicalLabel;
 class InvoiceDocumentViewModelBuilder
 {
     public function __construct(
-        private readonly InvoiceBrandingResolver $brandingResolver
+        private readonly InvoiceBrandingSnapshotService $brandingSnapshotService
     ) {
     }
 
@@ -114,8 +114,10 @@ class InvoiceDocumentViewModelBuilder
             ],
 
             'branding' =>
-                $this->brandingResolver
-                    ->resolve(),
+                $this->brandingSnapshotService
+                    ->resolve(
+                        $invoice
+                    ),
         ];
     }
 

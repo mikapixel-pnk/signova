@@ -36,6 +36,9 @@ class Invoice extends Model
         'invoice_template_key',
         'invoice_palette_key',
         'invoice_template_version',
+        'branding_snapshot',
+        'branding_logo_file_id',
+        'branding_signature_file_id',
         'notes',
         'created_by_user_id',
     ];
@@ -50,6 +53,7 @@ class Invoice extends Model
         'paid_amount' => 'decimal:2',
         'outstanding_amount' => 'decimal:2',
         'invoice_template_version' => 'integer',
+        'branding_snapshot' => 'array',
     ];
 
     public function customer(): BelongsTo

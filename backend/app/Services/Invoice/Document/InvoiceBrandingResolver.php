@@ -67,7 +67,6 @@ class InvoiceBrandingResolver
 
             'logo_data_uri' =>
                 $this->privateImageDataUri(
-                    $tenantId,
                     $business->logo_file_id,
                     'BUSINESS_LOGO'
                 ),
@@ -83,7 +82,6 @@ class InvoiceBrandingResolver
 
             'signature_image_data_uri' =>
                 $this->privateImageDataUri(
-                    $tenantId,
                     $settings
                         ?->signature_image_file_id,
                     'DOCUMENT_SIGNATURE'
@@ -91,11 +89,13 @@ class InvoiceBrandingResolver
         ];
     }
 
-    private function privateImageDataUri(
-        string $tenantId,
+    public function privateImageDataUri(
         ?string $fileId,
         string $purpose
     ): ?string {
+        $tenantId =
+            $this->tenantContext->tenantId();
+
         if ($fileId === null) {
             return null;
         }
