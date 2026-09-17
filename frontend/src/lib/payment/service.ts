@@ -1,10 +1,12 @@
 import {
+  authenticatedApiBlobRequest,
   authenticatedApiRequest,
 } from "@/lib/api/client";
 
 import type {
   InvoicePaymentsResponse,
   PaymentCashAccountsResponse,
+  PaymentEvidenceResponse,
   RecordInvoicePaymentPayload,
   RecordInvoicePaymentResponse,
 } from "@/types/payment";
@@ -49,5 +51,37 @@ export async function recordInvoicePayment(
       method: "POST",
       body: payload,
     },
+  );
+}
+
+
+export async function uploadPaymentEvidence(
+  paymentId: string,
+  file: File,
+): Promise<PaymentEvidenceResponse> {
+  const body =
+    new FormData();
+
+  body.append(
+    "evidence",
+    file,
+  );
+
+  return authenticatedApiRequest<
+    PaymentEvidenceResponse
+  >(
+    `/payments/${paymentId}/evidence`,
+    {
+      method: "POST",
+      body,
+    },
+  );
+}
+
+export async function getPaymentEvidence(
+  paymentId: string,
+): Promise<Blob> {
+  return authenticatedApiBlobRequest(
+    `/payments/${paymentId}/evidence`,
   );
 }

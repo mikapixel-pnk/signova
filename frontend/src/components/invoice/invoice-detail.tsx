@@ -50,9 +50,11 @@ import {
 } from "@/lib/invoice/service";
 
 import {
+  getPaymentEvidence,
   listInvoicePayments,
   listPaymentCashAccounts,
   recordInvoicePayment,
+  uploadPaymentEvidence,
 } from "@/lib/payment/service";
 
 import type {
@@ -375,6 +377,20 @@ export function InvoiceDetail() {
     paymentReference,
     setPaymentReference,
   ] = useState("");
+
+  const [
+    evidenceUploadingId,
+    setEvidenceUploadingId,
+  ] = useState<
+    string | null
+  >(null);
+
+  const [
+    evidenceViewingId,
+    setEvidenceViewingId,
+  ] = useState<
+    string | null
+  >(null);
 
   useEffect(() => {
     let cancelled =
@@ -732,6 +748,169 @@ export function InvoiceDetail() {
     } finally {
       setPaymentSaving(
         false,
+      );
+    }
+  }
+
+  async function handleEvidenceUpload(
+    paymentId: string,
+    file: File,
+  ) {
+    const allowedTypes =
+      new Set([
+        "image/png",
+        "image/jpeg",
+        "image/webp",
+        "application/pdf",
+      ]);
+
+    if (
+      !allowedTypes.has(
+        file.type,
+      )
+    ) {
+      setActionError(
+        new Error(
+          "Bukti harus berupa PNG, JPG, WebP, atau PDF.",
+        ),
+      );
+
+      return;
+    }
+
+    if (
+      file.size >
+      5 * 1024 * 1024
+    ) {
+      setActionError(
+        new Error(
+          "Ukuran bukti maksimal 5 MB.",
+        ),
+      );
+
+      return;
+    }
+
+    setEvidenceUploadingId(
+      paymentId,
+    );
+
+    setActionError(
+      null,
+    );
+
+    try {
+      const response =
+        await uploadPaymentEvidence(
+          paymentId,
+          file,
+        );
+
+      setActionSuccess(
+        response.message ??
+        "Bukti pembayaran berhasil ditambahkan.",
+      );
+
+      await refreshPayments();
+    } catch (caught) {
+      setActionError(
+        caught,
+      );
+    } finally {
+      setEvidenceUploadingId(
+        null,
+      );
+    }
+  }
+
+  async function handleEvidenceView(
+    paymentId: string,
+  ) {
+    const previewWindow =
+      window.open(
+        "",
+        "_blank",
+      );
+
+    if (previewWindow) {
+      try {
+        previewWindow.opener =
+          null;
+
+        previewWindow.document.title =
+          "Memuat bukti pembayaran...";
+      } catch {
+        // Browser dapat membatasi akses tab baru.
+      }
+    }
+
+    setEvidenceViewingId(
+      paymentId,
+    );
+
+    setActionError(
+      null,
+    );
+
+    try {
+      const blob =
+        await getPaymentEvidence(
+          paymentId,
+        );
+
+      const objectUrl =
+        URL.createObjectURL(
+          blob,
+        );
+
+      if (previewWindow) {
+        previewWindow.location.href =
+          objectUrl;
+      } else {
+        const link =
+          document.createElement(
+            "a",
+          );
+
+        link.href =
+          objectUrl;
+
+        link.target =
+          "_blank";
+
+        link.rel =
+          "noopener noreferrer";
+
+        document.body.appendChild(
+          link,
+        );
+
+        link.click();
+        link.remove();
+      }
+
+      window.setTimeout(
+        () => {
+          URL.revokeObjectURL(
+            objectUrl,
+          );
+        },
+        60_000,
+      );
+    } catch (caught) {
+      if (
+        previewWindow &&
+        !previewWindow.closed
+      ) {
+        previewWindow.close();
+      }
+
+      setActionError(
+        caught,
+      );
+    } finally {
+      setEvidenceViewingId(
+        null,
       );
     }
   }
@@ -1748,6 +1927,104 @@ export function InvoiceDetail() {
                         ? "Ada bukti pembayaran"
                         : "Tanpa bukti pembayaran"}
                     </span>
+                  </div>
+
+                  <div
+                    className={
+                      styles.paymentEvidenceActions
+                    }
+                  >
+                    {payment.has_evidence ? (
+                      <button
+                        type="button"
+                        className={
+                          styles.paymentEvidenceButton
+                        }
+                        disabled={
+                          evidenceViewingId ===
+                          payment.payment_id
+                        }
+                        onClick={
+                          () =>
+                            void handleEvidenceView(
+                              payment.payment_id,
+                            )
+                        }
+                      >
+                        {evidenceViewingId ===
+                        payment.payment_id
+                          ? "Membuka..."
+                          : "Lihat Bukti"}
+                      </button>
+                    ) : payment.status ===
+                      "VERIFIED" ? (
+                      <>
+                        <input
+                          id={
+                            `payment-evidence-${payment.payment_id}`
+                          }
+                          type="file"
+                          accept="image/png,image/jpeg,image/webp,application/pdf"
+                          className={
+                            styles.paymentEvidenceInput
+                          }
+                          disabled={
+                            evidenceUploadingId ===
+                            payment.payment_id
+                          }
+                          onChange={
+                            (
+                              event,
+                            ) => {
+                              const file =
+                                event.target
+                                  .files?.[0];
+
+                              event.currentTarget
+                                .value = "";
+
+                              if (file) {
+                                void handleEvidenceUpload(
+                                  payment.payment_id,
+                                  file,
+                                );
+                              }
+                            }
+                          }
+                        />
+
+                        <button
+                          type="button"
+                          className={
+                            styles.paymentEvidenceButton
+                          }
+                          disabled={
+                            evidenceUploadingId ===
+                            payment.payment_id
+                          }
+                          onClick={
+                            () => {
+                              const input =
+                                document.getElementById(
+                                  `payment-evidence-${payment.payment_id}`,
+                                );
+
+                              if (
+                                input instanceof
+                                HTMLInputElement
+                              ) {
+                                input.click();
+                              }
+                            }
+                          }
+                        >
+                          {evidenceUploadingId ===
+                          payment.payment_id
+                            ? "Mengunggah..."
+                            : "Tambah Bukti"}
+                        </button>
+                      </>
+                    ) : null}
                   </div>
                 </article>
               ),

@@ -127,6 +127,24 @@ export type RecordedPayment = {
   has_evidence: boolean;
 };
 
+export type PaymentEvidenceResponse = {
+  success: true;
+
+  data: {
+    id: string;
+    status: string;
+    has_evidence: boolean;
+  };
+
+  meta:
+    Record<
+      string,
+      unknown
+    >;
+
+  message?: string;
+};
+
 export type RecordInvoicePaymentResponse = {
   success: true;
 
