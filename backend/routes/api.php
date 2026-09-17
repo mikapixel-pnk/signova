@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\V1\Auth\AuthController;
+use App\Http\Controllers\Api\Public\V1\Invoice\PublicInvoiceController;
 use App\Http\Controllers\Api\Public\V1\Quotation\PublicQuotationController;
 use App\Http\Controllers\Api\V1\HealthController;
 use App\Http\Controllers\Api\V1\Finance\CashAccountController;
@@ -8,6 +9,7 @@ use App\Http\Controllers\Api\V1\Finance\ExpenseController;
 use App\Http\Controllers\Api\V1\Finance\FinanceSummaryController;
 use App\Http\Controllers\Api\V1\Finance\IncomeController;
 use App\Http\Controllers\Api\V1\Invoice\InvoiceController;
+use App\Http\Controllers\Api\V1\Invoice\InvoicePublicLinkController;
 use App\Http\Controllers\Api\V1\Payment\PaymentController;
 use App\Http\Controllers\Api\V1\Settings\BusinessProfileController;
 use App\Http\Controllers\Api\V1\Settings\DocumentSettingController;
@@ -51,6 +53,15 @@ Route::prefix('public/v1')->group(function () {
     Route::post(
         '/quotations/{token}/reject',
         [PublicQuotationController::class, 'reject']
+    );
+
+    /*
+     * Public Invoice GET harus read-only.
+     * Tidak membutuhkan auth/tenant context.
+     */
+    Route::get(
+        '/invoices/{token}',
+        [PublicInvoiceController::class, 'show']
     );
 });
 
@@ -277,6 +288,14 @@ Route::prefix('v1')->group(function () {
         Route::post(
             '/invoices/{invoiceId}/actions/issue',
             [InvoiceController::class, 'issue']
+        )->middleware([
+            'business.context',
+            'capability:invoice.issue',
+        ]);
+
+        Route::post(
+            '/invoices/{invoiceId}/actions/issue-public-link',
+            [InvoicePublicLinkController::class, 'store']
         )->middleware([
             'business.context',
             'capability:invoice.issue',

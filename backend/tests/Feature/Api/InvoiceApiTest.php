@@ -5002,4 +5002,328 @@ class InvoiceApiTest extends TestCase
                 ]
             );
     }
+
+    public function test_owner_can_issue_public_invoice_link_and_public_get_is_minimal(): void
+    {
+        $workspace =
+            $this->workspace(
+                'invoice-public-link@example.test',
+                'Invoice Public Link'
+            );
+
+        $customerId =
+            $this->insertCustomer(
+                $workspace['tenant_id'],
+                'CUST-INVOICE-PUBLIC',
+                'Pelanggan Public Invoice'
+            );
+
+        $invoiceId =
+            $this->insertInvoice(
+                $workspace,
+                $customerId,
+                'INV-PUBLIC-001',
+                'ISSUED'
+            );
+
+        $this->actingAsWorkspace(
+            $workspace
+        );
+
+        $response =
+            $this->postJson(
+                "/api/v1/invoices/{$invoiceId}/actions/issue-public-link"
+            );
+
+        $response
+            ->assertCreated()
+            ->assertJsonPath(
+                'success',
+                true
+            )
+            ->assertJsonStructure([
+                'data' => [
+                    'public_url',
+                    'expires_at',
+                ],
+            ]);
+
+        $publicUrl =
+            (string) $response->json(
+                'data.public_url'
+            );
+
+        $path =
+            (string) parse_url(
+                $publicUrl,
+                PHP_URL_PATH
+            );
+
+        $presentedToken =
+            basename(
+                $path
+            );
+
+        $this->assertStringStartsWith(
+            'TAGIHAN-',
+            $presentedToken
+        );
+
+        $rawToken =
+            substr(
+                $presentedToken,
+                strlen(
+                    'TAGIHAN-'
+                )
+            );
+
+        $this->assertDatabaseHas(
+            'invoice_public_links',
+            [
+                'tenant_id' =>
+                    $workspace[
+                        'tenant_id'
+                    ],
+
+                'business_id' =>
+                    $workspace[
+                        'business_id'
+                    ],
+
+                'invoice_id' =>
+                    $invoiceId,
+
+                'token_hash' =>
+                    hash(
+                        'sha256',
+                        $rawToken
+                    ),
+
+                'revoked_at' =>
+                    null,
+            ]
+        );
+
+        /*
+         * Public GET tidak membawa header tenant/business
+         * dan tidak boleh mengekspos internal IDs.
+         */
+        $this->getJson(
+            '/api/public/v1/invoices/'
+            . $presentedToken
+        )
+            ->assertOk()
+            ->assertJsonPath(
+                'success',
+                true
+            )
+            ->assertJsonPath(
+                'data.invoice_number',
+                'INV-PUBLIC-001'
+            )
+            ->assertJsonPath(
+                'data.status',
+                'ISSUED'
+            )
+            ->assertJsonMissingPath(
+                'data.id'
+            )
+            ->assertJsonMissingPath(
+                'data.tenant_id'
+            )
+            ->assertJsonMissingPath(
+                'data.business_id'
+            );
+    }
+
+
+    public function test_draft_invoice_cannot_issue_public_invoice_link(): void
+    {
+        $workspace =
+            $this->workspace(
+                'invoice-public-draft@example.test',
+                'Invoice Public Draft'
+            );
+
+        $customerId =
+            $this->insertCustomer(
+                $workspace['tenant_id'],
+                'CUST-INVOICE-DRAFT',
+                'Pelanggan Draft'
+            );
+
+        $invoiceId =
+            $this->insertInvoice(
+                $workspace,
+                $customerId,
+                'INV-PUBLIC-DRAFT',
+                'DRAFT'
+            );
+
+        $this->actingAsWorkspace(
+            $workspace
+        );
+
+        $this->postJson(
+            "/api/v1/invoices/{$invoiceId}/actions/issue-public-link"
+        )
+            ->assertStatus(409)
+            ->assertJsonPath(
+                'success',
+                false
+            )
+            ->assertJsonPath(
+                'error.code',
+                'INVALID_TRANSITION'
+            );
+
+        $this->assertDatabaseMissing(
+            'invoice_public_links',
+            [
+                'invoice_id' =>
+                    $invoiceId,
+            ]
+        );
+    }
+
+
+    public function test_reissuing_public_invoice_link_revokes_previous_link(): void
+    {
+        $workspace =
+            $this->workspace(
+                'invoice-public-reissue@example.test',
+                'Invoice Public Reissue'
+            );
+
+        $customerId =
+            $this->insertCustomer(
+                $workspace['tenant_id'],
+                'CUST-INVOICE-REISSUE',
+                'Pelanggan Reissue'
+            );
+
+        $invoiceId =
+            $this->insertInvoice(
+                $workspace,
+                $customerId,
+                'INV-PUBLIC-REISSUE',
+                'ISSUED'
+            );
+
+        $this->actingAsWorkspace(
+            $workspace
+        );
+
+        $first =
+            $this->postJson(
+                "/api/v1/invoices/{$invoiceId}/actions/issue-public-link"
+            )->assertCreated();
+
+        $second =
+            $this->postJson(
+                "/api/v1/invoices/{$invoiceId}/actions/issue-public-link"
+            )->assertCreated();
+
+        $firstToken =
+            basename(
+                (string) parse_url(
+                    (string) $first->json(
+                        'data.public_url'
+                    ),
+                    PHP_URL_PATH
+                )
+            );
+
+        $secondToken =
+            basename(
+                (string) parse_url(
+                    (string) $second->json(
+                        'data.public_url'
+                    ),
+                    PHP_URL_PATH
+                )
+            );
+
+        $this->assertNotSame(
+            $firstToken,
+            $secondToken
+        );
+
+        $firstHash =
+            hash(
+                'sha256',
+                substr(
+                    $firstToken,
+                    strlen(
+                        'TAGIHAN-'
+                    )
+                )
+            );
+
+        $secondHash =
+            hash(
+                'sha256',
+                substr(
+                    $secondToken,
+                    strlen(
+                        'TAGIHAN-'
+                    )
+                )
+            );
+
+        $this->assertNotNull(
+            \Illuminate\Support\Facades\DB::table(
+                'invoice_public_links'
+            )
+                ->where(
+                    'token_hash',
+                    $firstHash
+                )
+                ->value(
+                    'revoked_at'
+                )
+        );
+
+        $this->assertNull(
+            \Illuminate\Support\Facades\DB::table(
+                'invoice_public_links'
+            )
+                ->where(
+                    'token_hash',
+                    $secondHash
+                )
+                ->value(
+                    'revoked_at'
+                )
+        );
+
+        $this->getJson(
+            '/api/public/v1/invoices/'
+            . $firstToken
+        )->assertNotFound();
+
+        $this->getJson(
+            '/api/public/v1/invoices/'
+            . $secondToken
+        )->assertOk();
+    }
+
+
+    public function test_invalid_public_invoice_token_returns_not_found(): void
+    {
+        $this->getJson(
+            '/api/public/v1/invoices/'
+            . 'TAGIHAN-invalid-token'
+        )
+            ->assertNotFound()
+            ->assertJsonPath(
+                'success',
+                false
+            )
+            ->assertJsonPath(
+                'error.code',
+                'RESOURCE_NOT_FOUND'
+            );
+    }
+
 }
