@@ -1306,6 +1306,28 @@ export function InvoiceDetail() {
           "DRAFT" ? (
             <Button
               type="button"
+              variant="secondary"
+              disabled={
+                actionLoading
+              }
+              leadingIcon={
+                <FileText
+                  size={17}
+                />
+              }
+              onClick={
+                () =>
+                  void handlePdf()
+              }
+            >
+              Pratinjau
+            </Button>
+          ) : null}
+
+          {invoice.status ===
+          "DRAFT" ? (
+            <Button
+              type="button"
               loading={
                 actionLoading
               }

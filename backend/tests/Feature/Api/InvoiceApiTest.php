@@ -1865,6 +1865,79 @@ class InvoiceApiTest extends TestCase
     }
 
 
+    public function test_draft_invoice_can_be_previewed_without_being_issued(): void
+    {
+        $workspace =
+            $this->workspace(
+                'invoice-draft-preview@example.test',
+                'Invoice Draft Preview'
+            );
+
+        $customerId =
+            $this->insertCustomer(
+                $workspace['tenant_id'],
+                'CUST-DRAFT-PREVIEW',
+                'Pelanggan Draft Preview'
+            );
+
+        $invoiceId =
+            $this->insertInvoice(
+                $workspace,
+                $customerId,
+                'INV-DRAFT-PREVIEW',
+                'DRAFT'
+            );
+
+        $this->insertInvoiceItem(
+            $workspace['tenant_id'],
+            $invoiceId,
+            'Jasa Pratinjau Tagihan',
+            '350000.00'
+        );
+
+        $this->actingAsWorkspace(
+            $workspace
+        );
+
+        $response =
+            $this->get(
+                "/api/v1/invoices/{$invoiceId}/pdf"
+            );
+
+        $response
+            ->assertOk()
+            ->assertHeader(
+                'Content-Type',
+                'application/pdf'
+            );
+
+        $this->assertStringStartsWith(
+            '%PDF',
+            $response->getContent()
+        );
+
+        $this->assertDatabaseHas(
+            'invoices',
+            [
+                'id' =>
+                    $invoiceId,
+
+                'tenant_id' =>
+                    $workspace['tenant_id'],
+
+                'business_id' =>
+                    $workspace['business_id'],
+
+                'status' =>
+                    'DRAFT',
+
+                'issued_at' =>
+                    null,
+            ]
+        );
+    }
+
+
     public function test_owner_can_download_branded_invoice_pdf(): void
     {
         $workspace = $this->workspace(
