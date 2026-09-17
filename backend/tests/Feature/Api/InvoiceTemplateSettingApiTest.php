@@ -68,7 +68,7 @@ class InvoiceTemplateSettingApiTest extends TestCase
         );
     }
 
-    public function test_catalog_contains_three_starter_templates(): void
+    public function test_catalog_contains_starter_and_premium_templates(): void
     {
         $workspace =
             $this->workspace(
@@ -92,7 +92,7 @@ class InvoiceTemplateSettingApiTest extends TestCase
             );
 
         $this->assertCount(
-            3,
+            4,
             $templates
         );
 
@@ -101,6 +101,7 @@ class InvoiceTemplateSettingApiTest extends TestCase
                 'classic_blue',
                 'modern_emerald',
                 'minimal_slate',
+                'premium_navy',
             ],
             array_column(
                 $templates,
@@ -108,7 +109,13 @@ class InvoiceTemplateSettingApiTest extends TestCase
             )
         );
 
-        foreach ($templates as $template) {
+        foreach (
+            array_slice(
+                $templates,
+                0,
+                3
+            ) as $template
+        ) {
             $this->assertSame(
                 'STARTER',
                 $template['tier']
@@ -118,6 +125,28 @@ class InvoiceTemplateSettingApiTest extends TestCase
                 $template['is_available']
             );
         }
+
+        $premium =
+            $templates[3];
+
+        $this->assertSame(
+            'Premium Navy',
+            $premium['name']
+        );
+
+        $this->assertSame(
+            'PREMIUM',
+            $premium['tier']
+        );
+
+        $this->assertFalse(
+            $premium['is_available']
+        );
+
+        $this->assertArrayNotHasKey(
+            'author',
+            $premium
+        );
     }
 
     public function test_owner_can_select_template_and_palette(): void
@@ -423,7 +452,7 @@ class InvoiceTemplateSettingApiTest extends TestCase
         );
     }
 
-    public function test_owner_can_preview_all_starter_templates(): void
+    public function test_owner_can_preview_all_catalog_templates(): void
     {
         $workspace =
             $this->workspace(
@@ -444,6 +473,9 @@ class InvoiceTemplateSettingApiTest extends TestCase
 
             'minimal_slate' =>
                 'minimal',
+
+            'premium_navy' =>
+                'premium',
         ];
 
         foreach (
@@ -560,6 +592,44 @@ class InvoiceTemplateSettingApiTest extends TestCase
             '/api/v1/settings/invoice-templates/classic_blue/preview'
         )
             ->assertForbidden();
+    }
+
+
+    public function test_premium_template_is_visible_but_not_selectable_on_starter(): void
+    {
+        $workspace =
+            $this->workspace(
+                'template-premium-locked@example.test',
+                'Template Premium Locked'
+            );
+
+        $this->actingAsWorkspace(
+            $workspace
+        );
+
+        $this->getJson(
+            '/api/v1/settings/invoice-templates'
+        )
+            ->assertOk()
+            ->assertJsonFragment([
+                'key' => 'premium_navy',
+                'name' => 'Premium Navy',
+                'tier' => 'PREMIUM',
+                'is_available' => false,
+            ]);
+
+        $this->patchJson(
+            '/api/v1/settings/invoice-templates',
+            [
+                'invoice_template_key' =>
+                    'premium_navy',
+            ]
+        )
+            ->assertUnprocessable()
+            ->assertJsonPath(
+                'error.code',
+                'VALIDATION_FAILED'
+            );
     }
 
 

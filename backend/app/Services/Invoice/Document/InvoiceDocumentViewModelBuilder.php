@@ -166,6 +166,13 @@ class InvoiceDocumentViewModelBuilder
                 'tax_id' =>
                     $business->tax_id,
 
+                'logo_data_uri' =>
+                    $this->privateImageDataUri(
+                        $tenantId,
+                        $business->logo_file_id,
+                        'BUSINESS_LOGO'
+                    ),
+
                 'invoice_footnote' =>
                     $settings?->invoice_footnote,
 
@@ -176,10 +183,11 @@ class InvoiceDocumentViewModelBuilder
                     $settings?->signature_title,
 
                 'signature_image_data_uri' =>
-                    $this->signatureDataUri(
+                    $this->privateImageDataUri(
                         $tenantId,
                         $settings
-                            ?->signature_image_file_id
+                            ?->signature_image_file_id,
+                        'DOCUMENT_SIGNATURE'
                     ),
             ],
         ];
@@ -213,9 +221,10 @@ class InvoiceDocumentViewModelBuilder
         );
     }
 
-    private function signatureDataUri(
+    private function privateImageDataUri(
         string $tenantId,
-        ?string $fileId
+        ?string $fileId,
+        string $purpose
     ): ?string {
         if ($fileId === null) {
             return null;
@@ -233,7 +242,7 @@ class InvoiceDocumentViewModelBuilder
                 )
                 ->where(
                     'purpose',
-                    'DOCUMENT_SIGNATURE'
+                    $purpose
                 )
                 ->whereIn(
                     'mime_type',

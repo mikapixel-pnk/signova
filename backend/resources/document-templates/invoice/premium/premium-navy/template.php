@@ -3,10 +3,13 @@
 return [
     'key' => 'premium_navy',
     'name' => 'Premium Navy',
+    'author' => 'Novel',
+    'sort_order' => 100,
     'tier' => 'PREMIUM',
-    'enabled' => false,
+    'enabled' => true,
 
     'layout' => 'premium',
+    'view' => 'view.blade.php',
     'version' => 1,
 
     'default_palette' => 'navy',

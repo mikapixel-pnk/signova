@@ -3,10 +3,13 @@
 return [
     'key' => 'classic_blue',
     'name' => 'Classic Blue',
+    'author' => 'Novel',
+    'sort_order' => 10,
     'tier' => 'STARTER',
     'enabled' => true,
 
     'layout' => 'classic',
+    'view' => 'view.blade.php',
     'version' => 1,
 
     'default_palette' => 'blue',

@@ -70,17 +70,17 @@ class InvoiceTemplateLoader
                 );
             }
 
+            $this->validate(
+                $definition,
+                $file
+            );
+
             if (
                 ($definition['enabled'] ?? true)
                 !== true
             ) {
                 continue;
             }
-
-            $this->validate(
-                $definition,
-                $file
-            );
 
             $key =
                 $definition['key'];
@@ -126,11 +126,28 @@ class InvoiceTemplateLoader
                 'name' =>
                     $definition['name'],
 
+                'author' =>
+                    $definition['author'],
+
                 'tier' =>
                     $definition['tier'],
 
+                'sort_order' =>
+                    $definition['sort_order'],
+
                 'layout' =>
                     $definition['layout'],
+
+                'view' =>
+                    $definition['view'],
+
+                'view_path' =>
+                    dirname($file)
+                    . '/'
+                    . $definition['view'],
+
+                'package_path' =>
+                    dirname($file),
 
                 'version' =>
                     $definition['version'],
@@ -157,18 +174,17 @@ class InvoiceTemplateLoader
                 array $left,
                 array $right
             ): int {
-                $order = [
-                    'classic_blue' => 10,
-                    'modern_emerald' => 20,
-                    'minimal_slate' => 30,
-                ];
+                $orderComparison =
+                    $left['sort_order']
+                    <=> $right['sort_order'];
 
-                return (
-                    $order[$left['key']]
-                    ?? 1000
-                ) <=> (
-                    $order[$right['key']]
-                    ?? 1000
+                if ($orderComparison !== 0) {
+                    return $orderComparison;
+                }
+
+                return strcmp(
+                    $left['key'],
+                    $right['key']
                 );
             }
         );
@@ -190,8 +206,11 @@ class InvoiceTemplateLoader
             [
                 'key',
                 'name',
+                'author',
                 'tier',
+                'sort_order',
                 'layout',
+                'view',
                 'version',
                 'default_palette',
                 'palettes',
@@ -212,10 +231,18 @@ class InvoiceTemplateLoader
             || $definition['key'] === ''
             || ! is_string($definition['name'])
             || $definition['name'] === ''
+            || ! is_string($definition['author'])
+            || $definition['author'] === ''
             || ! is_string($definition['tier'])
             || $definition['tier'] === ''
+            || ! is_int($definition['sort_order'])
+            || $definition['sort_order'] < 0
             || ! is_string($definition['layout'])
             || $definition['layout'] === ''
+            || ! is_string($definition['view'])
+            || $definition['view'] === ''
+            || basename($definition['view'])
+                !== $definition['view']
             || ! is_int($definition['version'])
             || $definition['version'] < 1
             || ! is_string(
@@ -227,6 +254,38 @@ class InvoiceTemplateLoader
         ) {
             throw new InvalidArgumentException(
                 "Invalid invoice template contract: {$file}"
+            );
+        }
+
+        $folderName =
+            basename(
+                dirname($file)
+            );
+
+        $expectedKey =
+            str_replace(
+                '-',
+                '_',
+                $folderName
+            );
+
+        $expectedName =
+            ucwords(
+                str_replace(
+                    '-',
+                    ' ',
+                    $folderName
+                )
+            );
+
+        if (
+            $definition['key']
+            !== $expectedKey
+            || $definition['name']
+                !== $expectedName
+        ) {
+            throw new InvalidArgumentException(
+                "Invoice template identity does not match package folder: {$file}"
             );
         }
 

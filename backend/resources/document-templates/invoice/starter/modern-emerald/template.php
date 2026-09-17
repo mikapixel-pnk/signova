@@ -3,10 +3,13 @@
 return [
     'key' => 'modern_emerald',
     'name' => 'Modern Emerald',
+    'author' => 'Novel',
+    'sort_order' => 20,
     'tier' => 'STARTER',
     'enabled' => true,
 
     'layout' => 'modern',
+    'view' => 'view.blade.php',
     'version' => 1,
 
     'default_palette' => 'emerald',

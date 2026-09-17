@@ -32,7 +32,9 @@ class InvoiceTemplatePreviewService
 
         return $this->renderer->renderHtml(
             $resolved['view'],
-            $viewModel
+            $viewModel,
+            $resolved['view_path']
+                ?? null
         );
     }
 }

@@ -20,15 +20,30 @@ class InvoiceTemplateLoaderTest extends TestCase
                 'classic_blue',
                 'modern_emerald',
                 'minimal_slate',
+                'premium_navy',
             ],
             array_keys(
                 $templates
             )
         );
 
-        $this->assertArrayNotHasKey(
+        $this->assertArrayHasKey(
             'premium_navy',
             $templates
+        );
+
+        $this->assertSame(
+            'Novel',
+            $templates[
+                'premium_navy'
+            ]['author']
+        );
+
+        $this->assertSame(
+            100,
+            $templates[
+                'premium_navy'
+            ]['sort_order']
         );
     }
 

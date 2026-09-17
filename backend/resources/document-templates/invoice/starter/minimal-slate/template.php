@@ -3,10 +3,13 @@
 return [
     'key' => 'minimal_slate',
     'name' => 'Minimal Slate',
+    'author' => 'Novel',
+    'sort_order' => 30,
     'tier' => 'STARTER',
     'enabled' => true,
 
     'layout' => 'minimal',
+    'view' => 'view.blade.php',
     'version' => 1,
 
     'default_palette' => 'slate',

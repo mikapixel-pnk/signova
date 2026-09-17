@@ -50,18 +50,32 @@ class InvoiceTemplateViewResolver
                 $paletteKey
             );
 
+        $template =
+            $resolved['template'];
+
+        $viewPath =
+            $template['view_path']
+            ?? null;
+
         return [
             'template' =>
-                $resolved['template'],
+                $template,
 
             'palette' =>
                 $resolved['palette'],
 
             'view' =>
-                'pdf.invoices.'
-                . $resolved[
-                    'template'
-                ]['layout'],
+                is_string($viewPath)
+                && is_file($viewPath)
+                    ? null
+                    : 'pdf.invoices.'
+                        . $template['layout'],
+
+            'view_path' =>
+                is_string($viewPath)
+                && is_file($viewPath)
+                    ? $viewPath
+                    : null,
         ];
     }
 }

@@ -94,4 +94,103 @@ class InvoiceTemplateRenderTest extends TestCase
             );
         }
     }
+    public function test_premium_navy_renders_from_package_view(): void
+    {
+        $resolver =
+            app(
+                InvoiceTemplateViewResolver::class
+            );
+
+        $factory =
+            app(
+                InvoicePreviewViewModelFactory::class
+            );
+
+        $renderer =
+            app(
+                InvoicePdfRenderer::class
+            );
+
+        $resolved =
+            $resolver->resolve(
+                'premium_navy'
+            );
+
+        $this->assertNull(
+            $resolved['view']
+        );
+
+        $this->assertIsString(
+            $resolved['view_path']
+        );
+
+        $this->assertFileExists(
+            $resolved['view_path']
+        );
+
+        $this->assertSame(
+            'Novel',
+            $resolved[
+                'template'
+            ]['author']
+        );
+
+        $backgroundPath =
+            $resolved[
+                'template'
+            ]['package_path']
+            . '/'
+            . $resolved[
+                'template'
+            ]['background']['asset'];
+
+        $this->assertFileExists(
+            $backgroundPath
+        );
+
+        $viewModel =
+            $factory->make(
+                $resolved
+            );
+
+        $html =
+            $renderer->renderHtml(
+                $resolved['view'],
+                $viewModel,
+                $resolved['view_path']
+            );
+
+        $this->assertStringContainsString(
+            'data-invoice-layout="premium"',
+            $html
+        );
+
+        $this->assertStringContainsString(
+            'INV-202609-0001',
+            $html
+        );
+
+        $this->assertStringContainsString(
+            'data:image/png;base64,',
+            $html
+        );
+
+        $pdf =
+            $renderer->render(
+                $resolved['view'],
+                $viewModel,
+                $resolved['view_path']
+            );
+
+        $this->assertStringStartsWith(
+            '%PDF-',
+            $pdf
+        );
+
+        $this->assertGreaterThan(
+            1000,
+            strlen($pdf)
+        );
+    }
+
 }

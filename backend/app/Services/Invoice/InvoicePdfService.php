@@ -64,7 +64,9 @@ class InvoicePdfService
             'content' =>
                 $this->renderer->render(
                     $resolvedTemplate['view'],
-                    $viewModel
+                    $viewModel,
+                    $resolvedTemplate['view_path']
+                        ?? null
                 ),
 
             'filename' =>

@@ -117,6 +117,9 @@ class InvoicePreviewViewModelFactory
                 'tax_id' =>
                     '01.234.567.8-999.000',
 
+                'logo_data_uri' =>
+                    null,
+
                 'invoice_footnote' =>
                     'Pembayaran dapat dilakukan sesuai informasi yang telah disepakati.',
 

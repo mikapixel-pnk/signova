@@ -1650,6 +1650,155 @@ class InvoiceApiTest extends TestCase
         );
     }
 
+    public function test_premium_invoice_pdf_supports_uploaded_business_logo(): void
+    {
+        Storage::fake('local');
+
+        config()->set(
+            'filesystems.private_disk',
+            'local'
+        );
+
+        $workspace =
+            $this->workspace(
+                'invoice-logo@example.test',
+                'Invoice Logo'
+            );
+
+        $customerId =
+            $this->insertCustomer(
+                $workspace['tenant_id'],
+                'CUST-INV-LOGO',
+                'Pelanggan Invoice Logo'
+            );
+
+        $invoiceId =
+            $this->insertInvoice(
+                $workspace,
+                $customerId,
+                'INV-LOGO-001',
+                'ISSUED'
+            );
+
+        $this->insertInvoiceItem(
+            $workspace['tenant_id'],
+            $invoiceId,
+            'Jasa Premium Signage',
+            '750000.00'
+        );
+
+        DB::table('invoices')
+            ->where(
+                'id',
+                $invoiceId
+            )
+            ->update([
+                'invoice_template_key' =>
+                    'premium_navy',
+
+                'invoice_palette_key' =>
+                    'navy',
+
+                'invoice_template_version' =>
+                    1,
+            ]);
+
+        $this->actingAsWorkspace(
+            $workspace
+        );
+
+        $this->post(
+            '/api/v1/settings/business-profile/logo',
+            [
+                'logo' =>
+                    UploadedFile::fake()->image(
+                        'logo-usaha.png',
+                        1000,
+                        400
+                    ),
+            ]
+        )
+            ->assertOk()
+            ->assertJsonPath(
+                'data.has_logo',
+                true
+            );
+
+        $logoFile =
+            DB::table('files')
+                ->where(
+                    'tenant_id',
+                    $workspace['tenant_id']
+                )
+                ->where(
+                    'purpose',
+                    'BUSINESS_LOGO'
+                )
+                ->first();
+
+        $this->assertNotNull(
+            $logoFile
+        );
+
+        $this->assertSame(
+            'image/png',
+            $logoFile->mime_type
+        );
+
+        $this->assertSame(
+            'PRIVATE',
+            $logoFile->visibility
+        );
+
+        Storage::disk('local')
+            ->assertExists(
+                $logoFile->object_key
+            );
+
+        $this->assertDatabaseHas(
+            'business_profiles',
+            [
+                'id' =>
+                    $workspace['business_id'],
+
+                'tenant_id' =>
+                    $workspace['tenant_id'],
+
+                'logo_file_id' =>
+                    $logoFile->id,
+            ]
+        );
+
+        $response =
+            $this->get(
+                "/api/v1/invoices/{$invoiceId}/pdf"
+            );
+
+        $response
+            ->assertOk()
+            ->assertHeader(
+                'Content-Type',
+                'application/pdf'
+            )
+            ->assertHeader(
+                'X-Content-Type-Options',
+                'nosniff'
+            );
+
+        $this->assertStringStartsWith(
+            '%PDF',
+            $response->getContent()
+        );
+
+        $this->assertGreaterThan(
+            1000,
+            strlen(
+                $response->getContent()
+            )
+        );
+    }
+
+
     public function test_owner_can_create_manual_draft_invoice(): void
     {
         $workspace =
