@@ -4341,6 +4341,376 @@ class PaymentApiTest extends TestCase
     }
 
 
+    public function test_invoice_payment_action_records_verifies_and_allocates_atomically(): void
+    {
+        $workspace =
+            $this->workspace(
+                'record-invoice-payment@example.test',
+                'Record Invoice Payment'
+            );
+
+        $customer =
+            $this->customer(
+                $workspace,
+                'Customer Record Payment'
+            );
+
+        $invoiceId =
+            $this->createReceivableInvoice(
+                $workspace,
+                $customer,
+                'INV-RECORD-PAYMENT',
+                '100000.00',
+                'ISSUED'
+            );
+
+        $cashAccountId =
+            $this->cashAccount(
+                $workspace
+            );
+
+        $this->actingAsWorkspace(
+            $workspace
+        );
+
+        $response =
+            $this->postJson(
+                '/api/v1/invoices/'
+                . $invoiceId
+                . '/actions/record-payment',
+                [
+                    'cash_account_id' =>
+                        $cashAccountId,
+
+                    'amount' =>
+                        '40000.00',
+
+                    'paid_at' =>
+                        now()->toISOString(),
+
+                    'method' =>
+                        'BANK_TRANSFER',
+
+                    'reference' =>
+                        'PAY-ATOMIC-001',
+                ]
+            )
+                ->assertCreated()
+                ->assertJsonPath(
+                    'data.payment.status',
+                    'VERIFIED'
+                )
+                ->assertJsonPath(
+                    'data.invoice.status',
+                    'PARTIALLY_PAID'
+                )
+                ->assertJsonPath(
+                    'data.invoice.paid_amount',
+                    '40000.00'
+                )
+                ->assertJsonPath(
+                    'data.invoice.outstanding_amount',
+                    '60000.00'
+                );
+
+        $paymentId =
+            $response->json(
+                'data.payment.id'
+            );
+
+        $this->assertDatabaseHas(
+            'payments',
+            [
+                'id' =>
+                    $paymentId,
+
+                'tenant_id' =>
+                    $workspace['tenant_id'],
+
+                'business_id' =>
+                    $workspace['business_id'],
+
+                'status' =>
+                    'VERIFIED',
+
+                'reference' =>
+                    'PAY-ATOMIC-001',
+            ]
+        );
+
+        $this->assertDatabaseHas(
+            'payment_allocations',
+            [
+                'tenant_id' =>
+                    $workspace['tenant_id'],
+
+                'business_id' =>
+                    $workspace['business_id'],
+
+                'payment_id' =>
+                    $paymentId,
+
+                'invoice_id' =>
+                    $invoiceId,
+
+                'allocated_amount' =>
+                    '40000.00',
+            ]
+        );
+
+        $this->assertDatabaseHas(
+            'cash_transactions',
+            [
+                'tenant_id' =>
+                    $workspace['tenant_id'],
+
+                'business_id' =>
+                    $workspace['business_id'],
+
+                'source_type' =>
+                    'PAYMENT',
+
+                'source_id' =>
+                    $paymentId,
+
+                'direction' =>
+                    'IN',
+
+                'amount' =>
+                    '40000.00',
+            ]
+        );
+
+        $this->getJson(
+            '/api/v1/invoices/'
+            . $invoiceId
+            . '/payments'
+        )
+            ->assertOk()
+            ->assertJsonPath(
+                'data.0.payment_id',
+                $paymentId
+            )
+            ->assertJsonPath(
+                'data.0.allocated_amount',
+                '40000.00'
+            )
+            ->assertJsonPath(
+                'data.0.status',
+                'VERIFIED'
+            );
+    }
+
+    public function test_invoice_payment_action_rolls_back_when_partial_payment_is_disabled(): void
+    {
+        $workspace =
+            $this->workspace(
+                'partial-disabled@example.test',
+                'Partial Disabled'
+            );
+
+        $customer =
+            $this->customer(
+                $workspace,
+                'Customer Partial Disabled'
+            );
+
+        $invoiceId =
+            $this->createReceivableInvoice(
+                $workspace,
+                $customer,
+                'INV-PARTIAL-DISABLED',
+                '100000.00',
+                'ISSUED'
+            );
+
+        $cashAccountId =
+            $this->cashAccount(
+                $workspace
+            );
+
+        \App\Models\TenantPaymentSetting::query()
+            ->create([
+                'tenant_id' =>
+                    $workspace['tenant_id'],
+
+                'business_id' =>
+                    $workspace['business_id'],
+
+                'bank_transfer_enabled' =>
+                    true,
+
+                'static_qr_enabled' =>
+                    false,
+
+                'midtrans_enabled' =>
+                    false,
+
+                'partial_payment_enabled' =>
+                    false,
+            ]);
+
+        $this->actingAsWorkspace(
+            $workspace
+        );
+
+        $this->postJson(
+            '/api/v1/invoices/'
+            . $invoiceId
+            . '/actions/record-payment',
+            [
+                'cash_account_id' =>
+                    $cashAccountId,
+
+                'amount' =>
+                    '40000.00',
+
+                'paid_at' =>
+                    now()->toISOString(),
+
+                'method' =>
+                    'BANK_TRANSFER',
+
+                'reference' =>
+                    'PAY-PARTIAL-DISABLED',
+            ]
+        )->assertStatus(409);
+
+        $this->assertDatabaseMissing(
+            'payments',
+            [
+                'tenant_id' =>
+                    $workspace['tenant_id'],
+
+                'business_id' =>
+                    $workspace['business_id'],
+
+                'reference' =>
+                    'PAY-PARTIAL-DISABLED',
+            ]
+        );
+
+        $this->assertDatabaseMissing(
+            'payment_allocations',
+            [
+                'tenant_id' =>
+                    $workspace['tenant_id'],
+
+                'business_id' =>
+                    $workspace['business_id'],
+
+                'invoice_id' =>
+                    $invoiceId,
+            ]
+        );
+
+        $this->assertDatabaseMissing(
+            'cash_transactions',
+            [
+                'tenant_id' =>
+                    $workspace['tenant_id'],
+
+                'business_id' =>
+                    $workspace['business_id'],
+
+                'source_type' =>
+                    'PAYMENT',
+            ]
+        );
+
+        $this->assertDatabaseHas(
+            'invoices',
+            [
+                'id' =>
+                    $invoiceId,
+
+                'status' =>
+                    'ISSUED',
+
+                'paid_amount' =>
+                    '0.00',
+
+                'outstanding_amount' =>
+                    '100000.00',
+            ]
+        );
+    }
+
+    public function test_invoice_payment_action_cannot_access_other_business_invoice(): void
+    {
+        $workspace =
+            $this->workspace(
+                'record-business-a@example.test',
+                'Record Business A'
+            );
+
+        $otherBusiness =
+            $this->secondBusinessWorkspace(
+                $workspace,
+                'Record Business B'
+            );
+
+        $foreignCustomer =
+            $this->customer(
+                $otherBusiness,
+                'Customer Business B'
+            );
+
+        $foreignInvoiceId =
+            $this->createReceivableInvoice(
+                $otherBusiness,
+                $foreignCustomer,
+                'INV-FOREIGN-RECORD',
+                '100000.00',
+                'ISSUED'
+            );
+
+        $cashAccountId =
+            $this->cashAccount(
+                $workspace
+            );
+
+        $this->actingAsWorkspace(
+            $workspace
+        );
+
+        $this->postJson(
+            '/api/v1/invoices/'
+            . $foreignInvoiceId
+            . '/actions/record-payment',
+            [
+                'cash_account_id' =>
+                    $cashAccountId,
+
+                'amount' =>
+                    '100000.00',
+
+                'paid_at' =>
+                    now()->toISOString(),
+
+                'method' =>
+                    'BANK_TRANSFER',
+
+                'reference' =>
+                    'PAY-FOREIGN-INVOICE',
+            ]
+        )->assertNotFound();
+
+        $this->assertDatabaseMissing(
+            'payments',
+            [
+                'tenant_id' =>
+                    $workspace['tenant_id'],
+
+                'business_id' =>
+                    $workspace['business_id'],
+
+                'reference' =>
+                    'PAY-FOREIGN-INVOICE',
+            ]
+        );
+    }
+
     private function secondBusinessWorkspace(
         array $workspace,
         string $name

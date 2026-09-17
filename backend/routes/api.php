@@ -315,6 +315,29 @@ Route::prefix('v1')->group(function () {
         */
 
         Route::get(
+            '/invoices/{invoiceId}/payments',
+            [
+                PaymentController::class,
+                'invoicePayments',
+            ]
+        )->middleware([
+            'business.context',
+            'capability:payment.view',
+        ]);
+
+        Route::post(
+            '/invoices/{invoiceId}/actions/record-payment',
+            [
+                PaymentController::class,
+                'recordForInvoice',
+            ]
+        )->middleware([
+            'business.context',
+            'capability:payment.record',
+            'capability:payment.verify',
+        ]);
+
+        Route::get(
             '/payments',
             [PaymentController::class, 'index']
         )->middleware([

@@ -13,6 +13,7 @@ use App\Models\PaymentAllocation;
 use App\Models\PaymentReversal;
 use App\Models\Payment;
 use App\Services\File\FileService;
+use App\Services\Settings\PaymentSettingService;
 use App\Tenancy\BusinessContext;
 use App\Tenancy\TenantContext;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
@@ -26,6 +27,7 @@ class PaymentService
     public function __construct(
         private readonly TenantContext $tenantContext,
         private readonly BusinessContext $businessContext,
+        private readonly PaymentSettingService $paymentSettingService,
         private readonly FileService $fileService
     ) {
     }
@@ -127,6 +129,189 @@ class PaymentService
                 $paymentId
             )
             ->firstOrFail();
+    }
+
+    public function listForInvoice(
+        string $invoiceId
+    ): array {
+        Invoice::query()
+            ->where(
+                'tenant_id',
+                $this->tenantContext
+                    ->tenantId()
+            )
+            ->where(
+                'business_id',
+                $this->businessContext
+                    ->businessId()
+            )
+            ->where(
+                'id',
+                $invoiceId
+            )
+            ->firstOrFail();
+
+        return PaymentAllocation::query()
+            ->join(
+                'payments',
+                function ($join): void {
+                    $join
+                        ->on(
+                            'payments.id',
+                            '=',
+                            'payment_allocations.payment_id'
+                        )
+                        ->on(
+                            'payments.tenant_id',
+                            '=',
+                            'payment_allocations.tenant_id'
+                        )
+                        ->on(
+                            'payments.business_id',
+                            '=',
+                            'payment_allocations.business_id'
+                        );
+                }
+            )
+            ->where(
+                'payment_allocations.tenant_id',
+                $this->tenantContext
+                    ->tenantId()
+            )
+            ->where(
+                'payment_allocations.business_id',
+                $this->businessContext
+                    ->businessId()
+            )
+            ->where(
+                'payment_allocations.invoice_id',
+                $invoiceId
+            )
+            ->orderByDesc(
+                'payments.paid_at'
+            )
+            ->orderByDesc(
+                'payment_allocations.created_at'
+            )
+            ->get([
+                'payment_allocations.id as allocation_id',
+                'payment_allocations.allocated_amount',
+                'payments.id as payment_id',
+                'payments.amount as payment_amount',
+                'payments.status',
+                'payments.method',
+                'payments.paid_at',
+                'payments.reference',
+                'payments.evidence_file_id',
+                'payments.created_at',
+            ])
+            ->map(
+                fn ($row) => [
+                    'allocation_id' =>
+                        $row->allocation_id,
+
+                    'payment_id' =>
+                        $row->payment_id,
+
+                    'allocated_amount' =>
+                        $row->allocated_amount,
+
+                    'payment_amount' =>
+                        $row->payment_amount,
+
+                    'status' =>
+                        $row->status,
+
+                    'method' =>
+                        $row->method,
+
+                    'paid_at' =>
+                        $row->paid_at,
+
+                    'reference' =>
+                        $row->reference,
+
+                    'has_evidence' =>
+                        $row->evidence_file_id
+                        !== null,
+
+                    'created_at' =>
+                        $row->created_at,
+                ]
+            )
+            ->values()
+            ->all();
+    }
+
+    public function recordForInvoice(
+        string $invoiceId,
+        array $data
+    ): array {
+        return DB::transaction(
+            function () use (
+                $invoiceId,
+                $data
+            ): array {
+                $invoice =
+                    Invoice::query()
+                        ->where(
+                            'tenant_id',
+                            $this->tenantContext
+                                ->tenantId()
+                        )
+                        ->where(
+                            'business_id',
+                            $this->businessContext
+                                ->businessId()
+                        )
+                        ->where(
+                            'id',
+                            $invoiceId
+                        )
+                        ->firstOrFail();
+
+                $payment =
+                    $this->create([
+                        'customer_id' =>
+                            $invoice->customer_id,
+
+                        'cash_account_id' =>
+                            $data['cash_account_id'],
+
+                        'amount' =>
+                            $data['amount'],
+
+                        'currency' =>
+                            $invoice->currency,
+
+                        'paid_at' =>
+                            $data['paid_at'],
+
+                        'method' =>
+                            $data['method'],
+
+                        'reference' =>
+                            $data['reference']
+                            ?? null,
+                    ]);
+
+                $this->verify(
+                    $payment->id
+                );
+
+                return $this->allocate(
+                    $payment->id,
+                    [
+                        'invoice_id' =>
+                            $invoice->id,
+
+                        'amount' =>
+                            $data['amount'],
+                    ]
+                );
+            },
+            3
+        );
     }
 
     public function create(
@@ -970,13 +1155,37 @@ class PaymentService
                         $invoice->total
                     );
 
+                $invoiceRemainingMinor =
+                    $invoiceTotalMinor
+                    - $invoicePaidMinor;
+
+                if ($invoiceRemainingMinor <= 0) {
+                    throw new PaymentAllocationConflictException(
+                        'Tagihan ini sudah tidak memiliki sisa pembayaran.'
+                    );
+                }
+
                 if (
-                    $invoicePaidMinor
-                    + $requestedMinor
-                    > $invoiceTotalMinor
+                    $requestedMinor
+                    > $invoiceRemainingMinor
                 ) {
                     throw new PaymentAllocationConflictException(
                         'Jumlah alokasi melebihi sisa tagihan.'
+                    );
+                }
+
+                $paymentSettings =
+                    $this->paymentSettingService
+                        ->get();
+
+                if (
+                    ! $paymentSettings
+                        ->partial_payment_enabled
+                    && $requestedMinor
+                        !== $invoiceRemainingMinor
+                ) {
+                    throw new PaymentAllocationConflictException(
+                        'Pembayaran sebagian tidak diizinkan untuk usaha ini.'
                     );
                 }
 
