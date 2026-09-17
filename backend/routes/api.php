@@ -317,72 +317,82 @@ Route::prefix('v1')->group(function () {
         Route::get(
             '/payments',
             [PaymentController::class, 'index']
-        )->middleware(
-            'capability:payment.view'
-        );
+        )->middleware([
+            'business.context',
+            'capability:payment.view',
+        ]);
 
         Route::post(
             '/payments',
             [PaymentController::class, 'store']
-        )->middleware(
-            'capability:payment.record'
-        );
+        )->middleware([
+            'business.context',
+            'capability:payment.record',
+        ]);
 
         Route::post(
             '/payments/{paymentId}/allocations',
             [PaymentController::class, 'allocate']
-        )->middleware(
-            'capability:payment.verify'
-        );
+        )->middleware([
+            'business.context',
+            'capability:payment.verify',
+        ]);
 
         Route::post(
             '/payments/{paymentId}/actions/verify',
             [PaymentController::class, 'verify']
-        )->middleware(
-            'capability:payment.verify'
-        );
+        )->middleware([
+            'business.context',
+            'capability:payment.verify',
+        ]);
 
         Route::post(
             '/payments/{paymentId}/actions/reverse',
             [PaymentController::class, 'reverse']
-        )->middleware(
-            'capability:payment.reverse'
-        );
+        )->middleware([
+            'business.context',
+            'capability:payment.reverse',
+        ]);
 
         Route::post(
             '/payments/{paymentId}/actions/reject',
             [PaymentController::class, 'reject']
-        )->middleware(
-            'capability:payment.verify'
-        );
+        )->middleware([
+            'business.context',
+            'capability:payment.verify',
+        ]);
 
         Route::get(
             '/payments/{paymentId}',
             [PaymentController::class, 'show']
-        )->middleware(
-            'capability:payment.view'
-        );
+        )->middleware([
+            'business.context',
+            'capability:payment.view',
+        ]);
 
         Route::post(
             '/payments/{paymentId}/evidence',
             [PaymentController::class, 'uploadEvidence']
-        )->middleware(
-            'capability:payment.record'
-        );
+        )->middleware([
+            'business.context',
+            'capability:payment.record',
+        ]);
 
         Route::get(
             '/payments/{paymentId}/evidence',
             [PaymentController::class, 'evidence']
-        )->middleware(
-            'capability:payment.view'
-        );
+        )->middleware([
+            'business.context',
+            'capability:payment.view',
+        ]);
 
         Route::delete(
             '/payments/{paymentId}/evidence',
             [PaymentController::class, 'destroyEvidence']
-        )->middleware(
-            'capability:payment.record'
-        );
+        )->middleware([
+            'business.context',
+            'capability:payment.record',
+        ]);
 
 
         /*
@@ -394,9 +404,10 @@ Route::prefix('v1')->group(function () {
         Route::get(
             '/finance/summary',
             FinanceSummaryController::class
-        )->middleware(
-            'capability:finance.summary.view'
-        );
+        )->middleware([
+            'business.context',
+            'capability:finance.summary.view',
+        ]);
 
 
         /*
@@ -408,58 +419,66 @@ Route::prefix('v1')->group(function () {
         Route::get(
             '/finance/cash-accounts',
             [CashAccountController::class, 'index']
-        )->middleware(
-            'capability:finance.cash_bank.view'
-        );
+        )->middleware([
+            'business.context',
+            'capability:finance.cash_bank.view',
+        ]);
 
         Route::post(
             '/finance/cash-accounts',
             [CashAccountController::class, 'store']
-        )->middleware(
-            'capability:finance.cash_bank.manage'
-        );
+        )->middleware([
+            'business.context',
+            'capability:finance.cash_bank.manage',
+        ]);
 
         Route::get(
             '/finance/cash-accounts/{cashAccountId}',
             [CashAccountController::class, 'show']
-        )->middleware(
-            'capability:finance.cash_bank.view'
-        );
+        )->middleware([
+            'business.context',
+            'capability:finance.cash_bank.view',
+        ]);
 
         Route::patch(
             '/finance/cash-accounts/{cashAccountId}',
             [CashAccountController::class, 'update']
-        )->middleware(
-            'capability:finance.cash_bank.manage'
-        );
+        )->middleware([
+            'business.context',
+            'capability:finance.cash_bank.manage',
+        ]);
 
         Route::delete(
             '/finance/cash-accounts/{cashAccountId}',
             [CashAccountController::class, 'destroy']
-        )->middleware(
-            'capability:finance.cash_bank.manage'
-        );
+        )->middleware([
+            'business.context',
+            'capability:finance.cash_bank.manage',
+        ]);
 
         Route::post(
             '/finance/cash-accounts/{cashAccountId}/actions/activate',
             [CashAccountController::class, 'activate']
-        )->middleware(
-            'capability:finance.cash_bank.manage'
-        );
+        )->middleware([
+            'business.context',
+            'capability:finance.cash_bank.manage',
+        ]);
 
         Route::post(
             '/finance/cash-accounts/{cashAccountId}/actions/deactivate',
             [CashAccountController::class, 'deactivate']
-        )->middleware(
-            'capability:finance.cash_bank.manage'
-        );
+        )->middleware([
+            'business.context',
+            'capability:finance.cash_bank.manage',
+        ]);
 
         Route::post(
             '/finance/cash-accounts/{cashAccountId}/actions/set-default',
             [CashAccountController::class, 'setDefault']
-        )->middleware(
-            'capability:finance.cash_bank.manage'
-        );
+        )->middleware([
+            'business.context',
+            'capability:finance.cash_bank.manage',
+        ]);
 
 
         /*
@@ -471,51 +490,58 @@ Route::prefix('v1')->group(function () {
         Route::get(
             '/finance/incomes',
             [IncomeController::class, 'index']
-        )->middleware(
-            'capability:finance.income.view'
-        );
+        )->middleware([
+            'business.context',
+            'capability:finance.income.view',
+        ]);
 
         Route::post(
             '/finance/incomes',
             [IncomeController::class, 'store']
-        )->middleware(
-            'capability:finance.income.manage'
-        );
+        )->middleware([
+            'business.context',
+            'capability:finance.income.manage',
+        ]);
 
         Route::get(
             '/finance/incomes/{incomeId}',
             [IncomeController::class, 'show']
-        )->middleware(
-            'capability:finance.income.view'
-        );
+        )->middleware([
+            'business.context',
+            'capability:finance.income.view',
+        ]);
 
         Route::patch(
             '/finance/incomes/{incomeId}',
             [IncomeController::class, 'update']
-        )->middleware(
-            'capability:finance.income.manage'
-        );
+        )->middleware([
+            'business.context',
+            'capability:finance.income.manage',
+        ]);
 
         Route::delete(
             '/finance/incomes/{incomeId}',
             [IncomeController::class, 'destroy']
-        )->middleware(
-            'capability:finance.income.manage'
-        );
+        )->middleware([
+            'business.context',
+            'capability:finance.income.manage',
+        ]);
 
         Route::post(
             '/finance/incomes/{incomeId}/actions/post',
             [IncomeController::class, 'post']
-        )->middleware(
-            'capability:finance.income.manage'
-        );
+        )->middleware([
+            'business.context',
+            'capability:finance.income.manage',
+        ]);
 
         Route::post(
             '/finance/incomes/{incomeId}/actions/void',
             [IncomeController::class, 'void']
-        )->middleware(
-            'capability:finance.income.manage'
-        );
+        )->middleware([
+            'business.context',
+            'capability:finance.income.manage',
+        ]);
 
 
         /*
@@ -527,51 +553,58 @@ Route::prefix('v1')->group(function () {
         Route::get(
             '/finance/expenses',
             [ExpenseController::class, 'index']
-        )->middleware(
-            'capability:finance.expense.view'
-        );
+        )->middleware([
+            'business.context',
+            'capability:finance.expense.view',
+        ]);
 
         Route::post(
             '/finance/expenses',
             [ExpenseController::class, 'store']
-        )->middleware(
-            'capability:finance.expense.manage'
-        );
+        )->middleware([
+            'business.context',
+            'capability:finance.expense.manage',
+        ]);
 
         Route::get(
             '/finance/expenses/{expenseId}',
             [ExpenseController::class, 'show']
-        )->middleware(
-            'capability:finance.expense.view'
-        );
+        )->middleware([
+            'business.context',
+            'capability:finance.expense.view',
+        ]);
 
         Route::patch(
             '/finance/expenses/{expenseId}',
             [ExpenseController::class, 'update']
-        )->middleware(
-            'capability:finance.expense.manage'
-        );
+        )->middleware([
+            'business.context',
+            'capability:finance.expense.manage',
+        ]);
 
         Route::delete(
             '/finance/expenses/{expenseId}',
             [ExpenseController::class, 'destroy']
-        )->middleware(
-            'capability:finance.expense.manage'
-        );
+        )->middleware([
+            'business.context',
+            'capability:finance.expense.manage',
+        ]);
 
         Route::post(
             '/finance/expenses/{expenseId}/actions/post',
             [ExpenseController::class, 'post']
-        )->middleware(
-            'capability:finance.expense.manage'
-        );
+        )->middleware([
+            'business.context',
+            'capability:finance.expense.manage',
+        ]);
 
         Route::post(
             '/finance/expenses/{expenseId}/actions/void',
             [ExpenseController::class, 'void']
-        )->middleware(
-            'capability:finance.expense.manage'
-        );
+        )->middleware([
+            'business.context',
+            'capability:finance.expense.manage',
+        ]);
 
 
         /*

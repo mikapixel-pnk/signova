@@ -1041,6 +1041,9 @@ class CashAccountApiTest extends TestCase
             'id' => $id,
             'tenant_id' =>
                 $workspace['tenant_id'],
+
+            'business_id' =>
+                $workspace['business_id'],
             'name' => $name,
             'type' => $type,
             'bank_name' =>
@@ -1079,6 +1082,9 @@ class CashAccountApiTest extends TestCase
                 (string) Str::ulid(),
             'tenant_id' =>
                 $workspace['tenant_id'],
+
+            'business_id' =>
+                $workspace['business_id'],
             'cash_account_id' =>
                 $accountId,
             'direction' =>
@@ -1147,6 +1153,85 @@ class CashAccountApiTest extends TestCase
         return $id;
     }
 
+
+    public function test_same_tenant_other_business_account_detail_returns_not_found(): void
+    {
+        $workspace =
+            $this->workspace(
+                'cash-business-scope@example.test',
+                'Cash Business Scope'
+            );
+
+        $otherBusiness =
+            $this->secondBusinessWorkspace(
+                $workspace,
+                'Cash Business B'
+            );
+
+        $foreignAccountId =
+            $this->insertAccount(
+                $otherBusiness,
+                'Kas Business B',
+                'CASH',
+                false
+            );
+
+        $this->actingAsWorkspace(
+            $workspace
+        );
+
+        $this->getJson(
+            '/api/v1/finance/cash-accounts/'
+            . $foreignAccountId
+        )
+            ->assertNotFound()
+            ->assertJsonPath(
+                'error.code',
+                'RESOURCE_NOT_FOUND'
+            );
+    }
+
+
+    private function secondBusinessWorkspace(
+        array $workspace,
+        string $name
+    ): array {
+        $businessId =
+            (string) \Illuminate\Support\Str::ulid();
+
+        DB::table(
+            'business_profiles'
+        )->insert([
+            'id' =>
+                $businessId,
+
+            'tenant_id' =>
+                $workspace['tenant_id'],
+
+            'name' =>
+                $name,
+
+            'is_default' =>
+                false,
+
+            'status' =>
+                'ACTIVE',
+
+            'created_at' =>
+                now(),
+
+            'updated_at' =>
+                now(),
+        ]);
+
+        return [
+            ...$workspace,
+
+            'business_id' =>
+                $businessId,
+        ];
+    }
+
     private function workspace(
         string $email,
         string $businessName
@@ -1186,6 +1271,11 @@ class CashAccountApiTest extends TestCase
         $this->withHeader(
             'X-Tenant-ID',
             $workspace['tenant_id']
+        );
+
+        $this->withHeader(
+            'X-Signova-Business',
+            $workspace['business_id']
         );
     }
 

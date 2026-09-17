@@ -381,6 +381,116 @@ class FinanceSummaryApiTest extends TestCase
             );
     }
 
+
+    public function test_summary_is_business_scoped_within_same_tenant(): void
+    {
+        $workspace =
+            $this->workspace(
+                'summary-business-scope@example.test',
+                'Summary Business Scope'
+            );
+
+        $otherBusiness =
+            $this->secondBusinessWorkspace(
+                $workspace,
+                'Summary Business B'
+            );
+
+        $localAccount =
+            $this->insertAccount(
+                $workspace,
+                'Kas Business A',
+                'CASH'
+            );
+
+        $foreignAccount =
+            $this->insertAccount(
+                $otherBusiness,
+                'Kas Business B',
+                'CASH'
+            );
+
+        $this->insertLedger(
+            $workspace,
+            $localAccount,
+            'IN',
+            '100000.00',
+            'MANUAL_INCOME',
+            now()->toDateTimeString()
+        );
+
+        $this->insertLedger(
+            $otherBusiness,
+            $foreignAccount,
+            'IN',
+            '900000.00',
+            'MANUAL_INCOME',
+            now()->toDateTimeString()
+        );
+
+        $this->actingAsWorkspace(
+            $workspace
+        );
+
+        $this->getJson(
+            '/api/v1/finance/summary'
+        )
+            ->assertOk()
+            ->assertJsonPath(
+                'data.cash_bank.total_balance',
+                '100000.00'
+            )
+            ->assertJsonPath(
+                'data.cash_bank.account_count',
+                1
+            )
+            ->assertJsonPath(
+                'data.cashflow.total_in',
+                '100000.00'
+            );
+    }
+
+
+    private function secondBusinessWorkspace(
+        array $workspace,
+        string $name
+    ): array {
+        $businessId =
+            (string) \Illuminate\Support\Str::ulid();
+
+        DB::table(
+            'business_profiles'
+        )->insert([
+            'id' =>
+                $businessId,
+
+            'tenant_id' =>
+                $workspace['tenant_id'],
+
+            'name' =>
+                $name,
+
+            'is_default' =>
+                false,
+
+            'status' =>
+                'ACTIVE',
+
+            'created_at' =>
+                now(),
+
+            'updated_at' =>
+                now(),
+        ]);
+
+        return [
+            ...$workspace,
+
+            'business_id' =>
+                $businessId,
+        ];
+    }
+
     private function workspace(
         string $email,
         string $tenantName
@@ -423,6 +533,11 @@ class FinanceSummaryApiTest extends TestCase
             'X-Tenant-ID',
             $workspace['tenant_id']
         );
+
+        $this->withHeader(
+            'X-Signova-Business',
+            $workspace['business_id']
+        );
     }
 
     private function insertAccount(
@@ -441,6 +556,9 @@ class FinanceSummaryApiTest extends TestCase
 
             'tenant_id' =>
                 $workspace['tenant_id'],
+
+            'business_id' =>
+                $workspace['business_id'],
 
             'name' =>
                 $name,
@@ -503,6 +621,9 @@ class FinanceSummaryApiTest extends TestCase
             'tenant_id' =>
                 $workspace['tenant_id'],
 
+            'business_id' =>
+                $workspace['business_id'],
+
             'cash_account_id' =>
                 $cashAccountId,
 
@@ -562,6 +683,9 @@ class FinanceSummaryApiTest extends TestCase
             'tenant_id' =>
                 $workspace['tenant_id'],
 
+            'business_id' =>
+                $workspace['business_id'],
+
             'name' =>
                 'Customer Finance Summary',
 
@@ -595,6 +719,9 @@ class FinanceSummaryApiTest extends TestCase
 
             'tenant_id' =>
                 $workspace['tenant_id'],
+
+            'business_id' =>
+                $workspace['business_id'],
 
             'invoice_number' =>
                 $number,

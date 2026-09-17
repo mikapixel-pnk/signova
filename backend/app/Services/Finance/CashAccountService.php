@@ -5,6 +5,7 @@ namespace App\Services\Finance;
 use App\Exceptions\Finance\CashAccountStateConflictException;
 use App\Exceptions\Finance\EntityHasActivityException;
 use App\Models\CashAccount;
+use App\Tenancy\BusinessContext;
 use App\Tenancy\TenantContext;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
@@ -15,6 +16,7 @@ class CashAccountService
 {
     public function __construct(
         private readonly TenantContext $tenantContext,
+        private readonly BusinessContext $businessContext,
     ) {
     }
 
@@ -96,11 +98,16 @@ class CashAccountService
     ): CashAccount {
         return DB::transaction(
             function () use ($data): CashAccount {
-                DB::table('tenants')
+                DB::table('business_profiles')
                     ->where(
-                        'id',
+                        'tenant_id',
                         $this->tenantContext
                             ->tenantId()
+                    )
+                    ->where(
+                        'id',
+                        $this->businessContext
+                            ->businessId()
                     )
                     ->lockForUpdate()
                     ->firstOrFail();
@@ -121,6 +128,10 @@ class CashAccountService
                             'tenant_id' =>
                                 $this->tenantContext
                                     ->tenantId(),
+
+                            'business_id' =>
+                                $this->businessContext
+                                    ->businessId(),
 
                             'name' =>
                                 $data['name'],
@@ -423,6 +434,11 @@ class CashAccountService
                                 ->tenantId()
                         )
                         ->where(
+                            'business_id',
+                            $this->businessContext
+                                ->businessId()
+                        )
+                        ->where(
                             'cash_account_id',
                             $account->id
                         )
@@ -434,6 +450,11 @@ class CashAccountService
                             'tenant_id',
                             $this->tenantContext
                                 ->tenantId()
+                        )
+                        ->where(
+                            'business_id',
+                            $this->businessContext
+                                ->businessId()
                         )
                         ->where(
                             'cash_account_id',
@@ -449,6 +470,11 @@ class CashAccountService
                                 ->tenantId()
                         )
                         ->where(
+                            'business_id',
+                            $this->businessContext
+                                ->businessId()
+                        )
+                        ->where(
                             'cash_account_id',
                             $account->id
                         )
@@ -460,6 +486,11 @@ class CashAccountService
                             'tenant_id',
                             $this->tenantContext
                                 ->tenantId()
+                        )
+                        ->where(
+                            'business_id',
+                            $this->businessContext
+                                ->businessId()
                         )
                         ->where(
                             'cash_account_id',
@@ -498,6 +529,11 @@ class CashAccountService
                 'tenant_id',
                 $this->tenantContext
                     ->tenantId()
+            )
+            ->where(
+                'business_id',
+                $this->businessContext
+                    ->businessId()
             );
     }
 
@@ -521,6 +557,8 @@ class CashAccountService
                         WHERE
                             ct.tenant_id =
                                 cash_accounts.tenant_id
+                            AND ct.business_id =
+                                cash_accounts.business_id
                             AND ct.cash_account_id =
                                 cash_accounts.id
                     ),

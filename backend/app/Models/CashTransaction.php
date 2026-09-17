@@ -12,6 +12,7 @@ class CashTransaction extends Model
 
     protected $fillable = [
         'tenant_id',
+        'business_id',
         'cash_account_id',
         'direction',
         'amount',

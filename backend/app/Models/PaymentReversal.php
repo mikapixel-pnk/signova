@@ -12,6 +12,7 @@ class PaymentReversal extends Model
 
     protected $fillable = [
         'tenant_id',
+        'business_id',
         'payment_id',
         'amount',
         'reason',

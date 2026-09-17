@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Payment;
 
+use App\Tenancy\BusinessContext;
 use App\Tenancy\TenantContext;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -62,6 +63,10 @@ class StorePaymentRequest extends FormRequest
             TenantContext::class
         )->tenantId();
 
+        $businessId = app(
+            BusinessContext::class
+        )->businessId();
+
         return [
             'customer_id' => [
                 'required',
@@ -75,6 +80,10 @@ class StorePaymentRequest extends FormRequest
                             ->where(
                                 'tenant_id',
                                 $tenantId
+                            )
+                            ->where(
+                                'business_id',
+                                $businessId
                             )
                             ->where(
                                 'status',
@@ -95,6 +104,10 @@ class StorePaymentRequest extends FormRequest
                             ->where(
                                 'tenant_id',
                                 $tenantId
+                            )
+                            ->where(
+                                'business_id',
+                                $businessId
                             )
                             ->where(
                                 'status',

@@ -7,6 +7,7 @@ use App\Exceptions\Finance\IncomeStateConflictException;
 use App\Models\CashAccount;
 use App\Models\CashTransaction;
 use App\Models\Income;
+use App\Tenancy\BusinessContext;
 use App\Tenancy\TenantContext;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
@@ -17,6 +18,7 @@ class IncomeService
 {
     public function __construct(
         private readonly TenantContext $tenantContext,
+        private readonly BusinessContext $businessContext,
     ) {
     }
 
@@ -105,6 +107,10 @@ class IncomeService
                         'tenant_id' =>
                             $this->tenantContext
                                 ->tenantId(),
+
+                        'business_id' =>
+                            $this->businessContext
+                                ->businessId(),
 
                         'cash_account_id' =>
                             $cashAccountId,
@@ -214,6 +220,11 @@ class IncomeService
                                 ->tenantId()
                         )
                         ->where(
+                            'business_id',
+                            $this->businessContext
+                                ->businessId()
+                        )
+                        ->where(
                             'source_id',
                             $income->id
                         )
@@ -292,6 +303,10 @@ class IncomeService
                         $this->tenantContext
                             ->tenantId(),
 
+                    'business_id' =>
+                        $this->businessContext
+                            ->businessId(),
+
                     'cash_account_id' =>
                         $account->id,
 
@@ -365,6 +380,11 @@ class IncomeService
                             'MANUAL_INCOME'
                         )
                         ->where(
+                            'business_id',
+                            $this->businessContext
+                                ->businessId()
+                        )
+                        ->where(
                             'source_id',
                             $income->id
                         )
@@ -416,6 +436,10 @@ class IncomeService
                     'tenant_id' =>
                         $this->tenantContext
                             ->tenantId(),
+
+                    'business_id' =>
+                        $this->businessContext
+                            ->businessId(),
 
                     'cash_account_id' =>
                         $original
@@ -486,6 +510,11 @@ class IncomeService
                         ->tenantId()
                 )
                 ->where(
+                    'business_id',
+                    $this->businessContext
+                        ->businessId()
+                )
+                ->where(
                     'id',
                     $cashAccountId
                 );
@@ -504,6 +533,11 @@ class IncomeService
                 'tenant_id',
                 $this->tenantContext
                     ->tenantId()
+            )
+            ->where(
+                'business_id',
+                $this->businessContext
+                    ->businessId()
             );
     }
 

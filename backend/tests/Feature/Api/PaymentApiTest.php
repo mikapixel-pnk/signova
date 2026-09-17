@@ -2872,6 +2872,128 @@ class PaymentApiTest extends TestCase
         );
     }
 
+
+    public function test_same_tenant_other_business_invoice_cannot_receive_allocation(): void
+    {
+        $workspace =
+            $this->workspace(
+                'allocation-business-a@example.test',
+                'Allocation Business A'
+            );
+
+        $otherBusiness =
+            $this->secondBusinessWorkspace(
+                $workspace,
+                'Allocation Business B'
+            );
+
+        $localCustomer =
+            $this->customer(
+                $workspace,
+                'Customer Business A'
+            );
+
+        $foreignCustomer =
+            $this->customer(
+                $otherBusiness,
+                'Customer Business B'
+            );
+
+        $paymentId =
+            $this->createPaymentWithAmount(
+                $workspace,
+                $localCustomer,
+                '100000.00'
+            );
+
+        $foreignInvoiceId =
+            $this->createReceivableInvoice(
+                $otherBusiness,
+                $foreignCustomer,
+                'INV-BUSINESS-B-ALLOC',
+                '100000.00',
+                'ISSUED'
+            );
+
+        $this->actingAsWorkspace(
+            $workspace
+        );
+
+        $this->postJson(
+            '/api/v1/payments/'
+            . $paymentId
+            . '/actions/verify'
+        )->assertOk();
+
+        $this->postJson(
+            '/api/v1/payments/'
+            . $paymentId
+            . '/allocations',
+            [
+                'invoice_id' =>
+                    $foreignInvoiceId,
+
+                'amount' =>
+                    '100000.00',
+            ]
+        )
+            ->assertUnprocessable()
+            ->assertJsonPath(
+                'error.code',
+                'VALIDATION_FAILED'
+            )
+            ->assertJsonStructure([
+                'error' => [
+                    'details' => [
+                        'fields' => [
+                            'invoice_id',
+                        ],
+                    ],
+                ],
+            ]);
+
+        $this->assertDatabaseMissing(
+            'payment_allocations',
+            [
+                'tenant_id' =>
+                    $workspace['tenant_id'],
+
+                'business_id' =>
+                    $workspace['business_id'],
+
+                'payment_id' =>
+                    $paymentId,
+
+                'invoice_id' =>
+                    $foreignInvoiceId,
+            ]
+        );
+
+        $this->assertDatabaseHas(
+            'invoices',
+            [
+                'id' =>
+                    $foreignInvoiceId,
+
+                'tenant_id' =>
+                    $workspace['tenant_id'],
+
+                'business_id' =>
+                    $otherBusiness['business_id'],
+
+                'status' =>
+                    'ISSUED',
+
+                'paid_amount' =>
+                    '0.00',
+
+                'outstanding_amount' =>
+                    '100000.00',
+            ]
+        );
+    }
+
+
     public function test_foreign_tenant_invoice_cannot_receive_allocation(): void
     {
         $first = $this->workspace(
@@ -2933,7 +3055,21 @@ class PaymentApiTest extends TestCase
                 'amount' =>
                     '100000.00',
             ]
-        )->assertNotFound();
+        )
+            ->assertUnprocessable()
+            ->assertJsonPath(
+                'error.code',
+                'VALIDATION_FAILED'
+            )
+            ->assertJsonStructure([
+                'error' => [
+                    'details' => [
+                        'fields' => [
+                            'invoice_id',
+                        ],
+                    ],
+                ],
+            ]);
     }
 
     public function test_allocation_requires_payment_verify_capability(): void
@@ -3872,6 +4008,9 @@ class PaymentApiTest extends TestCase
             'tenant_id' =>
                 $workspace['tenant_id'],
 
+            'business_id' =>
+                $workspace['business_id'],
+
             'invoice_number' =>
                 $number,
 
@@ -3988,6 +4127,10 @@ class PaymentApiTest extends TestCase
                     $workspace['tenant_id']
                 )
                 ->where(
+                    'business_id',
+                    $workspace['business_id']
+                )
+                ->where(
                     'status',
                     $status
                 )
@@ -4006,6 +4149,9 @@ class PaymentApiTest extends TestCase
 
             'tenant_id' =>
                 $workspace['tenant_id'],
+
+            'business_id' =>
+                $workspace['business_id'],
 
             'name' =>
                 $status === 'ACTIVE'
@@ -4056,6 +4202,9 @@ class PaymentApiTest extends TestCase
                 'tenant_id' =>
                     $workspace['tenant_id'],
 
+                'business_id' =>
+                    $workspace['business_id'],
+
                 'type' =>
                     'COMPANY',
 
@@ -4068,6 +4217,168 @@ class PaymentApiTest extends TestCase
                 'status' =>
                     $status,
             ]);
+    }
+
+
+    public function test_manual_payment_rejects_cash_account_from_other_business_in_same_tenant(): void
+    {
+        $workspace =
+            $this->workspace(
+                'payment-business-account@example.test',
+                'Payment Business Account'
+            );
+
+        $otherBusiness =
+            $this->secondBusinessWorkspace(
+                $workspace,
+                'Payment Business B'
+            );
+
+        $customer =
+            $this->customer(
+                $workspace,
+                'Customer Business A'
+            );
+
+        $foreignCashAccount =
+            $this->cashAccount(
+                $otherBusiness
+            );
+
+        $this->actingAsWorkspace(
+            $workspace
+        );
+
+        $this->postJson(
+            '/api/v1/payments',
+            [
+                'customer_id' =>
+                    $customer->id,
+
+                'cash_account_id' =>
+                    $foreignCashAccount,
+
+                'amount' =>
+                    100000,
+
+                'paid_at' =>
+                    now()->toISOString(),
+
+                'method' =>
+                    'BANK_TRANSFER',
+            ]
+        )
+            ->assertUnprocessable()
+            ->assertJsonPath(
+                'error.code',
+                'VALIDATION_FAILED'
+            );
+
+        $this->assertDatabaseCount(
+            'payments',
+            0
+        );
+    }
+
+    public function test_manual_payment_rejects_customer_from_other_business_in_same_tenant(): void
+    {
+        $workspace =
+            $this->workspace(
+                'payment-business-customer@example.test',
+                'Payment Business Customer'
+            );
+
+        $otherBusiness =
+            $this->secondBusinessWorkspace(
+                $workspace,
+                'Payment Customer Business B'
+            );
+
+        $foreignCustomer =
+            $this->customer(
+                $otherBusiness,
+                'Customer Business B'
+            );
+
+        $localCashAccount =
+            $this->cashAccount(
+                $workspace
+            );
+
+        $this->actingAsWorkspace(
+            $workspace
+        );
+
+        $this->postJson(
+            '/api/v1/payments',
+            [
+                'customer_id' =>
+                    $foreignCustomer->id,
+
+                'cash_account_id' =>
+                    $localCashAccount,
+
+                'amount' =>
+                    100000,
+
+                'paid_at' =>
+                    now()->toISOString(),
+
+                'method' =>
+                    'BANK_TRANSFER',
+            ]
+        )
+            ->assertUnprocessable()
+            ->assertJsonPath(
+                'error.code',
+                'VALIDATION_FAILED'
+            );
+
+        $this->assertDatabaseCount(
+            'payments',
+            0
+        );
+    }
+
+
+    private function secondBusinessWorkspace(
+        array $workspace,
+        string $name
+    ): array {
+        $businessId =
+            (string) \Illuminate\Support\Str::ulid();
+
+        DB::table(
+            'business_profiles'
+        )->insert([
+            'id' =>
+                $businessId,
+
+            'tenant_id' =>
+                $workspace['tenant_id'],
+
+            'name' =>
+                $name,
+
+            'is_default' =>
+                false,
+
+            'status' =>
+                'ACTIVE',
+
+            'created_at' =>
+                now(),
+
+            'updated_at' =>
+                now(),
+        ]);
+
+        return [
+            ...$workspace,
+
+            'business_id' =>
+                $businessId,
+        ];
     }
 
     private function workspace(
@@ -4100,6 +4411,9 @@ class PaymentApiTest extends TestCase
             'tenant_id' =>
                 $workspace['tenant_id'],
 
+            'business_id' =>
+                $workspace['business_id'],
+
             'user' =>
                 User::query()->findOrFail(
                     $workspace['user_id']
@@ -4118,6 +4432,11 @@ class PaymentApiTest extends TestCase
         $this->withHeader(
             'X-Tenant-ID',
             $workspace['tenant_id']
+        );
+
+        $this->withHeader(
+            'X-Signova-Business',
+            $workspace['business_id']
         );
     }
 

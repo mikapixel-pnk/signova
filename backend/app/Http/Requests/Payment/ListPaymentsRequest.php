@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Payment;
 
+use App\Tenancy\BusinessContext;
 use App\Tenancy\TenantContext;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -54,6 +55,10 @@ class ListPaymentsRequest extends FormRequest
             TenantContext::class
         )->tenantId();
 
+        $businessId = app(
+            BusinessContext::class
+        )->businessId();
+
         return [
             'search' => [
                 'sometimes',
@@ -83,10 +88,15 @@ class ListPaymentsRequest extends FormRequest
                     'id'
                 )->where(
                     fn ($query) =>
-                        $query->where(
-                            'tenant_id',
-                            $tenantId
-                        )
+                        $query
+                            ->where(
+                                'tenant_id',
+                                $tenantId
+                            )
+                            ->where(
+                                'business_id',
+                                $businessId
+                            )
                 ),
             ],
 

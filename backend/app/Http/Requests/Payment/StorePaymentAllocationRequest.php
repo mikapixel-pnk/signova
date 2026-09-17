@@ -2,7 +2,10 @@
 
 namespace App\Http\Requests\Payment;
 
+use App\Tenancy\BusinessContext;
+use App\Tenancy\TenantContext;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class StorePaymentAllocationRequest extends FormRequest
 {
@@ -28,11 +31,35 @@ class StorePaymentAllocationRequest extends FormRequest
 
     public function rules(): array
     {
+        $tenantId = app(
+            TenantContext::class
+        )->tenantId();
+
+        $businessId = app(
+            BusinessContext::class
+        )->businessId();
+
         return [
             'invoice_id' => [
                 'required',
                 'string',
                 'max:26',
+
+                Rule::exists(
+                    'invoices',
+                    'id'
+                )->where(
+                    fn ($query) =>
+                        $query
+                            ->where(
+                                'tenant_id',
+                                $tenantId
+                            )
+                            ->where(
+                                'business_id',
+                                $businessId
+                            )
+                ),
             ],
 
             'amount' => [

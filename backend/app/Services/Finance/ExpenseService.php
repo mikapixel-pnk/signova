@@ -7,6 +7,7 @@ use App\Exceptions\Finance\ExpenseStateConflictException;
 use App\Models\CashAccount;
 use App\Models\CashTransaction;
 use App\Models\Expense;
+use App\Tenancy\BusinessContext;
 use App\Tenancy\TenantContext;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
@@ -17,6 +18,7 @@ class ExpenseService
 {
     public function __construct(
         private readonly TenantContext $tenantContext,
+        private readonly BusinessContext $businessContext,
     ) {
     }
 
@@ -103,6 +105,10 @@ class ExpenseService
                         'tenant_id' =>
                             $this->tenantContext
                                 ->tenantId(),
+
+                        'business_id' =>
+                            $this->businessContext
+                                ->businessId(),
 
                         'cash_account_id' =>
                             $cashAccountId,
@@ -207,6 +213,11 @@ class ExpenseService
                                 ->tenantId()
                         )
                         ->where(
+                            'business_id',
+                            $this->businessContext
+                                ->businessId()
+                        )
+                        ->where(
                             'source_id',
                             $expense->id
                         )
@@ -301,6 +312,10 @@ class ExpenseService
                         $this->tenantContext
                             ->tenantId(),
 
+                    'business_id' =>
+                        $this->businessContext
+                            ->businessId(),
+
                     'cash_account_id' =>
                         $account->id,
 
@@ -379,6 +394,11 @@ class ExpenseService
                             'EXPENSE'
                         )
                         ->where(
+                            'business_id',
+                            $this->businessContext
+                                ->businessId()
+                        )
+                        ->where(
                             'source_id',
                             $expense->id
                         )
@@ -432,6 +452,10 @@ class ExpenseService
                     'tenant_id' =>
                         $this->tenantContext
                             ->tenantId(),
+
+                    'business_id' =>
+                        $this->businessContext
+                            ->businessId(),
 
                     'cash_account_id' =>
                         $original
@@ -502,6 +526,11 @@ class ExpenseService
                         ->tenantId()
                 )
                 ->where(
+                    'business_id',
+                    $this->businessContext
+                        ->businessId()
+                )
+                ->where(
                     'id',
                     $cashAccountId
                 );
@@ -520,6 +549,11 @@ class ExpenseService
                 'tenant_id',
                 $this->tenantContext
                     ->tenantId()
+            )
+            ->where(
+                'business_id',
+                $this->businessContext
+                    ->businessId()
             );
     }
 

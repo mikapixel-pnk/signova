@@ -13,6 +13,7 @@ use App\Models\PaymentAllocation;
 use App\Models\PaymentReversal;
 use App\Models\Payment;
 use App\Services\File\FileService;
+use App\Tenancy\BusinessContext;
 use App\Tenancy\TenantContext;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
@@ -24,6 +25,7 @@ class PaymentService
 {
     public function __construct(
         private readonly TenantContext $tenantContext,
+        private readonly BusinessContext $businessContext,
         private readonly FileService $fileService
     ) {
     }
@@ -139,6 +141,10 @@ class PaymentService
                     $this->tenantContext
                         ->tenantId(),
 
+                'business_id' =>
+                    $this->businessContext
+                        ->businessId(),
+
                 'customer_id' =>
                     $data['customer_id'],
 
@@ -248,6 +254,10 @@ class PaymentService
                     'tenant_id' =>
                         $this->tenantContext
                             ->tenantId(),
+
+                    'business_id' =>
+                        $this->businessContext
+                            ->businessId(),
 
                     'cash_account_id' =>
                         $payment->cash_account_id,
@@ -389,6 +399,11 @@ class PaymentService
                                 ->tenantId()
                         )
                         ->where(
+                            'business_id',
+                            $this->businessContext
+                                ->businessId()
+                        )
+                        ->where(
                             'source_type',
                             'PAYMENT'
                         )
@@ -431,6 +446,11 @@ class PaymentService
                                 ->tenantId()
                         )
                         ->where(
+                            'business_id',
+                            $this->businessContext
+                                ->businessId()
+                        )
+                        ->where(
                             'payment_id',
                             $payment->id
                         )
@@ -454,6 +474,11 @@ class PaymentService
                                     ->tenantId()
                             )
                             ->where(
+                                'business_id',
+                                $this->businessContext
+                                    ->businessId()
+                            )
+                            ->where(
                                 'id',
                                 $invoiceId
                             )
@@ -471,6 +496,10 @@ class PaymentService
                             'tenant_id' =>
                                 $this->tenantContext
                                     ->tenantId(),
+
+                            'business_id' =>
+                                $this->businessContext
+                                    ->businessId(),
 
                             'payment_id' =>
                                 $payment->id,
@@ -497,6 +526,10 @@ class PaymentService
                     'tenant_id' =>
                         $this->tenantContext
                             ->tenantId(),
+
+                    'business_id' =>
+                        $this->businessContext
+                            ->businessId(),
 
                     'cash_account_id' =>
                         $originalCashTransaction
@@ -570,6 +603,11 @@ class PaymentService
                                                 'payments.tenant_id',
                                                 '=',
                                                 'payment_allocations.tenant_id'
+                                            )
+                                            ->on(
+                                                'payments.business_id',
+                                                '=',
+                                                'payment_allocations.business_id'
                                             );
                                     }
                                 )
@@ -577,6 +615,11 @@ class PaymentService
                                     'payment_allocations.tenant_id',
                                     $this->tenantContext
                                         ->tenantId()
+                                )
+                                ->where(
+                                    'payment_allocations.business_id',
+                                    $this->businessContext
+                                        ->businessId()
                                 )
                                 ->where(
                                     'payment_allocations.invoice_id',
@@ -652,6 +695,9 @@ class PaymentService
                                 'tenant_id' =>
                                     $this->tenantContext
                                         ->tenantId(),
+
+                                'business_id' =>
+                                    $invoice->business_id,
 
                                 'invoice_id' =>
                                     $invoice->id,
@@ -754,6 +800,11 @@ class PaymentService
                                 ->tenantId()
                         )
                         ->where(
+                            'business_id',
+                            $this->businessContext
+                                ->businessId()
+                        )
+                        ->where(
                             'id',
                             $data['invoice_id']
                         )
@@ -801,6 +852,11 @@ class PaymentService
                                 ->tenantId()
                         )
                         ->where(
+                            'business_id',
+                            $this->businessContext
+                                ->businessId()
+                        )
+                        ->where(
                             'payment_id',
                             $payment->id
                         )
@@ -833,6 +889,11 @@ class PaymentService
                                 'tenant_id',
                                 $this->tenantContext
                                     ->tenantId()
+                            )
+                            ->where(
+                                'business_id',
+                                $this->businessContext
+                                    ->businessId()
                             )
                             ->where(
                                 'payment_id',
@@ -873,6 +934,11 @@ class PaymentService
                                             'payments.tenant_id',
                                             '=',
                                             'payment_allocations.tenant_id'
+                                        )
+                                        ->on(
+                                            'payments.business_id',
+                                            '=',
+                                            'payment_allocations.business_id'
                                         );
                                 }
                             )
@@ -880,6 +946,11 @@ class PaymentService
                                 'payment_allocations.tenant_id',
                                 $this->tenantContext
                                     ->tenantId()
+                            )
+                            ->where(
+                                'payment_allocations.business_id',
+                                $this->businessContext
+                                    ->businessId()
                             )
                             ->where(
                                 'payment_allocations.invoice_id',
@@ -916,6 +987,10 @@ class PaymentService
                                 $this->tenantContext
                                     ->tenantId(),
 
+                            'business_id' =>
+                                $this->businessContext
+                                    ->businessId(),
+
                             'payment_id' =>
                                 $payment->id,
 
@@ -947,6 +1022,11 @@ class PaymentService
                                             'payments.tenant_id',
                                             '=',
                                             'payment_allocations.tenant_id'
+                                        )
+                                        ->on(
+                                            'payments.business_id',
+                                            '=',
+                                            'payment_allocations.business_id'
                                         );
                                 }
                             )
@@ -954,6 +1034,11 @@ class PaymentService
                                 'payment_allocations.tenant_id',
                                 $this->tenantContext
                                     ->tenantId()
+                            )
+                            ->where(
+                                'payment_allocations.business_id',
+                                $this->businessContext
+                                    ->businessId()
                             )
                             ->where(
                                 'payment_allocations.invoice_id',
@@ -1018,6 +1103,9 @@ class PaymentService
                             'tenant_id' =>
                                 $this->tenantContext
                                     ->tenantId(),
+
+                            'business_id' =>
+                                $invoice->business_id,
 
                             'invoice_id' =>
                                 $invoice->id,
@@ -1393,6 +1481,11 @@ class PaymentService
                 'tenant_id',
                 $this->tenantContext
                     ->tenantId()
+            )
+            ->where(
+                'business_id',
+                $this->businessContext
+                    ->businessId()
             );
     }
 }

@@ -12,6 +12,7 @@ class PaymentAllocation extends Model
 
     protected $fillable = [
         'tenant_id',
+        'business_id',
         'payment_id',
         'invoice_id',
         'allocated_amount',

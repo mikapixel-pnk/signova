@@ -211,11 +211,20 @@ class IncomeApiTest extends TestCase
                     'Foreign account',
             ]
         )
-            ->assertNotFound()
+            ->assertUnprocessable()
             ->assertJsonPath(
                 'error.code',
-                'RESOURCE_NOT_FOUND'
-            );
+                'VALIDATION_FAILED'
+            )
+            ->assertJsonStructure([
+                'error' => [
+                    'details' => [
+                        'fields' => [
+                            'cash_account_id',
+                        ],
+                    ],
+                ],
+            ]);
     }
 
     public function test_draft_income_can_be_updated(): void
@@ -971,6 +980,104 @@ class IncomeApiTest extends TestCase
             );
     }
 
+
+    public function test_income_rejects_cash_account_from_other_business_in_same_tenant(): void
+    {
+        $workspace =
+            $this->workspace(
+                'income-business-scope@example.test',
+                'Income Business Scope'
+            );
+
+        $otherBusiness =
+            $this->secondBusinessWorkspace(
+                $workspace,
+                'Income Business B'
+            );
+
+        $foreignAccountId =
+            $this->insertAccount(
+                $otherBusiness,
+                'Kas Income Business B'
+            );
+
+        $this->actingAsWorkspace(
+            $workspace
+        );
+
+        $this->postJson(
+            '/api/v1/finance/incomes',
+            [
+                'cash_account_id' =>
+                    $foreignAccountId,
+
+                'amount' =>
+                    '50000.00',
+
+                'occurred_at' =>
+                    now()->toISOString(),
+
+                'description' =>
+                    'Tidak boleh lintas business',
+            ]
+        )
+            ->assertUnprocessable()
+            ->assertJsonPath(
+                'error.code',
+                'VALIDATION_FAILED'
+            )
+            ->assertJsonStructure([
+                'error' => [
+                    'details' => [
+                        'fields' => [
+                            'cash_account_id',
+                        ],
+                    ],
+                ],
+            ]);
+    }
+
+
+    private function secondBusinessWorkspace(
+        array $workspace,
+        string $name
+    ): array {
+        $businessId =
+            (string) \Illuminate\Support\Str::ulid();
+
+        DB::table(
+            'business_profiles'
+        )->insert([
+            'id' =>
+                $businessId,
+
+            'tenant_id' =>
+                $workspace['tenant_id'],
+
+            'name' =>
+                $name,
+
+            'is_default' =>
+                false,
+
+            'status' =>
+                'ACTIVE',
+
+            'created_at' =>
+                now(),
+
+            'updated_at' =>
+                now(),
+        ]);
+
+        return [
+            ...$workspace,
+
+            'business_id' =>
+                $businessId,
+        ];
+    }
+
     private function workspace(
         string $email,
         string $tenantName
@@ -1013,6 +1120,11 @@ class IncomeApiTest extends TestCase
             'X-Tenant-ID',
             $workspace['tenant_id']
         );
+
+        $this->withHeader(
+            'X-Signova-Business',
+            $workspace['business_id']
+        );
     }
 
     private function insertAccount(
@@ -1031,6 +1143,9 @@ class IncomeApiTest extends TestCase
 
             'tenant_id' =>
                 $workspace['tenant_id'],
+
+            'business_id' =>
+                $workspace['business_id'],
 
             'name' =>
                 $name,
@@ -1087,6 +1202,9 @@ class IncomeApiTest extends TestCase
 
             'tenant_id' =>
                 $workspace['tenant_id'],
+
+            'business_id' =>
+                $workspace['business_id'],
 
             'cash_account_id' =>
                 $cashAccountId,
@@ -1159,6 +1277,9 @@ class IncomeApiTest extends TestCase
 
             'tenant_id' =>
                 $workspace['tenant_id'],
+
+            'business_id' =>
+                $workspace['business_id'],
 
             'cash_account_id' =>
                 $cashAccountId,

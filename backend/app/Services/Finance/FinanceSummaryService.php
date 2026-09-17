@@ -2,6 +2,7 @@
 
 namespace App\Services\Finance;
 
+use App\Tenancy\BusinessContext;
 use App\Tenancy\TenantContext;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
@@ -10,6 +11,7 @@ class FinanceSummaryService
 {
     public function __construct(
         private readonly TenantContext $tenantContext,
+        private readonly BusinessContext $businessContext,
     ) {
     }
 
@@ -63,6 +65,11 @@ class FinanceSummaryService
                                 'ct.tenant_id',
                                 '=',
                                 'ca.tenant_id'
+                            )
+                            ->on(
+                                'ct.business_id',
+                                '=',
+                                'ca.business_id'
                             );
                     }
                 )
@@ -70,6 +77,11 @@ class FinanceSummaryService
                     'ca.tenant_id',
                     $this->tenantContext
                         ->tenantId()
+                )
+                ->where(
+                    'ca.business_id',
+                    $this->businessContext
+                        ->businessId()
                 )
                 ->selectRaw(
                     'COUNT(DISTINCT ca.id) AS account_count'
@@ -170,6 +182,11 @@ class FinanceSummaryService
                     'tenant_id',
                     $this->tenantContext
                         ->tenantId()
+                )
+                ->where(
+                    'business_id',
+                    $this->businessContext
+                        ->businessId()
                 )
                 ->whereBetween(
                     'occurred_at',
@@ -319,6 +336,11 @@ class FinanceSummaryService
                     'tenant_id',
                     $this->tenantContext
                         ->tenantId()
+                )
+                ->where(
+                    'business_id',
+                    $this->businessContext
+                        ->businessId()
                 )
                 ->whereIn(
                     'status',

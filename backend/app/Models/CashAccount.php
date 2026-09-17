@@ -12,6 +12,7 @@ class CashAccount extends Model
 
     protected $fillable = [
         'tenant_id',
+        'business_id',
         'name',
         'type',
         'bank_name',
