@@ -592,7 +592,7 @@
 }
 
 .rejectButton,
-.verifyDisabled {
+.verifyButton {
   min-height: 42px;
   padding: 9px 10px;
   display: inline-flex;
@@ -612,12 +612,22 @@
   cursor: pointer;
 }
 
-.verifyDisabled {
-  border: 1px solid var(--border);
-  background: var(--surface-soft);
-  color: var(--foreground-muted);
-  cursor: not-allowed;
-  opacity: 0.65;
+.verifyButton {
+  border: 1px solid var(--sv-teal);
+  background: var(--sv-teal);
+  color: white;
+  cursor: pointer;
+}
+
+.verifyButton:disabled,
+.rejectButton:disabled {
+  cursor: wait;
+  opacity: 0.62;
+}
+
+.verifyButton:not(:disabled):active,
+.rejectButton:not(:disabled):active {
+  transform: translateY(1px);
 }
 
 .rejectionBox strong {

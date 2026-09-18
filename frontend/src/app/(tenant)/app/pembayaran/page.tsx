@@ -36,6 +36,7 @@ import {
   getPaymentEvidence,
   listPayments,
   rejectPayment,
+  verifyPayment,
 } from "@/lib/payment/service";
 
 import type {
@@ -561,6 +562,45 @@ export default function Page() {
       setEvidenceLoading(
         false,
       );
+    }
+  }
+
+
+  async function submitVerify() {
+    if (!selected) {
+      return;
+    }
+
+    setActionLoading(true);
+    setActionError(null);
+    setActionMessage(null);
+
+    try {
+      const response =
+        await verifyPayment(
+          selected.id,
+        );
+
+      setSelected(
+        response.data,
+      );
+
+      setActionMessage(
+        "Pembayaran berhasil diverifikasi dan Tagihan telah diperbarui.",
+      );
+
+      await Promise.all([
+        loadPayments(page),
+        loadSummary(),
+      ]);
+    } catch (caught) {
+      setActionError(
+        caught instanceof Error
+          ? caught.message
+          : "Pembayaran belum berhasil diverifikasi.",
+      );
+    } finally {
+      setActionLoading(false);
     }
   }
 
@@ -1453,16 +1493,34 @@ export default function Page() {
                         <button
                           type="button"
                           className={
-                            styles.verifyDisabled
+                            styles.verifyButton
                           }
-                          disabled
-                          title="Aktivasi setelah settlement atomik selesai"
+                          disabled={
+                            actionLoading
+                          }
+                          onClick={
+                            () =>
+                              void submitVerify()
+                          }
                         >
-                          <CheckCircle2
-                            size={16}
-                          />
+                          {actionLoading ? (
+                            <LoaderCircle
+                              className={
+                                styles.spinner
+                              }
+                              size={16}
+                            />
+                          ) : (
+                            <CheckCircle2
+                              size={16}
+                            />
+                          )}
 
-                          Verifikasi Pembayaran
+                          {
+                            actionLoading
+                              ? "Memproses..."
+                              : "Verifikasi Pembayaran"
+                          }
                         </button>
                       </div>
                     </section>

@@ -211,3 +211,21 @@ export async function rejectPayment(
     },
   );
 }
+
+
+export async function verifyPayment(
+  paymentId: string,
+): Promise<
+  import("@/types/payment")
+    .PaymentCenterDetailResponse
+> {
+  return authenticatedApiRequest<
+    import("@/types/payment")
+      .PaymentCenterDetailResponse
+  >(
+    `/payments/${paymentId}/actions/verify`,
+    {
+      method: "POST",
+    },
+  );
+}
