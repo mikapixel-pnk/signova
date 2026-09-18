@@ -124,6 +124,35 @@ class AppServiceProvider extends ServiceProvider
                 ];
             }
         );
+        RateLimiter::for(
+            'public.invoice.payment',
+            function (Request $request): array {
+                $token =
+                    trim(
+                        (string)
+                        $request->route(
+                            'token',
+                            ''
+                        )
+                    );
+
+                return [
+                    Limit::perMinute(10)
+                        ->by(
+                            'public-invoice-payment-ip:'
+                            . $request->ip()
+                        ),
+
+                    Limit::perMinute(5)
+                        ->by(
+                            'public-invoice-payment-token:'
+                            . $this->rateLimitHash(
+                                $token
+                            )
+                        ),
+                ];
+            }
+        );
     }
 
     private function rateLimitHash(

@@ -68,6 +68,16 @@ Route::prefix('public/v1')->group(function () {
         '/invoices/{token}/pdf',
         [PublicInvoiceController::class, 'pdf']
     );
+
+    Route::post(
+        '/invoices/{token}/payments',
+        [
+            PublicInvoiceController::class,
+            'submitPayment',
+        ]
+    )->middleware(
+        'throttle:public.invoice.payment'
+    );
 });
 
 Route::prefix('v1')->group(function () {

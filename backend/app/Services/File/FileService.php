@@ -32,7 +32,21 @@ class FileService
     public function storePaymentProof(
         UploadedFile $uploadedFile
     ): FileAsset {
-        return $this->storePrivateFile(
+        return $this->storePaymentProofForTenant(
+            $this->tenantContext->tenantId(),
+            $uploadedFile,
+            $this->tenantContext->userId()
+        );
+    }
+
+    public function storePaymentProofForTenant(
+        string $tenantId,
+        UploadedFile $uploadedFile,
+        ?string $uploadedByUserId = null
+    ): FileAsset {
+        return $this->storePrivateFileForTenant(
+            $tenantId,
+            $uploadedByUserId,
             $uploadedFile,
             'PAYMENT_PROOF',
             'payment-proofs',
@@ -79,12 +93,24 @@ class FileService
         string $folder,
         array $mimeMap
     ): FileAsset {
-        $tenantId =
-            $this->tenantContext->tenantId();
+        return $this->storePrivateFileForTenant(
+            $this->tenantContext->tenantId(),
+            $this->tenantContext->userId(),
+            $uploadedFile,
+            $purpose,
+            $folder,
+            $mimeMap
+        );
+    }
 
-        $userId =
-            $this->tenantContext->userId();
-
+    private function storePrivateFileForTenant(
+        string $tenantId,
+        ?string $userId,
+        UploadedFile $uploadedFile,
+        string $purpose,
+        string $folder,
+        array $mimeMap
+    ): FileAsset {
         $mimeType =
             $uploadedFile->getMimeType();
 

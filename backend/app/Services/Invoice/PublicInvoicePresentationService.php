@@ -8,10 +8,16 @@ use App\Models\FileAsset;
 use App\Models\Invoice;
 use App\Models\InvoicePublicLink;
 use App\Models\TenantPaymentSetting;
+use App\Services\Payment\PublicPaymentAccountTokenService;
 use Illuminate\Support\Facades\Storage;
 
 class PublicInvoicePresentationService
 {
+    public function __construct(
+        private readonly PublicPaymentAccountTokenService $paymentAccountTokenService
+    ) {
+    }
+
     private const IMAGE_MIME_TYPES = [
         'image/png',
         'image/jpeg',
@@ -103,6 +109,13 @@ class PublicInvoicePresentationService
                              * id, tenant_id, business_id,
                              * balance, created_by, timestamps.
                              */
+                            'payment_account_token' =>
+                                $this
+                                    ->paymentAccountTokenService
+                                    ->issue(
+                                        $account
+                                    ),
+
                             'name' =>
                                 $account->name,
 

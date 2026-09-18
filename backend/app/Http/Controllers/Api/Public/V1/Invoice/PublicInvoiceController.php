@@ -3,10 +3,12 @@
 namespace App\Http\Controllers\Api\Public\V1\Invoice;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Public\Invoice\SubmitPublicInvoicePaymentRequest;
 use App\Http\Resources\Invoice\PublicInvoiceResource;
 use App\Services\Invoice\InvoicePdfService;
 use App\Services\Invoice\InvoicePublicLinkService;
 use App\Services\Invoice\PublicInvoicePresentationService;
+use App\Services\Payment\PublicInvoicePaymentService;
 use App\Support\Api\ApiResponse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -87,6 +89,63 @@ class PublicInvoiceController extends Controller
                 'Referrer-Policy' =>
                     'no-referrer',
             ]
+        );
+    }
+
+
+    public function submitPayment(
+        SubmitPublicInvoicePaymentRequest $request,
+        string $token,
+        InvoicePublicLinkService $linkService,
+        PublicInvoicePaymentService $paymentService
+    ): JsonResponse {
+        /*
+         * Browser hanya membawa public token +
+         * data pembayaran. Scope invoice/customer/
+         * tenant/business tetap server-owned.
+         */
+        $link =
+            $linkService
+                ->resolveByPresentedToken(
+                    $token
+                );
+
+        $payment =
+            $paymentService->submit(
+                $link,
+                $request->validated(),
+                $request->file(
+                    'evidence'
+                )
+            );
+
+        return ApiResponse::success(
+            $request,
+            [
+                'status' =>
+                    $payment->status,
+
+                'amount' =>
+                    $payment->amount,
+
+                'currency' =>
+                    $payment->currency,
+
+                'paid_at' =>
+                    substr(
+                        (string)
+                        $payment->getRawOriginal(
+                            'paid_at'
+                        ),
+                        0,
+                        10
+                    ),
+
+                'reference' =>
+                    $payment->reference,
+            ],
+            201,
+            'Konfirmasi pembayaran berhasil dikirim dan menunggu verifikasi.'
         );
     }
 }
