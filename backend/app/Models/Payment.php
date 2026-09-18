@@ -15,6 +15,7 @@ class Payment extends Model
         'tenant_id',
         'business_id',
         'customer_id',
+        'intended_invoice_id',
         'cash_account_id',
         'amount',
         'currency',
@@ -54,6 +55,14 @@ class Payment extends Model
     {
         return $this->belongsTo(
             Customer::class
+        );
+    }
+
+    public function intendedInvoice(): BelongsTo
+    {
+        return $this->belongsTo(
+            Invoice::class,
+            'intended_invoice_id'
         );
     }
 

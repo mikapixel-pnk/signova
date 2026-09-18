@@ -77,6 +77,11 @@ class PaymentFoundationIsolationTest extends TestCase
             'tenant_id' =>
                 $second['tenant_id'],
 
+            'business_id' =>
+                $this->businessIdForTenant(
+                    $second['tenant_id']
+                ),
+
             'name' =>
                 'Bank Tenant B',
 
@@ -112,6 +117,11 @@ class PaymentFoundationIsolationTest extends TestCase
 
             'tenant_id' =>
                 $first['tenant_id'],
+
+            'business_id' =>
+                $this->businessIdForTenant(
+                    $first['tenant_id']
+                ),
 
             'customer_id' =>
                 $customer,
@@ -220,6 +230,10 @@ class PaymentFoundationIsolationTest extends TestCase
             'id' => (string) Str::ulid(),
             'tenant_id' =>
                 $first['tenant_id'],
+            'business_id' =>
+                $this->businessIdForTenant(
+                    $first['tenant_id']
+                ),
             'payment_id' =>
                 $paymentId,
             'invoice_id' =>
@@ -322,6 +336,10 @@ class PaymentFoundationIsolationTest extends TestCase
             'id' => (string) Str::ulid(),
             'tenant_id' =>
                 $workspace['tenant_id'],
+            'business_id' =>
+                $this->businessIdForTenant(
+                    $workspace['tenant_id']
+                ),
             'payment_id' =>
                 $paymentId,
             'invoice_id' =>
@@ -579,6 +597,10 @@ class PaymentFoundationIsolationTest extends TestCase
             'id' => (string) Str::ulid(),
             'tenant_id' =>
                 $first['tenant_id'],
+            'business_id' =>
+                $this->businessIdForTenant(
+                    $first['tenant_id']
+                ),
             'payment_id' =>
                 $paymentId,
             'amount' => '10000.00',
@@ -591,6 +613,136 @@ class PaymentFoundationIsolationTest extends TestCase
             'updated_at' => now(),
         ]);
     }
+
+    public function test_payment_can_reference_intended_invoice_in_same_scope(): void
+    {
+        $workspace = $this->workspace(
+            'intended-invoice@example.test',
+            'Intended Invoice'
+        );
+
+        $customer = $this->customer(
+            $workspace['tenant_id'],
+            'CUST-INTENDED'
+        );
+
+        $invoiceId = $this->invoice(
+            $workspace,
+            $customer,
+            'INV-INTENDED-001'
+        );
+
+        $paymentId = (string) Str::ulid();
+
+        DB::table('payments')->insert([
+            'id' => $paymentId,
+            'tenant_id' =>
+                $workspace['tenant_id'],
+            'business_id' =>
+                $this->businessIdForTenant(
+                    $workspace['tenant_id']
+                ),
+            'customer_id' =>
+                $customer,
+            'intended_invoice_id' =>
+                $invoiceId,
+            'amount' =>
+                '10000.00',
+            'currency' =>
+                'IDR',
+            'paid_at' =>
+                now(),
+            'method' =>
+                'BANK_TRANSFER',
+            'status' =>
+                'PENDING',
+            'created_by_user_id' =>
+                $workspace['user_id'],
+            'created_at' =>
+                now(),
+            'updated_at' =>
+                now(),
+        ]);
+
+        $this->assertDatabaseHas(
+            'payments',
+            [
+                'id' =>
+                    $paymentId,
+                'tenant_id' =>
+                    $workspace['tenant_id'],
+                'intended_invoice_id' =>
+                    $invoiceId,
+                'status' =>
+                    'PENDING',
+            ]
+        );
+    }
+
+    public function test_payment_intended_invoice_cannot_cross_tenant_scope(): void
+    {
+        $first = $this->workspace(
+            'intended-a@example.test',
+            'Intended A'
+        );
+
+        $second = $this->workspace(
+            'intended-b@example.test',
+            'Intended B'
+        );
+
+        $customerA = $this->customer(
+            $first['tenant_id'],
+            'CUST-INTENDED-A'
+        );
+
+        $customerB = $this->customer(
+            $second['tenant_id'],
+            'CUST-INTENDED-B'
+        );
+
+        $foreignInvoice = $this->invoice(
+            $second,
+            $customerB,
+            'INV-INTENDED-B'
+        );
+
+        $this->expectException(
+            QueryException::class
+        );
+
+        DB::table('payments')->insert([
+            'id' =>
+                (string) Str::ulid(),
+            'tenant_id' =>
+                $first['tenant_id'],
+            'business_id' =>
+                $this->businessIdForTenant(
+                    $first['tenant_id']
+                ),
+            'customer_id' =>
+                $customerA,
+            'intended_invoice_id' =>
+                $foreignInvoice,
+            'amount' =>
+                '10000.00',
+            'currency' =>
+                'IDR',
+            'paid_at' =>
+                now(),
+            'method' =>
+                'BANK_TRANSFER',
+            'status' =>
+                'PENDING',
+            'created_by_user_id' =>
+                $first['user_id'],
+            'created_at' =>
+                now(),
+            'updated_at' =>
+                now(),
+        ]);
+    }
+
 
     private function workspace(
         string $email,
@@ -680,6 +832,10 @@ class PaymentFoundationIsolationTest extends TestCase
             'id' => $id,
             'tenant_id' =>
                 $workspace['tenant_id'],
+            'business_id' =>
+                $this->businessIdForTenant(
+                    $workspace['tenant_id']
+                ),
             'invoice_number' => $number,
             'customer_id' => $customerId,
             'status' => 'ISSUED',
@@ -743,6 +899,10 @@ class PaymentFoundationIsolationTest extends TestCase
             'id' => $id,
             'tenant_id' =>
                 $workspace['tenant_id'],
+            'business_id' =>
+                $this->businessIdForTenant(
+                    $workspace['tenant_id']
+                ),
             'customer_id' => $customerId,
             'amount' => $amount,
             'currency' => 'IDR',
