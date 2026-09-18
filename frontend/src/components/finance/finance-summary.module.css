@@ -1,0 +1,408 @@
+.summary {
+  min-width: 0;
+  display: grid;
+  gap: 13px;
+}
+
+.header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.header > div {
+  min-width: 0;
+}
+
+.eyebrow {
+  display: block;
+  margin-bottom: 4px;
+  color: var(--muted-foreground);
+  font-size: 10px;
+  font-weight: 750;
+  letter-spacing: 0.08em;
+}
+
+.header h2 {
+  margin: 0;
+  font-size: 17px;
+}
+
+.header p {
+  margin: 5px 0 0;
+  color: var(--muted-foreground);
+  font-size: 12px;
+}
+
+.periodSelect {
+  min-height: 42px;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 0 11px;
+  border: 1px solid var(--border);
+  border-radius: 13px;
+  background: var(--surface);
+}
+
+.periodSelect svg {
+  flex: 0 0 auto;
+  color: var(--muted-foreground);
+}
+
+.periodSelect select {
+  min-width: 0;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 650;
+}
+
+.customPeriod {
+  display: grid;
+  grid-template-columns:
+    repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  padding: 13px;
+  border: 1px solid var(--border);
+  border-radius: 15px;
+  background: var(--surface);
+}
+
+.customPeriod label {
+  min-width: 0;
+  display: grid;
+  gap: 6px;
+}
+
+.customPeriod span {
+  color: var(--muted-foreground);
+  font-size: 11px;
+  font-weight: 650;
+}
+
+.customPeriod input {
+  width: 100%;
+  min-height: 40px;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: 11px;
+  outline: 0;
+  background: var(--background);
+  color: inherit;
+  font: inherit;
+}
+
+.loading {
+  padding: 24px;
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  background: var(--surface);
+  color: var(--muted-foreground);
+  font-size: 12px;
+  text-align: center;
+}
+
+.balanceCard {
+  min-width: 0;
+  display: grid;
+  grid-template-columns:
+    auto minmax(0, 1fr);
+  gap: 12px;
+  padding: 17px;
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  background:
+    color-mix(
+      in srgb,
+      var(--surface) 94%,
+      var(--sv-green)
+    );
+}
+
+.balanceIcon {
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  border-radius: 14px;
+  background:
+    color-mix(
+      in srgb,
+      var(--sv-green) 12%,
+      var(--muted)
+    );
+  color: var(--sv-green);
+}
+
+.balanceCopy {
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+}
+
+.balanceCopy > span {
+  color: var(--muted-foreground);
+  font-size: 11px;
+}
+
+.balanceCopy > strong {
+  overflow-wrap: anywhere;
+  font-size: 23px;
+  line-height: 1.25;
+}
+
+.balanceCopy > small {
+  color: var(--muted-foreground);
+  font-size: 10px;
+}
+
+.balanceBreakdown {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns:
+    repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.balanceBreakdown span {
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+  padding: 10px 11px;
+  border-radius: 12px;
+  background: var(--muted);
+  color: var(--muted-foreground);
+  font-size: 10px;
+}
+
+.balanceBreakdown strong {
+  overflow-wrap: anywhere;
+  color: var(--foreground);
+  font-size: 12px;
+}
+
+.flowGrid {
+  display: grid;
+  grid-template-columns:
+    repeat(3, minmax(0, 1fr));
+  gap: 9px;
+}
+
+.metricCard {
+  min-width: 0;
+  display: grid;
+  gap: 7px;
+  padding: 13px;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: var(--surface);
+}
+
+.metricIcon {
+  width: 31px;
+  height: 31px;
+  display: grid;
+  place-items: center;
+  border-radius: 10px;
+  background: var(--muted);
+}
+
+.metricIcon[data-tone="in"] {
+  color: var(--sv-green);
+}
+
+.metricIcon[data-tone="out"] {
+  color: #ef4444;
+}
+
+.metricIcon[data-tone="net"] {
+  color: var(--sv-blue);
+}
+
+.metricCard > span:not(.metricIcon) {
+  color: var(--muted-foreground);
+  font-size: 10px;
+}
+
+.metricCard strong {
+  overflow-wrap: anywhere;
+  font-size: 13px;
+}
+
+.detailGrid {
+  display: grid;
+  gap: 10px;
+}
+
+.detailCard {
+  min-width: 0;
+  padding: 15px;
+  display: grid;
+  gap: 13px;
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  background: var(--surface);
+}
+
+.detailCard > header {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.detailCard > header > svg {
+  flex: 0 0 auto;
+  margin-top: 1px;
+  color: var(--muted-foreground);
+}
+
+.detailCard > header > div {
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+}
+
+.detailCard > header strong {
+  font-size: 13px;
+}
+
+.detailCard > header span {
+  color: var(--muted-foreground);
+  font-size: 10px;
+  line-height: 1.45;
+}
+
+.detailCard dl {
+  margin: 0;
+  display: grid;
+}
+
+.detailCard dl > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 9px 0;
+  border-top: 1px solid var(--border);
+}
+
+.detailCard dt {
+  color: var(--muted-foreground);
+  font-size: 11px;
+}
+
+.detailCard dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+  font-size: 11px;
+  font-weight: 700;
+  text-align: right;
+}
+
+.receivableValue {
+  display: grid;
+  gap: 2px;
+}
+
+.receivableValue > span,
+.overdue > span {
+  color: var(--muted-foreground);
+  font-size: 10px;
+}
+
+.receivableValue > strong {
+  overflow-wrap: anywhere;
+  font-size: 20px;
+}
+
+.receivableValue small,
+.overdue small {
+  color: var(--muted-foreground);
+  font-size: 10px;
+}
+
+.overdue {
+  display: grid;
+  grid-template-columns:
+    minmax(0, 1fr) auto;
+  gap: 2px 10px;
+  padding-top: 11px;
+  border-top: 1px solid var(--border);
+}
+
+.overdue strong {
+  overflow-wrap: anywhere;
+  font-size: 12px;
+}
+
+.overdue small {
+  grid-column: 1 / -1;
+}
+
+.periodNote {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 11px 12px;
+  border-radius: 13px;
+  background: var(--muted);
+  color: var(--muted-foreground);
+  font-size: 10px;
+  line-height: 1.55;
+}
+
+.periodNote svg {
+  flex: 0 0 auto;
+  margin-top: 1px;
+}
+
+.periodNote strong {
+  color: var(--foreground);
+}
+
+@media (max-width: 560px) {
+  .header {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .periodSelect {
+    width: 100%;
+  }
+
+  .periodSelect select {
+    width: 100%;
+  }
+
+  .flowGrid {
+    grid-template-columns:
+      repeat(2, minmax(0, 1fr));
+  }
+
+  .metricCard:last-child {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (min-width: 720px) {
+  .balanceCard {
+    grid-template-columns:
+      auto minmax(0, 1fr) minmax(260px, 0.8fr);
+    align-items: center;
+    padding: 20px;
+  }
+
+  .balanceBreakdown {
+    grid-column: auto;
+  }
+
+  .detailGrid {
+    grid-template-columns:
+      repeat(2, minmax(0, 1fr));
+    gap: 13px;
+  }
+}

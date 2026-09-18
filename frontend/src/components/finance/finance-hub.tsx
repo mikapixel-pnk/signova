@@ -5,6 +5,14 @@ import {
 } from "lucide-react";
 
 import {
+  FinanceAttention,
+} from "@/components/finance/finance-attention";
+
+import {
+  FinanceSummaryPanel,
+} from "@/components/finance/finance-summary";
+
+import {
   ModuleHero,
 } from "@/components/module/module-hero";
 
@@ -70,9 +78,6 @@ export function FinanceHub() {
   const finance =
     getModule("finance");
 
-  const payments =
-    getModule("payments");
-
   const income =
     getModule("income");
 
@@ -109,81 +114,9 @@ export function FinanceHub() {
         }
       />
 
-      <section
-        className={styles.section}
-      >
-        <header
-          className={
-            styles.sectionHeader
-          }
-        >
-          <div>
-            <span
-              className={
-                styles.eyebrow
-              }
-            >
-              PERLU TINDAKAN
-            </span>
+      <FinanceSummaryPanel />
 
-            <h2>
-              Yang perlu diperiksa
-            </h2>
-
-            <p>
-              Selesaikan pekerjaan
-              keuangan yang menunggu
-              tindakan Anda.
-            </p>
-          </div>
-        </header>
-
-        <Link
-          href={payments.href}
-          className={
-            styles.attentionCard
-          }
-        >
-          <span
-            className={
-              styles.attentionIcon
-            }
-          >
-            <payments.icon
-              size={22}
-              strokeWidth={1.9}
-            />
-          </span>
-
-          <span
-            className={
-              styles.attentionCopy
-            }
-          >
-            <strong>
-              {
-                payments.label
-              }
-            </strong>
-
-            <span>
-              Periksa bukti
-              pembayaran pelanggan,
-              lalu verifikasi atau
-              tolak sesuai hasil
-              pengecekan.
-            </span>
-          </span>
-
-          <ChevronRight
-            className={
-              styles.moduleArrow
-            }
-            size={19}
-            strokeWidth={1.9}
-          />
-        </Link>
-      </section>
+      <FinanceAttention />
 
       <section
         className={styles.section}
