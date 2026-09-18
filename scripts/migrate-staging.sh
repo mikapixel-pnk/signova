@@ -54,6 +54,14 @@ done
 
 cd "$BACKEND_DIR"
 
+# Login tetap signova_migrator, tetapi seluruh koneksi Laravel
+# untuk operasi schema harus berjalan sebagai owner role
+# signova_migration.
+#
+# Jangan export PGOPTIONS secara global karena backup runner
+# menggunakan kredensial/role yang berbeda.
+MIGRATION_PGOPTIONS="${PGOPTIONS:+$PGOPTIONS }-c role=signova_migration"
+
 export APP_CONFIG_CACHE="/tmp/signova-migration-config-$$.php"
 
 cleanup() {
@@ -64,6 +72,7 @@ trap cleanup EXIT
 
 printf '\n=== MIGRATION CONNECTION PREFLIGHT ===\n'
 
+PGOPTIONS="$MIGRATION_PGOPTIONS" \
 php artisan tinker --execute="
 \$connection = DB::connection('pgsql_migration');
 
@@ -74,7 +83,7 @@ php artisan tinker --execute="
         session_user,
         current_database() AS database_name,
         pg_has_role(
-            current_user,
+            session_user,
             'signova_migration',
             'MEMBER'
         ) AS member_of_migration
@@ -88,9 +97,15 @@ echo 'member_of_migration='
     . (\$row->member_of_migration ? 'true' : 'false')
     . PHP_EOL;
 
-if (\$row->current_user !== 'signova_migrator') {
+if (\$row->session_user !== 'signova_migrator') {
     throw new RuntimeException(
-        'Unexpected migration database user.'
+        'Unexpected migration session user.'
+    );
+}
+
+if (\$row->current_user !== 'signova_migration') {
+    throw new RuntimeException(
+        'Migration owner role was not activated.'
     );
 }
 
@@ -109,6 +124,7 @@ if (! \$row->member_of_migration) {
 
 printf '\n=== MIGRATION STATUS ===\n'
 
+PGOPTIONS="$MIGRATION_PGOPTIONS" \
 php artisan migrate:status \
     --database=pgsql_migration
 
@@ -126,12 +142,14 @@ printf '\n=== PRE-MIGRATION BACKUP ===\n'
 
 printf '\n=== APPLY MIGRATIONS ===\n'
 
+PGOPTIONS="$MIGRATION_PGOPTIONS" \
 php artisan migrate \
     --database=pgsql_migration \
     --force
 
 printf '\n=== POST-MIGRATION STATUS ===\n'
 
+PGOPTIONS="$MIGRATION_PGOPTIONS" \
 php artisan migrate:status \
     --database=pgsql_migration
 
