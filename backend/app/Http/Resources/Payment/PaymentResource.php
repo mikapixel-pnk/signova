@@ -32,6 +32,45 @@ class PaymentResource extends JsonResource
                     ]
                 ),
 
+            'intended_invoice_id' =>
+                $this->intended_invoice_id,
+
+            'intended_invoice' =>
+                $this->whenLoaded(
+                    'intendedInvoice',
+                    fn () =>
+                        $this->intendedInvoice === null
+                            ? null
+                            : [
+                                'id' =>
+                                    $this->intendedInvoice->id,
+
+                                'invoice_number' =>
+                                    $this->intendedInvoice
+                                        ->invoice_number,
+
+                                'status' =>
+                                    $this->intendedInvoice
+                                        ->status,
+
+                                'currency' =>
+                                    $this->intendedInvoice
+                                        ->currency,
+
+                                'total' =>
+                                    $this->intendedInvoice
+                                        ->total,
+
+                                'paid_amount' =>
+                                    $this->intendedInvoice
+                                        ->paid_amount,
+
+                                'outstanding_amount' =>
+                                    $this->intendedInvoice
+                                        ->outstanding_amount,
+                            ]
+                ),
+
             'cash_account_id' =>
                 $this->cash_account_id,
 
@@ -50,6 +89,17 @@ class PaymentResource extends JsonResource
 
                                 'type' =>
                                     $this->cashAccount->type,
+
+                                'bank_name' =>
+                                    $this->cashAccount->bank_name,
+
+                                'account_number' =>
+                                    $this->cashAccount
+                                        ->account_number,
+
+                                'account_name' =>
+                                    $this->cashAccount
+                                        ->account_name,
                             ]
                 ),
 

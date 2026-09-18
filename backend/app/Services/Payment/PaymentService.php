@@ -44,6 +44,7 @@ class PaymentService
                 'customer',
                 'cashAccount',
                 'evidenceFile',
+                'intendedInvoice',
             ])
             ->when(
                 $search,
@@ -123,6 +124,7 @@ class PaymentService
                 'customer',
                 'cashAccount',
                 'evidenceFile',
+                'intendedInvoice',
             ])
             ->where(
                 'id',

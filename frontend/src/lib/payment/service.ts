@@ -85,3 +85,129 @@ export async function getPaymentEvidence(
     `/payments/${paymentId}/evidence`,
   );
 }
+
+
+export type ListPaymentsParams = {
+  search?: string;
+
+  status?:
+    | "PENDING"
+    | "VERIFIED"
+    | "REJECTED"
+    | "REVERSED";
+
+  page?: number;
+  per_page?: number;
+};
+
+
+function paymentQueryString(
+  params:
+    ListPaymentsParams,
+): string {
+  const query =
+    new URLSearchParams();
+
+  if (params.search?.trim()) {
+    query.set(
+      "search",
+      params.search.trim(),
+    );
+  }
+
+  if (params.status) {
+    query.set(
+      "status",
+      params.status,
+    );
+  }
+
+  if (params.page) {
+    query.set(
+      "page",
+      String(
+        params.page,
+      ),
+    );
+  }
+
+  if (params.per_page) {
+    query.set(
+      "per_page",
+      String(
+        params.per_page,
+      ),
+    );
+  }
+
+  const value =
+    query.toString();
+
+  return value
+    ? `?${value}`
+    : "";
+}
+
+
+export async function listPayments(
+  params:
+    ListPaymentsParams = {},
+): Promise<
+  import("@/types/payment")
+    .PaymentCenterListResponse
+> {
+  return authenticatedApiRequest<
+    import("@/types/payment")
+      .PaymentCenterListResponse
+  >(
+    `/payments${paymentQueryString(
+      params,
+    )}`,
+    {
+      method: "GET",
+      cache: "no-store",
+    },
+  );
+}
+
+
+export async function getPayment(
+  paymentId: string,
+): Promise<
+  import("@/types/payment")
+    .PaymentCenterDetailResponse
+> {
+  return authenticatedApiRequest<
+    import("@/types/payment")
+      .PaymentCenterDetailResponse
+  >(
+    `/payments/${paymentId}`,
+    {
+      method: "GET",
+      cache: "no-store",
+    },
+  );
+}
+
+
+export async function rejectPayment(
+  paymentId: string,
+  reason: string,
+): Promise<
+  import("@/types/payment")
+    .RejectPaymentResponse
+> {
+  return authenticatedApiRequest<
+    import("@/types/payment")
+      .RejectPaymentResponse
+  >(
+    `/payments/${paymentId}/actions/reject`,
+    {
+      method: "POST",
+
+      body: {
+        reason,
+      },
+    },
+  );
+}
