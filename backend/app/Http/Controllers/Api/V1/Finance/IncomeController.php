@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\V1\Finance;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Finance\ListIncomesRequest;
+use App\Http\Requests\Finance\RecordIncomeRequest;
 use App\Http\Requests\Finance\StoreIncomeRequest;
 use App\Http\Requests\Finance\UpdateIncomeRequest;
 use App\Http\Requests\Finance\VoidIncomeRequest;
@@ -77,6 +78,26 @@ class IncomeController extends Controller
             'Pemasukan berhasil dibuat.'
         );
     }
+
+    public function record(
+        RecordIncomeRequest $request,
+        IncomeService $service
+    ): JsonResponse {
+        $income =
+            $service->record(
+                $request->validated()
+            );
+
+        return ApiResponse::success(
+            $request,
+            (new IncomeResource(
+                $income
+            ))->resolve($request),
+            201,
+            'Pemasukan berhasil dicatat.'
+        );
+    }
+
 
     public function show(
         Request $request,

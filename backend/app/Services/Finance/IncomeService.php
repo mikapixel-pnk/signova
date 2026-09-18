@@ -151,6 +151,33 @@ class IncomeService
         );
     }
 
+    public function record(
+        array $data
+    ): Income {
+        /*
+         * One user action must be atomic:
+         * either Income + CashTransaction are both created,
+         * or neither remains persisted.
+         *
+         * create() and post() use nested Laravel transactions;
+         * the outer transaction remains the commit boundary.
+         */
+        return DB::transaction(
+            function () use ($data): Income {
+                $income =
+                    $this->create(
+                        $data
+                    );
+
+                return $this->post(
+                    $income->id
+                );
+            },
+            3
+        );
+    }
+
+
     public function update(
         string $incomeId,
         array $data

@@ -570,6 +570,15 @@ Route::prefix('v1')->group(function () {
             'capability:finance.income.manage',
         ]);
 
+        Route::post(
+            '/finance/incomes/actions/record',
+            [IncomeController::class, 'record']
+        )->middleware([
+            'business.context',
+            'capability:finance.income.manage',
+        ]);
+
+
         Route::get(
             '/finance/incomes/{incomeId}',
             [IncomeController::class, 'show']
