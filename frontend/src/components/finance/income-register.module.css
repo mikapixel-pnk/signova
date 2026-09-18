@@ -1,0 +1,503 @@
+.page {
+  width: 100%;
+  min-width: 0;
+  display: grid;
+  gap: 16px;
+}
+
+.hero {
+  min-width: 0;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.hero > div {
+  min-width: 0;
+}
+
+.eyebrow {
+  display: block;
+  margin-bottom: 5px;
+  color: #2868f0;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+}
+
+.hero h1 {
+  margin: 0;
+  font-size: 28px;
+  line-height: 1.12;
+}
+
+.hero p {
+  max-width: 620px;
+  margin: 7px 0 0;
+  color: var(--muted-foreground);
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.heroIcon {
+  width: 48px;
+  height: 48px;
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  border-radius: 16px;
+  background:
+    color-mix(
+      in srgb,
+      #34b56f 14%,
+      var(--surface)
+    );
+  color: #34b56f;
+}
+
+.summaryCard {
+  display: grid;
+  gap: 5px;
+  padding: 18px;
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  background:
+    linear-gradient(
+      135deg,
+      color-mix(
+        in srgb,
+        #2868f0 9%,
+        var(--surface)
+      ),
+      color-mix(
+        in srgb,
+        #29b8e8 7%,
+        var(--surface)
+      )
+    );
+}
+
+.summaryCard > span {
+  color: var(--muted-foreground);
+  font-size: 12px;
+  font-weight: 650;
+}
+
+.summaryCard strong {
+  font-size: 28px;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.15;
+}
+
+.summaryCard small {
+  color: var(--muted-foreground);
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+.periodCard {
+  display: grid;
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: var(--surface);
+}
+
+.periodCard label,
+.customDates label {
+  display: grid;
+  gap: 6px;
+}
+
+.periodCard label > span,
+.customDates label > span {
+  color: var(--muted-foreground);
+  font-size: 11px;
+  font-weight: 650;
+}
+
+.periodCard select,
+.customDates input {
+  width: 100%;
+  min-height: 44px;
+  padding: 0 12px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+  color: var(--foreground);
+  font: inherit;
+}
+
+.customDates {
+  display: grid;
+  grid-template-columns:
+    minmax(0, 1fr)
+    minmax(0, 1fr);
+  gap: 10px;
+}
+
+.controls {
+  min-width: 0;
+  display: grid;
+  gap: 12px;
+}
+
+.filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.filterButton,
+.filterActive {
+  min-height: 40px;
+  padding: 0 13px;
+  border-radius: 999px;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 650;
+  cursor: pointer;
+}
+
+.filterButton {
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--muted-foreground);
+}
+
+.filterActive {
+  border: 1px solid #2868f0;
+  background:
+    color-mix(
+      in srgb,
+      #2868f0 12%,
+      var(--surface)
+    );
+  color: #2868f0;
+}
+
+.searchBox {
+  min-height: 46px;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 0 13px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--surface);
+  color: var(--muted-foreground);
+}
+
+.searchBox:focus-within {
+  border-color: #2868f0;
+}
+
+.searchBox input {
+  width: 100%;
+  min-width: 0;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: var(--foreground);
+  font: inherit;
+  font-size: 13px;
+}
+
+.listHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.listHeader strong {
+  font-size: 15px;
+}
+
+.listHeader span {
+  color: var(--muted-foreground);
+  font-size: 11px;
+}
+
+.list,
+.loadingList {
+  min-width: 0;
+  display: grid;
+  gap: 10px;
+}
+
+.item {
+  min-width: 0;
+  padding: 15px;
+  border: 1px solid var(--border);
+  border-radius: 17px;
+  background: var(--surface);
+}
+
+.reversed {
+  opacity: 0.72;
+}
+
+.itemMain {
+  min-width: 0;
+  display: grid;
+  gap: 11px;
+}
+
+.itemHeading {
+  min-width: 0;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.itemHeading > div {
+  min-width: 0;
+  display: grid;
+  gap: 3px;
+}
+
+.itemHeading strong {
+  overflow-wrap: anywhere;
+  font-size: 14px;
+}
+
+.itemHeading span {
+  color: var(--muted-foreground);
+  font-size: 11px;
+}
+
+.amount {
+  flex: 0 0 auto;
+  font-size: 15px !important;
+  font-variant-numeric: tabular-nums;
+}
+
+.badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.sourceBadge,
+.modeBadge,
+.reversedBadge {
+  min-height: 24px;
+  display: inline-flex;
+  align-items: center;
+  padding: 0 8px;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 750;
+}
+
+.sourceBadge {
+  background:
+    color-mix(
+      in srgb,
+      #2868f0 11%,
+      var(--surface)
+    );
+  color: #2868f0;
+}
+
+.modeBadge {
+  background: var(--muted);
+  color: var(--muted-foreground);
+}
+
+.reversedBadge {
+  background:
+    color-mix(
+      in srgb,
+      #e45757 12%,
+      var(--surface)
+    );
+  color: #e45757;
+}
+
+.meta {
+  margin: 0;
+  display: grid;
+  gap: 7px;
+}
+
+.meta > div {
+  min-width: 0;
+  display: grid;
+  grid-template-columns:
+    74px minmax(0, 1fr);
+  gap: 10px;
+}
+
+.meta dt {
+  color: var(--muted-foreground);
+  font-size: 10px;
+}
+
+.meta dd {
+  min-width: 0;
+  margin: 0;
+  overflow-wrap: anywhere;
+  font-size: 11px;
+}
+
+.meta a {
+  color: #2868f0;
+  font-weight: 650;
+  text-decoration: none;
+}
+
+.empty {
+  padding: 26px 18px;
+  display: grid;
+  place-items: center;
+  gap: 7px;
+  border: 1px dashed var(--border);
+  border-radius: 18px;
+  text-align: center;
+}
+
+.empty strong {
+  font-size: 14px;
+}
+
+.empty p {
+  max-width: 420px;
+  margin: 0;
+  color: var(--muted-foreground);
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+.skeleton {
+  height: 148px;
+  border-radius: 17px;
+  background:
+    linear-gradient(
+      90deg,
+      var(--muted),
+      color-mix(
+        in srgb,
+        var(--muted) 55%,
+        var(--surface)
+      ),
+      var(--muted)
+    );
+  background-size: 200% 100%;
+  animation:
+    pulse 1.4s ease
+    infinite;
+}
+
+.pagination {
+  display: grid;
+  grid-template-columns:
+    minmax(0, 1fr)
+    auto
+    minmax(0, 1fr);
+  align-items: center;
+  gap: 8px;
+}
+
+.pagination button {
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  padding: 0 10px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+  color: var(--foreground);
+  font: inherit;
+  font-size: 11px;
+  font-weight: 650;
+  cursor: pointer;
+}
+
+.pagination button:last-child {
+  justify-self: stretch;
+}
+
+.pagination button:disabled {
+  cursor: default;
+  opacity: 0.45;
+}
+
+.pagination span {
+  white-space: nowrap;
+  color: var(--muted-foreground);
+  font-size: 10px;
+  text-align: center;
+}
+
+@keyframes pulse {
+  from {
+    background-position:
+      100% 0;
+  }
+
+  to {
+    background-position:
+      -100% 0;
+  }
+}
+
+@media (min-width: 720px) {
+  .page {
+    gap: 20px;
+  }
+
+  .hero h1 {
+    font-size: 34px;
+  }
+
+  .summaryCard {
+    padding: 22px;
+  }
+
+  .summaryCard strong {
+    font-size: 34px;
+  }
+
+  .periodCard {
+    grid-template-columns:
+      minmax(180px, 260px)
+      minmax(0, 1fr);
+    align-items: end;
+    padding: 16px;
+  }
+
+  .customDates {
+    max-width: 520px;
+  }
+
+  .controls {
+    grid-template-columns:
+      minmax(0, 1fr)
+      minmax(260px, 380px);
+    align-items: center;
+  }
+
+  .searchBox {
+    order: 2;
+  }
+
+  .item {
+    padding: 18px;
+  }
+
+  .meta {
+    grid-template-columns:
+      repeat(
+        2,
+        minmax(0, 1fr)
+      );
+    gap: 8px 18px;
+  }
+}
