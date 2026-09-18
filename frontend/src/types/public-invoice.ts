@@ -65,6 +65,8 @@ export type PublicInvoiceItem = {
 };
 
 export type PublicInvoiceBankAccount = {
+  payment_account_token: string;
+
   name: string;
 
   bank_name:
@@ -164,6 +166,37 @@ export type PublicInvoiceResponse = {
 
   data:
     PublicInvoice;
+
+  message?:
+    string;
+
+  meta?:
+    unknown;
+};
+
+
+export type PublicInvoicePaymentResult = {
+  status: "PENDING";
+
+  amount:
+    | string
+    | number;
+
+  currency: string;
+
+  paid_at: string;
+
+  reference:
+    | string
+    | null;
+};
+
+
+export type PublicInvoicePaymentResponse = {
+  success: true;
+
+  data:
+    PublicInvoicePaymentResult;
 
   message?:
     string;

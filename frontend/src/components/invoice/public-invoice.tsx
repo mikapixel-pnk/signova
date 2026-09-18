@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 
 import {
+  type FormEvent,
   useEffect,
   useState,
 } from "react";
@@ -31,6 +32,7 @@ import {
 import {
   getPublicInvoice,
   PublicInvoiceApiError,
+  submitPublicInvoicePayment,
 } from "@/lib/invoice/public-service";
 
 import {
@@ -39,6 +41,7 @@ import {
 
 import type {
   PublicInvoice,
+  PublicInvoicePaymentResult,
   PublicInvoiceStatus,
 } from "@/types/public-invoice";
 
@@ -158,6 +161,65 @@ function quantityLabel(
 }
 
 
+function todayInputValue(): string {
+  const now =
+    new Date();
+
+  const offset =
+    now.getTimezoneOffset() *
+    60_000;
+
+  return new Date(
+    now.getTime() - offset,
+  )
+    .toISOString()
+    .slice(
+      0,
+      10,
+    );
+}
+
+
+function paymentFormDefaults(
+  invoice: PublicInvoice,
+) {
+  const accounts =
+    invoice
+      .payment_options
+      .bank_accounts;
+
+  const defaultAccount =
+    accounts.find(
+      (account) =>
+        account.is_default,
+    ) ??
+    accounts[0];
+
+  return {
+    amount:
+      invoice.payment_allowed
+        ? String(
+            invoice
+              .outstanding_amount ??
+              "",
+          )
+        : "",
+
+    accountToken:
+      invoice.payment_allowed
+        ? defaultAccount
+            ?.payment_account_token ??
+          ""
+        : "",
+
+    date:
+      invoice.payment_allowed
+        ? todayInputValue()
+        : "",
+  };
+}
+
+
 function brandInitial(
   value:
     | string
@@ -218,6 +280,52 @@ export function PublicInvoiceView() {
     string | null
   >(null);
 
+  const [
+    paymentAmount,
+    setPaymentAmount,
+  ] = useState("");
+
+  const [
+    paymentAccountToken,
+    setPaymentAccountToken,
+  ] = useState("");
+
+  const [
+    paymentDate,
+    setPaymentDate,
+  ] = useState("");
+
+  const [
+    paymentReference,
+    setPaymentReference,
+  ] = useState("");
+
+  const [
+    paymentEvidence,
+    setPaymentEvidence,
+  ] = useState<
+    File | null
+  >(null);
+
+  const [
+    paymentSubmitting,
+    setPaymentSubmitting,
+  ] = useState(false);
+
+  const [
+    paymentSubmitError,
+    setPaymentSubmitError,
+  ] = useState<
+    string | null
+  >(null);
+
+  const [
+    paymentSubmitted,
+    setPaymentSubmitted,
+  ] = useState<
+    PublicInvoicePaymentResult | null
+  >(null);
+
 
   async function loadInvoice() {
     if (!token) {
@@ -242,9 +350,34 @@ export function PublicInvoiceView() {
           token,
         );
 
+      const nextInvoice =
+        response.data;
+
+      const defaults =
+        paymentFormDefaults(
+          nextInvoice,
+        );
+
       setInvoice(
-        response.data,
+        nextInvoice,
       );
+
+      setPaymentAmount(
+        defaults.amount,
+      );
+
+      setPaymentAccountToken(
+        defaults.accountToken,
+      );
+
+      setPaymentDate(
+        defaults.date,
+      );
+
+      setPaymentReference("");
+      setPaymentEvidence(null);
+      setPaymentSubmitError(null);
+      setPaymentSubmitted(null);
     } catch (caught) {
       if (
         caught instanceof
@@ -305,9 +438,34 @@ export function PublicInvoiceView() {
             return;
           }
 
+          const nextInvoice =
+            response.data;
+
+          const defaults =
+            paymentFormDefaults(
+              nextInvoice,
+            );
+
           setInvoice(
-            response.data,
+            nextInvoice,
           );
+
+          setPaymentAmount(
+            defaults.amount,
+          );
+
+          setPaymentAccountToken(
+            defaults.accountToken,
+          );
+
+          setPaymentDate(
+            defaults.date,
+          );
+
+          setPaymentReference("");
+          setPaymentEvidence(null);
+          setPaymentSubmitError(null);
+          setPaymentSubmitted(null);
 
           setUnavailable(false);
           setError(null);
@@ -387,6 +545,112 @@ export function PublicInvoiceView() {
     } catch {
       setCopiedAccount(
         null,
+      );
+    }
+  }
+
+
+  async function submitPayment(
+    event:
+      FormEvent<HTMLFormElement>,
+  ) {
+    event.preventDefault();
+
+    if (
+      !invoice ||
+      !token
+    ) {
+      return;
+    }
+
+    setPaymentSubmitError(null);
+
+    if (!paymentAccountToken) {
+      setPaymentSubmitError(
+        "Pilih rekening tujuan pembayaran.",
+      );
+
+      return;
+    }
+
+    const amount =
+      Number(
+        paymentAmount,
+      );
+
+    if (
+      !Number.isFinite(amount) ||
+      amount <= 0
+    ) {
+      setPaymentSubmitError(
+        "Nominal pembayaran tidak valid.",
+      );
+
+      return;
+    }
+
+    if (!paymentDate) {
+      setPaymentSubmitError(
+        "Tanggal pembayaran wajib diisi.",
+      );
+
+      return;
+    }
+
+    if (!paymentEvidence) {
+      setPaymentSubmitError(
+        "Bukti pembayaran wajib diunggah.",
+      );
+
+      return;
+    }
+
+    if (
+      paymentEvidence.size >
+      5 * 1024 * 1024
+    ) {
+      setPaymentSubmitError(
+        "Ukuran bukti pembayaran maksimal 5 MB.",
+      );
+
+      return;
+    }
+
+    setPaymentSubmitting(true);
+
+    try {
+      const response =
+        await submitPublicInvoicePayment(
+          token,
+          {
+            paymentAccountToken,
+            amount:
+              paymentAmount,
+            paidAt:
+              paymentDate,
+            reference:
+              paymentReference,
+            evidence:
+              paymentEvidence,
+          },
+        );
+
+      setPaymentSubmitted(
+        response.data,
+      );
+
+      setPaymentSubmitError(
+        null,
+      );
+    } catch (caught) {
+      setPaymentSubmitError(
+        caught instanceof Error
+          ? caught.message
+          : "Konfirmasi pembayaran belum berhasil dikirim.",
+      );
+    } finally {
+      setPaymentSubmitting(
+        false,
       );
     }
   }
@@ -495,6 +759,26 @@ export function PublicInvoiceView() {
       .bank_transfer_enabled ||
     invoice.payment_options
       .static_qr_enabled;
+
+  const bankAccounts =
+    invoice
+      .payment_options
+      .bank_accounts;
+
+  const canConfirmBankPayment =
+    invoice.payment_allowed &&
+    invoice
+      .payment_options
+      .bank_transfer_enabled &&
+    bankAccounts.length > 0;
+
+  const selectedPaymentAccount =
+    bankAccounts.find(
+      (account) =>
+        account
+          .payment_account_token ===
+        paymentAccountToken,
+    ) ?? null;
 
 
   return (
@@ -1341,12 +1625,414 @@ export function PublicInvoiceView() {
                 <span>
                   Pembayaran sebagian
                   diperbolehkan untuk
-                  Tagihan ini. Fitur
-                  konfirmasi pembayaran
-                  akan tersedia pada
-                  tahap berikutnya.
+                  Tagihan ini. Isi nominal
+                  sesuai jumlah yang telah
+                  ditransfer.
                 </span>
               </div>
+            ) : null}
+
+
+            {canConfirmBankPayment ? (
+              <section
+                className={
+                  styles
+                    .confirmationSection
+                }
+              >
+                <div
+                  className={
+                    styles
+                      .confirmationHeader
+                  }
+                >
+                  <CheckCircle2
+                    size={19}
+                  />
+
+                  <div>
+                    <h3>
+                      Konfirmasi Pembayaran
+                    </h3>
+
+                    <p>
+                      Sudah melakukan
+                      transfer? Kirim
+                      detail dan bukti
+                      pembayaran untuk
+                      diverifikasi.
+                    </p>
+                  </div>
+                </div>
+
+                {paymentSubmitted ? (
+                  <div
+                    className={
+                      styles.paymentSuccess
+                    }
+                    role="status"
+                  >
+                    <CheckCircle2
+                      size={24}
+                    />
+
+                    <div>
+                      <strong>
+                        Konfirmasi pembayaran
+                        telah dikirim
+                      </strong>
+
+                      <span>
+                        {
+                          money(
+                            paymentSubmitted
+                              .amount,
+                            paymentSubmitted
+                              .currency,
+                          )
+                        }
+                      </span>
+
+                      {selectedPaymentAccount ? (
+                        <small>
+                          {
+                            selectedPaymentAccount
+                              .bank_name ??
+                            selectedPaymentAccount
+                              .name
+                          }
+                          {
+                            selectedPaymentAccount
+                              .account_number
+                              ? ` • ${selectedPaymentAccount.account_number}`
+                              : ""
+                          }
+                        </small>
+                      ) : null}
+
+                      <small>
+                        Tanggal pembayaran:{" "}
+                        {
+                          dateLabel(
+                            paymentSubmitted
+                              .paid_at,
+                          )
+                        }
+                      </small>
+
+                      <div
+                        className={
+                          styles.pendingBadge
+                        }
+                      >
+                        Menunggu Verifikasi
+                      </div>
+
+                      <p>
+                        Pembayaran belum
+                        mengubah status
+                        Tagihan sampai
+                        diverifikasi oleh{" "}
+                        {businessName}.
+                      </p>
+                    </div>
+                  </div>
+                ) : (
+                  <form
+                    className={
+                      styles.paymentForm
+                    }
+                    onSubmit={
+                      submitPayment
+                    }
+                  >
+                    <div
+                      className={
+                        styles.formGrid
+                      }
+                    >
+                      <label
+                        className={
+                          styles.field
+                        }
+                      >
+                        <span>
+                          Nominal Pembayaran
+                          <b>*</b>
+                        </span>
+
+                        <div
+                          className={
+                            styles.amountInput
+                          }
+                        >
+                          <span>
+                            Rp
+                          </span>
+
+                          <input
+                            type="number"
+                            inputMode="decimal"
+                            min="0.01"
+                            step="0.01"
+                            value={
+                              paymentAmount
+                            }
+                            readOnly={
+                              !invoice
+                                .payment_options
+                                .partial_payment_enabled
+                            }
+                            onChange={
+                              (event) =>
+                                setPaymentAmount(
+                                  event
+                                    .target
+                                    .value,
+                                )
+                            }
+                            required
+                          />
+                        </div>
+
+                        <small>
+                          Sisa Tagihan:{" "}
+                          {
+                            money(
+                              invoice
+                                .outstanding_amount,
+                              invoice
+                                .currency,
+                            )
+                          }
+                        </small>
+                      </label>
+
+                      <label
+                        className={
+                          styles.field
+                        }
+                      >
+                        <span>
+                          Rekening Tujuan
+                          <b>*</b>
+                        </span>
+
+                        <select
+                          value={
+                            paymentAccountToken
+                          }
+                          onChange={
+                            (event) =>
+                              setPaymentAccountToken(
+                                event
+                                  .target
+                                  .value,
+                              )
+                          }
+                          required
+                        >
+                          <option value="">
+                            Pilih rekening
+                          </option>
+
+                          {bankAccounts.map(
+                            (account) => (
+                              <option
+                                key={
+                                  account
+                                    .payment_account_token
+                                }
+                                value={
+                                  account
+                                    .payment_account_token
+                                }
+                              >
+                                {
+                                  account
+                                    .bank_name ??
+                                  account
+                                    .name
+                                }
+                                {
+                                  account
+                                    .account_number
+                                    ? ` • ${account.account_number}`
+                                    : ""
+                                }
+                              </option>
+                            ),
+                          )}
+                        </select>
+                      </label>
+
+                      <label
+                        className={
+                          styles.field
+                        }
+                      >
+                        <span>
+                          Tanggal Pembayaran
+                          <b>*</b>
+                        </span>
+
+                        <input
+                          type="date"
+                          value={
+                            paymentDate
+                          }
+                          max={
+                            todayInputValue()
+                          }
+                          onChange={
+                            (event) =>
+                              setPaymentDate(
+                                event
+                                  .target
+                                  .value,
+                              )
+                          }
+                          required
+                        />
+                      </label>
+
+                      <label
+                        className={
+                          styles.field
+                        }
+                      >
+                        <span>
+                          Referensi Transfer
+                        </span>
+
+                        <input
+                          type="text"
+                          maxLength={255}
+                          value={
+                            paymentReference
+                          }
+                          placeholder="Opsional"
+                          onChange={
+                            (event) =>
+                              setPaymentReference(
+                                event
+                                  .target
+                                  .value,
+                              )
+                          }
+                        />
+                      </label>
+                    </div>
+
+                    <label
+                      className={
+                        styles.uploadField
+                      }
+                    >
+                      <span>
+                        Bukti Pembayaran
+                        <b>*</b>
+                      </span>
+
+                      <div
+                        className={
+                          styles.uploadBox
+                        }
+                      >
+                        <FileText
+                          size={22}
+                        />
+
+                        <div>
+                          <strong>
+                            {
+                              paymentEvidence
+                                ?.name ??
+                              "Pilih foto atau PDF"
+                            }
+                          </strong>
+
+                          <small>
+                            JPG, PNG, WebP,
+                            atau PDF • maks.
+                            5 MB
+                          </small>
+                        </div>
+
+                        <input
+                          type="file"
+                          accept="image/png,image/jpeg,image/webp,application/pdf"
+                          onChange={
+                            (event) => {
+                              setPaymentEvidence(
+                                event
+                                  .target
+                                  .files?.[0] ??
+                                  null,
+                              );
+
+                              setPaymentSubmitError(
+                                null,
+                              );
+                            }
+                          }
+                          required
+                        />
+                      </div>
+                    </label>
+
+                    {paymentSubmitError ? (
+                      <div
+                        className={
+                          styles.paymentError
+                        }
+                        role="alert"
+                      >
+                        <AlertCircle
+                          size={16}
+                        />
+
+                        <span>
+                          {
+                            paymentSubmitError
+                          }
+                        </span>
+                      </div>
+                    ) : null}
+
+                    <button
+                      type="submit"
+                      className={
+                        styles
+                          .submitPaymentButton
+                      }
+                      disabled={
+                        paymentSubmitting
+                      }
+                    >
+                      {
+                        paymentSubmitting
+                          ? "Mengirim Konfirmasi..."
+                          : "Kirim Konfirmasi Pembayaran"
+                      }
+                    </button>
+
+                    <p
+                      className={
+                        styles.paymentDisclaimer
+                      }
+                    >
+                      Pembayaran akan
+                      berstatus Menunggu
+                      Verifikasi dan belum
+                      mengurangi sisa
+                      Tagihan sampai
+                      diperiksa oleh{" "}
+                      {businessName}.
+                    </p>
+                  </form>
+                )}
+              </section>
             ) : null}
 
 

@@ -1,4 +1,5 @@
 import type {
+  PublicInvoicePaymentResponse,
   PublicInvoiceResponse,
 } from "@/types/public-invoice";
 
@@ -98,4 +99,106 @@ export async function getPublicInvoice(
       token,
     )}`,
   );
+}
+
+
+export type SubmitPublicInvoicePaymentInput = {
+  paymentAccountToken: string;
+
+  amount: string;
+
+  paidAt: string;
+
+  reference?: string;
+
+  evidence: File;
+};
+
+
+export async function submitPublicInvoicePayment(
+  token: string,
+  input: SubmitPublicInvoicePaymentInput,
+): Promise<PublicInvoicePaymentResponse> {
+  const formData =
+    new FormData();
+
+  formData.append(
+    "payment_account_token",
+    input.paymentAccountToken,
+  );
+
+  formData.append(
+    "amount",
+    input.amount,
+  );
+
+  formData.append(
+    "paid_at",
+    input.paidAt,
+  );
+
+  const reference =
+    input.reference?.trim();
+
+  if (reference) {
+    formData.append(
+      "reference",
+      reference,
+    );
+  }
+
+  formData.append(
+    "evidence",
+    input.evidence,
+  );
+
+  const response =
+    await fetch(
+      `${PUBLIC_API_BASE}/invoices/${encodeURIComponent(
+        token,
+      )}/payments`,
+      {
+        method: "POST",
+
+        headers: {
+          Accept:
+            "application/json",
+        },
+
+        body:
+          formData,
+
+        cache:
+          "no-store",
+      },
+    );
+
+  const body =
+    (await response
+      .json()
+      .catch(
+        () => null,
+      )) as
+      | ApiErrorPayload
+      | PublicInvoicePaymentResponse
+      | null;
+
+  if (!response.ok) {
+    const error =
+      body as
+        | ApiErrorPayload
+        | null;
+
+    throw new PublicInvoiceApiError(
+      error?.error?.message ??
+        error?.message ??
+        "Konfirmasi pembayaran belum berhasil dikirim.",
+      response.status,
+      error?.error?.code ??
+        null,
+    );
+  }
+
+  return body as
+    PublicInvoicePaymentResponse;
 }

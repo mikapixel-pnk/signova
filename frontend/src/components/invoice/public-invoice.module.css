@@ -947,3 +947,313 @@
   font-size: 9px;
   font-weight: 500;
 }
+
+
+.confirmationSection {
+  padding: 14px;
+  display: grid;
+  gap: 14px;
+  border: 1px solid
+    color-mix(
+      in srgb,
+      var(--sv-teal) 26%,
+      var(--border)
+    );
+  border-radius: 15px;
+  background: var(--surface);
+}
+
+.confirmationHeader {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+}
+
+.confirmationHeader > svg {
+  flex: 0 0 auto;
+  color: var(--sv-teal);
+}
+
+.confirmationHeader > div {
+  min-width: 0;
+  display: grid;
+  gap: 3px;
+}
+
+.confirmationHeader h3 {
+  margin: 0;
+  font-size: 11px;
+}
+
+.confirmationHeader p {
+  margin: 0;
+  color: var(--foreground-muted);
+  font-size: 8px;
+  line-height: 1.55;
+}
+
+.paymentForm {
+  display: grid;
+  gap: 13px;
+}
+
+.formGrid {
+  display: grid;
+  gap: 11px;
+}
+
+.field,
+.uploadField {
+  min-width: 0;
+  display: grid;
+  gap: 6px;
+}
+
+.field > span,
+.uploadField > span {
+  color: var(--foreground);
+  font-size: 9px;
+  font-weight: 750;
+}
+
+.field b,
+.uploadField b {
+  margin-left: 3px;
+  color: rgb(220 38 38);
+}
+
+.field > small {
+  color: var(--foreground-muted);
+  font-size: 8px;
+}
+
+.field input,
+.field select {
+  width: 100%;
+  min-width: 0;
+  min-height: 42px;
+  padding: 10px 11px;
+  border: 1px solid var(--border);
+  border-radius: 11px;
+  outline: none;
+  background: var(--surface);
+  color: var(--foreground);
+  font: inherit;
+  font-size: 10px;
+}
+
+.field input:focus,
+.field select:focus {
+  border-color: var(--sv-teal);
+  box-shadow:
+    0 0 0 3px
+    color-mix(
+      in srgb,
+      var(--sv-teal) 11%,
+      transparent
+    );
+}
+
+.field input:read-only {
+  background: var(--surface-soft);
+  color: var(--foreground-muted);
+}
+
+.amountInput {
+  min-height: 42px;
+  display: flex;
+  align-items: stretch;
+  border: 1px solid var(--border);
+  border-radius: 11px;
+  overflow: hidden;
+  background: var(--surface);
+}
+
+.amountInput > span {
+  display: flex;
+  align-items: center;
+  padding: 0 11px;
+  border-right: 1px solid var(--border);
+  background: var(--surface-soft);
+  color: var(--foreground-muted);
+  font-size: 9px;
+  font-weight: 800;
+}
+
+.amountInput input {
+  min-height: 40px;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none !important;
+}
+
+.uploadBox {
+  position: relative;
+  min-height: 76px;
+  padding: 13px;
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  border: 1px dashed
+    color-mix(
+      in srgb,
+      var(--sv-teal) 34%,
+      var(--border)
+    );
+  border-radius: 13px;
+  background: var(--surface-soft);
+  cursor: pointer;
+  overflow: hidden;
+}
+
+.uploadBox > svg {
+  flex: 0 0 auto;
+  color: var(--sv-teal);
+}
+
+.uploadBox > div {
+  min-width: 0;
+  display: grid;
+  gap: 3px;
+}
+
+.uploadBox strong {
+  overflow: hidden;
+  font-size: 9px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.uploadBox small {
+  color: var(--foreground-muted);
+  font-size: 8px;
+  line-height: 1.45;
+}
+
+.uploadBox input {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.paymentError {
+  padding: 10px 11px;
+  display: flex;
+  align-items: flex-start;
+  gap: 7px;
+  border: 1px solid
+    rgb(220 38 38 / 0.24);
+  border-radius: 11px;
+  background:
+    rgb(220 38 38 / 0.06);
+  color: rgb(185 28 28);
+  font-size: 8px;
+  line-height: 1.55;
+}
+
+.paymentError svg {
+  flex: 0 0 auto;
+}
+
+.submitPaymentButton {
+  min-height: 46px;
+  padding: 11px 14px;
+  border: 0;
+  border-radius: 12px;
+  background: var(--sv-teal);
+  color: white;
+  font: inherit;
+  font-size: 9px;
+  font-weight: 850;
+  cursor: pointer;
+}
+
+.submitPaymentButton:disabled {
+  cursor: wait;
+  opacity: 0.62;
+}
+
+.submitPaymentButton:not(:disabled):active {
+  transform: translateY(1px);
+}
+
+.paymentDisclaimer {
+  margin: 0;
+  color: var(--foreground-muted);
+  font-size: 8px;
+  line-height: 1.55;
+  text-align: center;
+}
+
+.paymentSuccess {
+  padding: 14px;
+  display: flex;
+  align-items: flex-start;
+  gap: 11px;
+  border: 1px solid
+    rgb(22 163 74 / 0.26);
+  border-radius: 14px;
+  background:
+    rgb(22 163 74 / 0.06);
+}
+
+.paymentSuccess > svg {
+  flex: 0 0 auto;
+  color: rgb(22 163 74);
+}
+
+.paymentSuccess > div {
+  min-width: 0;
+  display: grid;
+  gap: 5px;
+}
+
+.paymentSuccess strong {
+  font-size: 10px;
+}
+
+.paymentSuccess span {
+  font-size: 13px;
+  font-weight: 850;
+}
+
+.paymentSuccess small {
+  color: var(--foreground-muted);
+  font-size: 8px;
+  line-height: 1.45;
+}
+
+.paymentSuccess p {
+  margin: 2px 0 0;
+  color: var(--foreground-muted);
+  font-size: 8px;
+  line-height: 1.55;
+}
+
+.pendingBadge {
+  width: fit-content;
+  margin-top: 2px;
+  padding: 5px 8px;
+  border-radius: 999px;
+  background:
+    rgb(217 119 6 / 0.11);
+  color: rgb(180 83 9);
+  font-size: 8px;
+  font-weight: 850;
+}
+
+
+@media (min-width: 680px) {
+  .formGrid {
+    grid-template-columns:
+      repeat(
+        2,
+        minmax(0, 1fr)
+      );
+  }
+
+  .confirmationSection {
+    padding: 16px;
+  }
+}
