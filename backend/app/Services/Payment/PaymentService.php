@@ -390,6 +390,16 @@ class PaymentService
             function () use (
                 $paymentId
             ): Payment {
+                /*
+                 * Canonical lock order:
+                 * 1. payment
+                 * 2. intended invoice
+                 *
+                 * Payment public yang memiliki
+                 * intended_invoice_id harus
+                 * diverifikasi + dialokasikan
+                 * sebagai satu financial boundary.
+                 */
                 $payment =
                     $this->baseQuery()
                         ->where(
@@ -481,12 +491,50 @@ class PaymentService
                             ->userId(),
                 ]);
 
+                /*
+                 * Payment biasa tetap selesai
+                 * setelah verifikasi + posting kas.
+                 *
+                 * Payment customer/public memiliki
+                 * intended_invoice_id, sehingga
+                 * seluruh amount harus dialokasikan
+                 * ke Tagihan tujuan pada transaksi
+                 * database yang sama.
+                 *
+                 * allocate() memiliki nested
+                 * transaction/savepoint. Bila
+                 * validasi allocation gagal,
+                 * exception keluar ke transaction
+                 * ini sehingga perubahan status
+                 * Payment dan CashTransaction ikut
+                 * rollback.
+                 */
+                if (
+                    $payment
+                        ->intended_invoice_id
+                    !== null
+                ) {
+                    $this->allocate(
+                        $payment->id,
+                        [
+                            'invoice_id' =>
+                                $payment
+                                    ->intended_invoice_id,
+
+                            'amount' =>
+                                $payment->amount,
+                        ]
+                    );
+                }
+
                 return $this->findOrFail(
                     $payment->id
                 );
-            }
+            },
+            3
         );
     }
+
 
     public function reject(
         string $paymentId,
@@ -1022,6 +1070,7 @@ class PaymentService
                         [
                             'ISSUED',
                             'PARTIALLY_PAID',
+                            'OVERDUE',
                         ],
                         true
                     )

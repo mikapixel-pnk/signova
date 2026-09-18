@@ -1664,6 +1664,432 @@ class PaymentApiTest extends TestCase
 
     }
 
+    public function test_intended_invoice_payment_verification_is_atomic(): void
+    {
+        $workspace =
+            $this->workspace(
+                'intended-payment-verify@example.test',
+                'Intended Payment Verify'
+            );
+
+        $customer =
+            $this->customer(
+                $workspace,
+                'Customer Intended Verify'
+            );
+
+        /*
+         * OVERDUE sengaja dipakai karena
+         * public invoice tetap menerima
+         * pembayaran pada status ini.
+         */
+        $invoiceId =
+            $this->createReceivableInvoice(
+                $workspace,
+                $customer,
+                'INV-INTENDED-VERIFY',
+                '100000.00',
+                'OVERDUE'
+            );
+
+        $cashAccountId =
+            $this->cashAccount(
+                $workspace
+            );
+
+        $paymentId =
+            (string)
+            \Illuminate\Support\Str::ulid();
+
+        DB::table('payments')->insert([
+            'id' =>
+                $paymentId,
+
+            'tenant_id' =>
+                $workspace['tenant_id'],
+
+            'business_id' =>
+                $workspace['business_id'],
+
+            'customer_id' =>
+                $customer->id,
+
+            'intended_invoice_id' =>
+                $invoiceId,
+
+            'cash_account_id' =>
+                $cashAccountId,
+
+            'amount' =>
+                '40000.00',
+
+            'currency' =>
+                'IDR',
+
+            'paid_at' =>
+                now(),
+
+            'method' =>
+                'BANK_TRANSFER',
+
+            'status' =>
+                'PENDING',
+
+            'reference' =>
+                'PUBLIC-PAY-VERIFY-001',
+
+            'evidence_file_id' =>
+                null,
+
+            'provider' =>
+                null,
+
+            'provider_reference' =>
+                null,
+
+            'provider_transaction_id' =>
+                null,
+
+            'idempotency_key' =>
+                null,
+
+            'created_by_user_id' =>
+                null,
+
+            'created_at' =>
+                now(),
+
+            'updated_at' =>
+                now(),
+        ]);
+
+        $this->actingAsWorkspace(
+            $workspace
+        );
+
+        $this->postJson(
+            '/api/v1/payments/'
+            . $paymentId
+            . '/actions/verify'
+        )
+            ->assertOk()
+            ->assertJsonPath(
+                'data.status',
+                'VERIFIED'
+            )
+            ->assertJsonPath(
+                'data.intended_invoice.invoice_number',
+                'INV-INTENDED-VERIFY'
+            )
+            ->assertJsonPath(
+                'data.intended_invoice.status',
+                'PARTIALLY_PAID'
+            )
+            ->assertJsonPath(
+                'data.intended_invoice.paid_amount',
+                '40000.00'
+            )
+            ->assertJsonPath(
+                'data.intended_invoice.outstanding_amount',
+                '60000.00'
+            );
+
+        $this->assertDatabaseHas(
+            'payments',
+            [
+                'id' =>
+                    $paymentId,
+
+                'status' =>
+                    'VERIFIED',
+
+                'intended_invoice_id' =>
+                    $invoiceId,
+            ]
+        );
+
+        $this->assertDatabaseHas(
+            'cash_transactions',
+            [
+                'tenant_id' =>
+                    $workspace['tenant_id'],
+
+                'business_id' =>
+                    $workspace['business_id'],
+
+                'source_type' =>
+                    'PAYMENT',
+
+                'source_id' =>
+                    $paymentId,
+
+                'direction' =>
+                    'IN',
+
+                'amount' =>
+                    '40000.00',
+            ]
+        );
+
+        $this->assertDatabaseHas(
+            'payment_allocations',
+            [
+                'tenant_id' =>
+                    $workspace['tenant_id'],
+
+                'business_id' =>
+                    $workspace['business_id'],
+
+                'payment_id' =>
+                    $paymentId,
+
+                'invoice_id' =>
+                    $invoiceId,
+
+                'allocated_amount' =>
+                    '40000.00',
+            ]
+        );
+
+        $this->assertDatabaseHas(
+            'invoices',
+            [
+                'id' =>
+                    $invoiceId,
+
+                'status' =>
+                    'PARTIALLY_PAID',
+
+                'paid_amount' =>
+                    '40000.00',
+
+                'outstanding_amount' =>
+                    '60000.00',
+            ]
+        );
+
+        $this->assertDatabaseHas(
+            'invoice_status_history',
+            [
+                'invoice_id' =>
+                    $invoiceId,
+
+                'from_state' =>
+                    'OVERDUE',
+
+                'to_state' =>
+                    'PARTIALLY_PAID',
+
+                'source' =>
+                    'PAYMENT',
+            ]
+        );
+    }
+
+
+    public function test_intended_invoice_payment_verification_rolls_back_when_latest_outstanding_is_insufficient(): void
+    {
+        $workspace =
+            $this->workspace(
+                'intended-payment-race@example.test',
+                'Intended Payment Race'
+            );
+
+        $customer =
+            $this->customer(
+                $workspace,
+                'Customer Intended Race'
+            );
+
+        $invoiceId =
+            $this->createReceivableInvoice(
+                $workspace,
+                $customer,
+                'INV-INTENDED-RACE',
+                '100000.00',
+                'ISSUED'
+            );
+
+        $cashAccountId =
+            $this->cashAccount(
+                $workspace
+            );
+
+        $this->actingAsWorkspace(
+            $workspace
+        );
+
+        /*
+         * Kondisi terbaru Tagihan menjadi:
+         * paid 80.000, outstanding 20.000.
+         */
+        $this->postJson(
+            '/api/v1/invoices/'
+            . $invoiceId
+            . '/actions/record-payment',
+            [
+                'cash_account_id' =>
+                    $cashAccountId,
+
+                'amount' =>
+                    '80000.00',
+
+                'paid_at' =>
+                    now()->toISOString(),
+
+                'method' =>
+                    'BANK_TRANSFER',
+
+                'reference' =>
+                    'PRIOR-PAYMENT-001',
+            ]
+        )->assertCreated();
+
+        /*
+         * Customer sebelumnya telah
+         * mengirim konfirmasi 40.000.
+         * Saat finance memverifikasi,
+         * outstanding aktual hanya 20.000.
+         */
+        $paymentId =
+            (string)
+            \Illuminate\Support\Str::ulid();
+
+        DB::table('payments')->insert([
+            'id' =>
+                $paymentId,
+
+            'tenant_id' =>
+                $workspace['tenant_id'],
+
+            'business_id' =>
+                $workspace['business_id'],
+
+            'customer_id' =>
+                $customer->id,
+
+            'intended_invoice_id' =>
+                $invoiceId,
+
+            'cash_account_id' =>
+                $cashAccountId,
+
+            'amount' =>
+                '40000.00',
+
+            'currency' =>
+                'IDR',
+
+            'paid_at' =>
+                now(),
+
+            'method' =>
+                'BANK_TRANSFER',
+
+            'status' =>
+                'PENDING',
+
+            'reference' =>
+                'PUBLIC-PAY-RACE-001',
+
+            'evidence_file_id' =>
+                null,
+
+            'provider' =>
+                null,
+
+            'provider_reference' =>
+                null,
+
+            'provider_transaction_id' =>
+                null,
+
+            'idempotency_key' =>
+                null,
+
+            'created_by_user_id' =>
+                null,
+
+            'created_at' =>
+                now(),
+
+            'updated_at' =>
+                now(),
+        ]);
+
+        $response =
+            $this->postJson(
+                '/api/v1/payments/'
+                . $paymentId
+                . '/actions/verify'
+            );
+
+        /*
+         * Exact HTTP mapping milik
+         * PaymentAllocationConflictException
+         * tidak menjadi concern test ini.
+         * Yang wajib: request gagal dan
+         * tidak ada financial partial commit.
+         */
+        $this->assertGreaterThanOrEqual(
+            400,
+            $response->status()
+        );
+
+        $this->assertLessThan(
+            500,
+            $response->status()
+        );
+
+        $this->assertDatabaseHas(
+            'payments',
+            [
+                'id' =>
+                    $paymentId,
+
+                'status' =>
+                    'PENDING',
+            ]
+        );
+
+        $this->assertDatabaseMissing(
+            'cash_transactions',
+            [
+                'source_type' =>
+                    'PAYMENT',
+
+                'source_id' =>
+                    $paymentId,
+            ]
+        );
+
+        $this->assertDatabaseMissing(
+            'payment_allocations',
+            [
+                'payment_id' =>
+                    $paymentId,
+            ]
+        );
+
+        $this->assertDatabaseHas(
+            'invoices',
+            [
+                'id' =>
+                    $invoiceId,
+
+                'status' =>
+                    'PARTIALLY_PAID',
+
+                'paid_amount' =>
+                    '80000.00',
+
+                'outstanding_amount' =>
+                    '20000.00',
+            ]
+        );
+    }
+
+
     public function test_pending_payment_can_be_rejected_with_reason(): void
     {
         $workspace = $this->workspace(
