@@ -1,17 +1,15 @@
 import {
-  TenantShell,
-} from "@/components/layout/tenant-shell";
+  FinanceHub,
+} from "@/components/finance/finance-hub";
 
 import {
-  ModulePage,
-} from "@/components/module/module-page";
+  TenantShell,
+} from "@/components/layout/tenant-shell";
 
 export default function Page() {
   return (
     <TenantShell>
-      <ModulePage
-        moduleKey="finance"
-      />
+      <FinanceHub />
     </TenantShell>
   );
 }

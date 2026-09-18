@@ -200,13 +200,14 @@ export const modules:
   payments: {
     key: "payments",
     group: "penjualan",
-    label: "Pembayaran",
+    label: "Konfirmasi Pembayaran",
+    shortLabel: "Konfirmasi",
     href: "/app/pembayaran",
     tone: "rose",
     icon: CreditCard,
     plan: "starter",
     description:
-      "Kelola pembayaran pelanggan dan riwayat verifikasinya.",
+      "Periksa dan konfirmasi pembayaran pelanggan sebelum masuk ke Kas & Bank.",
     insight: {
       title:
         "Setiap pembayaran harus mudah ditelusuri",
@@ -273,7 +274,7 @@ export const modules:
     navigation: {
       desktop: true,
       mobile: true,
-      order: 20,
+      order: 40,
     },
   },
 
@@ -299,7 +300,7 @@ export const modules:
     navigation: {
       desktop: true,
       mobile: true,
-      order: 30,
+      order: 20,
     },
   },
 
@@ -325,7 +326,7 @@ export const modules:
     navigation: {
       desktop: true,
       mobile: true,
-      order: 40,
+      order: 30,
     },
   },
 
