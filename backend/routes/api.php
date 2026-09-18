@@ -124,6 +124,16 @@ Route::prefix('v1')->group(function () {
                 'tenant.context'
             )->group(function () {
                 Route::get(
+                    '/capabilities',
+                    [
+                        AuthController::class,
+                        'capabilities',
+                    ]
+                )->middleware(
+                    'business.context'
+                );
+
+                Route::get(
                     '/me',
                     [AuthController::class, 'me']
                 )->middleware(

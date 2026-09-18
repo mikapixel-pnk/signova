@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\V1\Auth;
 
 use App\Actions\Tenancy\CreateTenantWorkspaceAction;
+use App\Authorization\EffectiveCapabilityResolver;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\ForgotPasswordRequest;
 use App\Http\Requests\Auth\LoginRequest;
@@ -282,6 +283,30 @@ class AuthController extends Controller
             ],
         ]);
     }
+
+    public function capabilities(
+        Request $request,
+        EffectiveCapabilityResolver $resolver,
+        TenantContext $tenantContext,
+        \App\Tenancy\BusinessContext $businessContext
+    ): JsonResponse {
+        /** @var User $user */
+        $user = $request->user();
+
+        return response()->json([
+            'data' => [
+                'tenant_id' =>
+                    $tenantContext->tenantId(),
+
+                'business_id' =>
+                    $businessContext->businessId(),
+
+                'capability_codes' =>
+                    $resolver->codes($user),
+            ],
+        ]);
+    }
+
 
     public function context(
         Request $request,
