@@ -8,6 +8,7 @@ use App\Http\Controllers\Api\V1\Finance\CashAccountController;
 use App\Http\Controllers\Api\V1\Finance\ExpenseController;
 use App\Http\Controllers\Api\V1\Finance\FinanceSummaryController;
 use App\Http\Controllers\Api\V1\Finance\IncomeController;
+use App\Http\Controllers\Api\V1\Finance\IncomeRegisterController;
 use App\Http\Controllers\Api\V1\Invoice\InvoiceController;
 use App\Http\Controllers\Api\V1\Invoice\InvoicePublicLinkController;
 use App\Http\Controllers\Api\V1\Payment\PaymentController;
@@ -543,6 +544,15 @@ Route::prefix('v1')->group(function () {
         | Pemasukan
         |--------------------------------------------------------------------------
         */
+
+        Route::get(
+            '/finance/income-register',
+            IncomeRegisterController::class
+        )->middleware([
+            'business.context',
+            'capability:finance.income.view',
+        ]);
+
 
         Route::get(
             '/finance/incomes',
