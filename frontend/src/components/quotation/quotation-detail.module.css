@@ -661,3 +661,56 @@
       );
   }
 }
+
+
+.invoiceSummary {
+  display: grid;
+  gap: 9px;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 13px;
+  background: var(--surface-soft);
+}
+
+.invoiceSummary > div {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.invoiceSummary span {
+  color: var(--foreground-muted);
+  font-size: 9px;
+}
+
+.invoiceSummary strong {
+  min-width: 0;
+  color: var(--foreground);
+  font-size: 10px;
+  text-align: right;
+  overflow-wrap: anywhere;
+}
+
+.fieldHint {
+  color: var(--foreground-muted);
+  font-size: 8px;
+  line-height: 1.5;
+}
+
+@media (min-width: 560px) {
+  .invoiceSummary {
+    grid-template-columns:
+      repeat(3, minmax(0, 1fr));
+  }
+
+  .invoiceSummary > div {
+    display: grid;
+    justify-content: initial;
+    gap: 3px;
+  }
+
+  .invoiceSummary strong {
+    text-align: left;
+  }
+}

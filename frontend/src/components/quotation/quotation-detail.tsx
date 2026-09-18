@@ -27,6 +27,7 @@ import {
 
 import {
   useParams,
+  useRouter,
 } from "next/navigation";
 
 import {
@@ -273,6 +274,9 @@ export function QuotationDetail() {
       id: string;
     }>();
 
+  const router =
+    useRouter();
+
   const moduleDef =
     getModule("quotations");
 
@@ -321,6 +325,16 @@ export function QuotationDetail() {
   ] = useState<string | null>(
     null,
   );
+
+  const [
+    invoiceOpen,
+    setInvoiceOpen,
+  ] = useState(false);
+
+  const [
+    invoiceDueAt,
+    setInvoiceDueAt,
+  ] = useState("");
 
   const [
     decisionOpen,
@@ -919,19 +933,6 @@ export function QuotationDetail() {
     }
   }
 
-  async function reloadQuotation() {
-    const response =
-      await getQuotation(
-        params.id,
-      );
-
-    setQuotation(
-      response.data,
-    );
-
-    return response.data;
-  }
-
   async function handlePdf() {
     if (!quotation) {
       return;
@@ -1167,8 +1168,37 @@ export function QuotationDetail() {
     }
   }
 
+  function openInvoiceCreator() {
+    if (
+      !quotation ||
+      quotation.status !==
+        "APPROVED"
+    ) {
+      return;
+    }
+
+    setActionError(null);
+    setInvoiceDueAt("");
+    setInvoiceOpen(true);
+  }
+
+
   async function handleCreateInvoice() {
-    if (!quotation) {
+    if (
+      !quotation ||
+      quotation.status !==
+        "APPROVED"
+    ) {
+      return;
+    }
+
+    if (!invoiceDueAt) {
+      setActionError(
+        new Error(
+          "Tanggal jatuh tempo Tagihan wajib dipilih.",
+        ),
+      );
+
       return;
     }
 
@@ -1179,14 +1209,14 @@ export function QuotationDetail() {
       const response =
         await createInvoiceFromQuotation(
           quotation.id,
+          invoiceDueAt,
         );
 
-      setActionSuccess(
-        response.message ??
-          "Tagihan berhasil dibuat dari Penawaran.",
-      );
+      setInvoiceOpen(false);
 
-      await reloadQuotation();
+      router.push(
+        `/app/tagihan/${response.data.id}`,
+      );
     } catch (caught) {
       setActionError(caught);
     } finally {
@@ -1506,8 +1536,7 @@ export function QuotationDetail() {
                 />
               }
               onClick={
-                () =>
-                  void handleCreateInvoice()
+                openInvoiceCreator
               }
             >
               Buat Tagihan
@@ -2516,6 +2545,212 @@ export function QuotationDetail() {
           </section>
         </div>
       ) : null}
+
+      {invoiceOpen ? (
+        <div
+          className={
+            styles.previewBackdrop
+          }
+          role="presentation"
+        >
+          <section
+            className={
+              styles.decisionModal
+            }
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="quotation-invoice-title"
+          >
+            <header
+              className={
+                styles.previewHeader
+              }
+            >
+              <div>
+                <span>
+                  BUAT TAGIHAN
+                </span>
+
+                <h2
+                  id="quotation-invoice-title"
+                >
+                  Lanjutkan Penawaran
+                  menjadi Tagihan
+                </h2>
+              </div>
+
+              <button
+                type="button"
+                className={
+                  styles.closeButton
+                }
+                disabled={
+                  actionLoading
+                }
+                onClick={
+                  () =>
+                    setInvoiceOpen(
+                      false,
+                    )
+                }
+                aria-label="Tutup"
+              >
+                <X size={20} />
+              </button>
+            </header>
+
+            <div
+              className={
+                styles.decisionBody
+              }
+            >
+              <ActionFeedback
+                tone="info"
+                title="Penawaran sudah disetujui"
+                message="SIGNOVA akan membuat Tagihan Draf dari versi Penawaran yang disetujui. Isi Tagihan berasal dari Penawaran dan tidak diedit sebagai Tagihan manual."
+              />
+
+              <div
+                className={
+                  styles.invoiceSummary
+                }
+              >
+                <div>
+                  <span>
+                    Penawaran
+                  </span>
+
+                  <strong>
+                    {
+                      quotation
+                        .quotation_number
+                    }
+                  </strong>
+                </div>
+
+                <div>
+                  <span>
+                    Pelanggan
+                  </span>
+
+                  <strong>
+                    {
+                      quotation
+                        .customer
+                        ?.name ??
+                      "-"
+                    }
+                  </strong>
+                </div>
+
+                <div>
+                  <span>
+                    Total
+                  </span>
+
+                  <strong>
+                    {version
+                      ? formatCurrency(
+                          version.total,
+                          version.currency,
+                        )
+                      : "-"}
+                  </strong>
+                </div>
+              </div>
+
+              <label>
+                <span>
+                  Jatuh Tempo *
+                </span>
+
+                <input
+                  type="date"
+                  value={
+                    invoiceDueAt
+                  }
+                  onChange={
+                    (event) =>
+                      setInvoiceDueAt(
+                        event.target
+                          .value,
+                      )
+                  }
+                />
+
+                <small
+                  className={
+                    styles.fieldHint
+                  }
+                >
+                  Pilih tanggal pembayaran
+                  paling lambat untuk
+                  Tagihan ini.
+                </small>
+              </label>
+
+              {actionError ? (
+                <ActionFeedback
+                  tone="error"
+                  title="Tagihan belum dapat dibuat"
+                  message={
+                    apiErrorMessage(
+                      actionError,
+                    )
+                  }
+                  requestId={
+                    apiRequestId(
+                      actionError,
+                    )
+                  }
+                />
+              ) : null}
+            </div>
+
+            <footer
+              className={
+                styles.decisionFooter
+              }
+            >
+              <Button
+                type="button"
+                variant="secondary"
+                disabled={
+                  actionLoading
+                }
+                onClick={
+                  () =>
+                    setInvoiceOpen(
+                      false,
+                    )
+                }
+              >
+                Batal
+              </Button>
+
+              <Button
+                type="button"
+                loading={
+                  actionLoading
+                }
+                loadingLabel="Membuat Tagihan..."
+                leadingIcon={
+                  <ReceiptText
+                    size={17}
+                  />
+                }
+                onClick={
+                  () =>
+                    void handleCreateInvoice()
+                }
+              >
+                Buat Tagihan
+              </Button>
+            </footer>
+          </section>
+        </div>
+      ) : null}
+
 
       {decisionOpen ? (
         <div
