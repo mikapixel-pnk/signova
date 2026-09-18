@@ -687,3 +687,173 @@
     margin-left: auto;
   }
 }
+
+
+.shareSheet {
+  width: 100%;
+  max-height: min(
+    90dvh,
+    720px
+  );
+  overflow: auto;
+  border: 1px solid
+    var(--border);
+  border-bottom: 0;
+  border-radius:
+    22px 22px 0 0;
+  background:
+    var(--background);
+  box-shadow:
+    0 -20px 60px
+    rgb(0 0 0 / 25%);
+}
+
+.shareSheetBody {
+  display: grid;
+  gap: 14px;
+  padding: 18px;
+}
+
+.shareCustomer {
+  padding: 13px 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  border-radius: 14px;
+  background: var(--muted);
+}
+
+.shareCustomer > div {
+  min-width: 0;
+  display: grid;
+  gap: 3px;
+}
+
+.shareCustomer span,
+.shareCustomer small {
+  color:
+    var(--muted-foreground);
+  font-size: 0.76rem;
+}
+
+.shareCustomer strong {
+  overflow-wrap: anywhere;
+}
+
+.customerEditLink {
+  flex: 0 0 auto;
+  color: inherit;
+  font-size: 0.76rem;
+  font-weight: 700;
+  text-decoration:
+    underline;
+  text-underline-offset: 3px;
+}
+
+.sharePublicUrl {
+  padding: 13px;
+  display: grid;
+  gap: 6px;
+  border: 1px solid
+    var(--border);
+  border-radius: 14px;
+}
+
+.sharePublicUrl span {
+  color:
+    var(--muted-foreground);
+  font-size: 0.75rem;
+}
+
+.sharePublicUrl code {
+  overflow-wrap: anywhere;
+  font-family: inherit;
+  font-size: 0.78rem;
+  line-height: 1.5;
+}
+
+.shareOptions {
+  display: grid;
+  gap: 9px;
+}
+
+.shareOption {
+  width: 100%;
+  min-height: 70px;
+  padding: 12px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  border: 1px solid
+    var(--border);
+  border-radius: 14px;
+  background:
+    var(--surface);
+  color: inherit;
+  text-align: left;
+  font: inherit;
+  cursor: pointer;
+}
+
+.shareOption:hover:not(:disabled) {
+  background:
+    var(--muted);
+}
+
+.shareOption:disabled {
+  opacity: 0.52;
+  cursor: not-allowed;
+}
+
+.shareOptionIcon {
+  width: 42px;
+  height: 42px;
+  display: grid;
+  flex: 0 0 auto;
+  place-items: center;
+  border-radius: 12px;
+  background:
+    var(--muted);
+}
+
+.shareOption > span:last-child {
+  min-width: 0;
+  display: grid;
+  gap: 3px;
+}
+
+.shareOption strong {
+  font-size: 0.88rem;
+}
+
+.shareOption small {
+  color:
+    var(--muted-foreground);
+  font-size: 0.76rem;
+  line-height: 1.45;
+}
+
+.shareNotice {
+  margin: 0;
+  color:
+    var(--muted-foreground);
+  font-size: 0.73rem;
+  line-height: 1.5;
+}
+
+@media (min-width: 680px) {
+  .shareSheet {
+    width: min(
+      100%,
+      560px
+    );
+    border-bottom:
+      1px solid
+      var(--border);
+    border-radius: 22px;
+    box-shadow:
+      0 22px 60px
+      rgb(0 0 0 / 25%);
+  }
+}

@@ -119,7 +119,10 @@ class InvoiceBrandingSnapshotService
 
         if (! is_array($snapshot)) {
             return $this->brandingResolver
-                ->resolve();
+                ->resolveFor(
+                    $invoice->tenant_id,
+                    $invoice->business_id
+                );
         }
 
         return [
@@ -145,7 +148,8 @@ class InvoiceBrandingSnapshotService
 
             'logo_data_uri' =>
                 $this->brandingResolver
-                    ->privateImageDataUri(
+                    ->privateImageDataUriForTenant(
+                        $invoice->tenant_id,
                         $invoice
                             ->branding_logo_file_id,
                         'INVOICE_BRANDING_LOGO'
@@ -165,7 +169,8 @@ class InvoiceBrandingSnapshotService
 
             'signature_image_data_uri' =>
                 $this->brandingResolver
-                    ->privateImageDataUri(
+                    ->privateImageDataUriForTenant(
+                        $invoice->tenant_id,
                         $invoice
                             ->branding_signature_file_id,
                         'INVOICE_BRANDING_SIGNATURE'

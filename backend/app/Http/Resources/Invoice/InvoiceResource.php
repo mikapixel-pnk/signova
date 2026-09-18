@@ -32,6 +32,9 @@ class InvoiceResource extends JsonResource
 
                         'name' =>
                             $this->customer->name,
+
+                        'phone' =>
+                            $this->customer->phone,
                     ]
                 ),
 

@@ -19,12 +19,16 @@ class InvoiceBrandingResolver
 
     public function resolve(): array
     {
-        $tenantId =
-            $this->tenantContext->tenantId();
+        return $this->resolveFor(
+            $this->tenantContext->tenantId(),
+            $this->businessContext->businessId()
+        );
+    }
 
-        $businessId =
-            $this->businessContext->businessId();
-
+    public function resolveFor(
+        string $tenantId,
+        string $businessId
+    ): array {
         $business =
             BusinessProfile::query()
                 ->where(
@@ -66,7 +70,8 @@ class InvoiceBrandingResolver
                 $business->tax_id,
 
             'logo_data_uri' =>
-                $this->privateImageDataUri(
+                $this->privateImageDataUriForTenant(
+                    $tenantId,
                     $business->logo_file_id,
                     'BUSINESS_LOGO'
                 ),
@@ -81,7 +86,8 @@ class InvoiceBrandingResolver
                 $settings?->signature_title,
 
             'signature_image_data_uri' =>
-                $this->privateImageDataUri(
+                $this->privateImageDataUriForTenant(
+                    $tenantId,
                     $settings
                         ?->signature_image_file_id,
                     'DOCUMENT_SIGNATURE'
@@ -93,9 +99,18 @@ class InvoiceBrandingResolver
         ?string $fileId,
         string $purpose
     ): ?string {
-        $tenantId =
-            $this->tenantContext->tenantId();
+        return $this->privateImageDataUriForTenant(
+            $this->tenantContext->tenantId(),
+            $fileId,
+            $purpose
+        );
+    }
 
+    public function privateImageDataUriForTenant(
+        string $tenantId,
+        ?string $fileId,
+        string $purpose
+    ): ?string {
         if ($fileId === null) {
             return null;
         }

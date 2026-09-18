@@ -17,17 +17,25 @@ class InvoiceTemplateSnapshotService
 
     public function current(): array
     {
+        return $this->currentFor(
+            $this->tenantContext->tenantId(),
+            $this->businessContext->businessId()
+        );
+    }
+
+    public function currentFor(
+        string $tenantId,
+        string $businessId
+    ): array {
         $settings =
             TenantDocumentSetting::query()
                 ->where(
                     'tenant_id',
-                    $this->tenantContext
-                        ->tenantId()
+                    $tenantId
                 )
                 ->where(
                     'business_id',
-                    $this->businessContext
-                        ->businessId()
+                    $businessId
                 )
                 ->first();
 

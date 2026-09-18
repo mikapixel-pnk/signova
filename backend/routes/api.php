@@ -63,6 +63,11 @@ Route::prefix('public/v1')->group(function () {
         '/invoices/{token}',
         [PublicInvoiceController::class, 'show']
     );
+
+    Route::get(
+        '/invoices/{token}/pdf',
+        [PublicInvoiceController::class, 'pdf']
+    );
 });
 
 Route::prefix('v1')->group(function () {

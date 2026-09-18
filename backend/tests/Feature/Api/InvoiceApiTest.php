@@ -5326,4 +5326,413 @@ class InvoiceApiTest extends TestCase
             );
     }
 
+
+    public function test_public_invoice_exposes_snapshot_branding_and_safe_payment_instructions(): void
+    {
+        $workspace =
+            $this->workspace(
+                'invoice-public-view@example.test',
+                'Invoice Public View'
+            );
+
+        $customerId =
+            $this->insertCustomer(
+                $workspace['tenant_id'],
+                'CUST-PUBLIC-VIEW',
+                'Pelanggan Public View'
+            );
+
+        $invoiceId =
+            $this->insertInvoice(
+                $workspace,
+                $customerId,
+                'INV-PUBLIC-VIEW',
+                'ISSUED'
+            );
+
+        $invoice =
+            \App\Models\Invoice::query()
+                ->findOrFail(
+                    $invoiceId
+                );
+
+        /*
+         * insertInvoice() adalah fixture low-level dan
+         * melewati InvoiceService::issue().
+         *
+         * Invoice ISSUED yang valid memiliki:
+         * paid_amount = 0
+         * outstanding_amount = total
+         */
+        $invoice->paid_amount =
+            '0.00';
+
+        $invoice->outstanding_amount =
+            $invoice->total;
+
+        $invoice->branding_snapshot = [
+            'version' =>
+                1,
+
+            'business_name' =>
+                'Mikapixel Snapshot',
+
+            'address' =>
+                'Jl. Contoh No. 10',
+
+            'phone' =>
+                '081200000000',
+
+            'email' =>
+                'billing@example.test',
+
+            'tax_id' =>
+                null,
+
+            'invoice_footnote' =>
+                'Terima kasih.',
+        ];
+
+        $invoice->save();
+
+        \App\Models\TenantPaymentSetting::query()
+            ->create([
+                'tenant_id' =>
+                    $workspace[
+                        'tenant_id'
+                    ],
+
+                'business_id' =>
+                    $workspace[
+                        'business_id'
+                    ],
+
+                'bank_transfer_enabled' =>
+                    true,
+
+                'static_qr_enabled' =>
+                    false,
+
+                'midtrans_enabled' =>
+                    false,
+
+                'partial_payment_enabled' =>
+                    true,
+            ]);
+
+        \App\Models\CashAccount::query()
+            ->create([
+                'tenant_id' =>
+                    $workspace[
+                        'tenant_id'
+                    ],
+
+                'business_id' =>
+                    $workspace[
+                        'business_id'
+                    ],
+
+                'name' =>
+                    'BCA Penerimaan',
+
+                'type' =>
+                    'BANK',
+
+                'bank_name' =>
+                    'BCA',
+
+                'account_number' =>
+                    '7155181079',
+
+                'account_name' =>
+                    'Novel Hari Keswono',
+
+                'currency' =>
+                    'IDR',
+
+                'status' =>
+                    'ACTIVE',
+
+                'is_default' =>
+                    true,
+
+                'accepts_payments' =>
+                    true,
+
+                'created_by_user_id' =>
+                    null,
+            ]);
+
+        $this->actingAsWorkspace(
+            $workspace
+        );
+
+        $link =
+            $this->postJson(
+                "/api/v1/invoices/{$invoiceId}/actions/issue-public-link"
+            )->assertCreated();
+
+        $token =
+            basename(
+                (string) parse_url(
+                    (string) $link->json(
+                        'data.public_url'
+                    ),
+                    PHP_URL_PATH
+                )
+            );
+
+        $response =
+            $this->getJson(
+                '/api/public/v1/invoices/'
+                . $token
+            );
+
+        $response
+            ->assertOk()
+            ->assertJsonPath(
+                'data.branding.business_name',
+                'Mikapixel Snapshot'
+            )
+            ->assertJsonPath(
+                'data.branding.address',
+                'Jl. Contoh No. 10'
+            )
+            ->assertJsonPath(
+                'data.payment_allowed',
+                true
+            )
+            ->assertJsonPath(
+                'data.payment_options.bank_transfer_enabled',
+                true
+            )
+            ->assertJsonPath(
+                'data.payment_options.partial_payment_enabled',
+                true
+            )
+            ->assertJsonPath(
+                'data.payment_options.bank_accounts.0.bank_name',
+                'BCA'
+            )
+            ->assertJsonPath(
+                'data.payment_options.bank_accounts.0.account_number',
+                '7155181079'
+            )
+            ->assertJsonPath(
+                'data.payment_options.bank_accounts.0.account_name',
+                'Novel Hari Keswono'
+            )
+            ->assertJsonMissingPath(
+                'data.payment_options.bank_accounts.0.id'
+            )
+            ->assertJsonMissingPath(
+                'data.payment_options.bank_accounts.0.balance'
+            )
+            ->assertJsonMissingPath(
+                'data.payment_options.bank_accounts.0.tenant_id'
+            )
+            ->assertJsonMissingPath(
+                'data.payment_options.bank_accounts.0.business_id'
+            );
+    }
+
+
+    public function test_invoice_resource_exposes_customer_phone_for_authenticated_share(): void
+    {
+        $workspace =
+            $this->workspace(
+                'invoice-share-phone@example.test',
+                'Invoice Share Phone'
+            );
+
+        $customerId =
+            $this->insertCustomer(
+                $workspace['tenant_id'],
+                'CUST-SHARE-PHONE',
+                'Pelanggan WhatsApp'
+            );
+
+        \App\Models\Customer::query()
+            ->where(
+                'tenant_id',
+                $workspace['tenant_id']
+            )
+            ->where(
+                'business_id',
+                $workspace['business_id']
+            )
+            ->where(
+                'id',
+                $customerId
+            )
+            ->update([
+                'phone' =>
+                    '081234567890',
+            ]);
+
+        $invoiceId =
+            $this->insertInvoice(
+                $workspace,
+                $customerId,
+                'INV-SHARE-PHONE',
+                'ISSUED'
+            );
+
+        $this->actingAsWorkspace(
+            $workspace
+        );
+
+        $this->getJson(
+            "/api/v1/invoices/{$invoiceId}"
+        )
+            ->assertOk()
+            ->assertJsonPath(
+                'data.customer.phone',
+                '081234567890'
+            );
+    }
+
+
+    public function test_public_invoice_pdf_download_uses_token_and_no_store(): void
+    {
+        $workspace =
+            $this->workspace(
+                'invoice-public-pdf@example.test',
+                'Invoice Public PDF'
+            );
+
+        $customerId =
+            $this->insertCustomer(
+                $workspace['tenant_id'],
+                'CUST-PUBLIC-PDF',
+                'Pelanggan Public PDF'
+            );
+
+        $invoiceId =
+            $this->insertInvoice(
+                $workspace,
+                $customerId,
+                'INV-PUBLIC-PDF',
+                'ISSUED'
+            );
+
+        $invoice =
+            \App\Models\Invoice::query()
+                ->findOrFail(
+                    $invoiceId
+                );
+
+        /*
+         * insertInvoice() adalah fixture low-level.
+         * Samakan dengan invoice ISSUED valid.
+         */
+        $invoice->paid_amount =
+            '0.00';
+
+        $invoice->outstanding_amount =
+            $invoice->total;
+
+        $invoice->branding_snapshot = [
+            'version' =>
+                1,
+
+            'business_name' =>
+                'Mikapixel Public PDF',
+
+            'address' =>
+                'Jl. Public PDF',
+
+            'phone' =>
+                null,
+
+            'email' =>
+                null,
+
+            'tax_id' =>
+                null,
+
+            'invoice_footnote' =>
+                null,
+
+            'signature_name' =>
+                null,
+
+            'signature_title' =>
+                null,
+        ];
+
+        $invoice->save();
+
+        $this->actingAsWorkspace(
+            $workspace
+        );
+
+        $link =
+            $this->postJson(
+                "/api/v1/invoices/{$invoiceId}/actions/issue-public-link"
+            )
+                ->assertCreated();
+
+        $token =
+            basename(
+                (string) parse_url(
+                    (string) $link->json(
+                        'data.public_url'
+                    ),
+                    PHP_URL_PATH
+                )
+            );
+
+        $response =
+            $this->get(
+                '/api/public/v1/invoices/'
+                . $token
+                . '/pdf'
+            );
+
+        $response->assertOk();
+
+        $this->assertStringStartsWith(
+            'application/pdf',
+            (string) $response
+                ->headers
+                ->get(
+                    'Content-Type'
+                )
+        );
+
+        $this->assertStringContainsString(
+            'attachment;',
+            (string) $response
+                ->headers
+                ->get(
+                    'Content-Disposition'
+                )
+        );
+
+        $this->assertStringContainsString(
+            'Tagihan-INV-PUBLIC-PDF.pdf',
+            (string) $response
+                ->headers
+                ->get(
+                    'Content-Disposition'
+                )
+        );
+
+        $this->assertStringContainsString(
+            'no-store',
+            (string) $response
+                ->headers
+                ->get(
+                    'Cache-Control'
+                )
+        );
+
+        $this->assertStringStartsWith(
+            '%PDF',
+            (string) $response
+                ->getContent()
+        );
+    }
+
 }

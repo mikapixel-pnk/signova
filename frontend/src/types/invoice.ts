@@ -18,6 +18,10 @@ export type InvoiceCustomer = {
   id: string;
   code: string | null;
   name: string;
+
+  phone:
+    | string
+    | null;
 };
 
 export type InvoiceItem = {
@@ -358,6 +362,28 @@ export type InvoiceUpdatePayload = {
 
   items?:
     InvoiceItemPayload[];
+};
+
+
+export type InvoicePublicLink = {
+  public_url: string;
+
+  expires_at:
+    | string
+    | null;
+};
+
+export type InvoicePublicLinkResponse = {
+  success: true;
+
+  data:
+    InvoicePublicLink;
+
+  meta:
+    ApiMeta;
+
+  message?:
+    string;
 };
 
 

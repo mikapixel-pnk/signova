@@ -50,30 +50,21 @@ class InvoicePdfRenderer
         array $viewModel,
         ?string $viewPath = null
     ): string {
-        if ($viewPath !== null) {
-            return Pdf::loadHTML(
-                $this->renderHtml(
-                    null,
-                    $viewModel,
-                    $viewPath
-                )
-            )
-                ->setPaper(
-                    'a4',
-                    'portrait'
-                )
-                ->output();
-        }
-
-        if ($view === null) {
-            throw new InvalidArgumentException(
-                'Invoice template view is missing.'
+        /*
+         * Semua template harus melewati renderHtml()
+         * supaya transform dokumen, termasuk watermark
+         * LUNAS, konsisten untuk named view maupun
+         * filesystem view.
+         */
+        $html =
+            $this->renderHtml(
+                $view,
+                $viewModel,
+                $viewPath
             );
-        }
 
-        return Pdf::loadView(
-            $view,
-            $viewModel
+        return Pdf::loadHTML(
+            $html
         )
             ->setPaper(
                 'a4',

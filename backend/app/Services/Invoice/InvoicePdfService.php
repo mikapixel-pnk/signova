@@ -2,6 +2,7 @@
 
 namespace App\Services\Invoice;
 
+use App\Models\Invoice;
 use App\Services\Invoice\Document\InvoiceDocumentViewModelBuilder;
 use App\Services\Invoice\Document\InvoicePdfRenderer;
 use App\Services\Invoice\Document\InvoiceTemplateSnapshotService;
@@ -35,9 +36,29 @@ class InvoicePdfService
                     $invoiceId
                 );
 
+        return $this->documentForInvoice(
+            $invoice
+        );
+    }
+
+    public function documentForInvoice(
+        Invoice $invoice
+    ): array {
+        /*
+         * Public caller memperoleh invoice dari
+         * token server-side, bukan dari request ID.
+         */
+        $invoice->loadMissing([
+            'customer',
+            'items',
+        ]);
+
         $currentTemplate =
             $this->templateSnapshotService
-                ->current();
+                ->currentFor(
+                    $invoice->tenant_id,
+                    $invoice->business_id
+                );
 
         $resolvedTemplate =
             $this->templateResolver

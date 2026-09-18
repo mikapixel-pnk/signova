@@ -4,11 +4,14 @@ import {
   ArrowLeft,
   Ban,
   CalendarDays,
+  Copy,
   FileDown,
   FileText,
+  MessageCircle,
   Pencil,
   ReceiptText,
   Send,
+  Share2,
   UserRound,
   X,
 } from "lucide-react";
@@ -46,6 +49,7 @@ import {
   getInvoice,
   getInvoicePdf,
   issueInvoice,
+  issueInvoicePublicLink,
   voidInvoice,
 } from "@/lib/invoice/service";
 
@@ -237,6 +241,60 @@ function canDownloadPdf(
   ].includes(status);
 }
 
+function normalizeWhatsAppNumber(
+  value:
+    | string
+    | null
+    | undefined,
+): string | null {
+  if (!value?.trim()) {
+    return null;
+  }
+
+  let digits =
+    value.replace(
+      /\D/g,
+      "",
+    );
+
+  if (
+    digits.startsWith(
+      "00",
+    )
+  ) {
+    digits =
+      digits.slice(2);
+  }
+
+  if (
+    digits.startsWith(
+      "0",
+    )
+  ) {
+    digits =
+      `62${digits.slice(
+        1,
+      )}`;
+  } else if (
+    digits.startsWith(
+      "8",
+    )
+  ) {
+    digits =
+      `62${digits}`;
+  }
+
+  if (
+    digits.length < 9 ||
+    digits.length > 16
+  ) {
+    return null;
+  }
+
+  return digits;
+}
+
+
 export function InvoiceDetail() {
   const params =
     useParams<{
@@ -280,6 +338,18 @@ export function InvoiceDetail() {
   const [
     actionSuccess,
     setActionSuccess,
+  ] = useState<
+    string | null
+  >(null);
+
+  const [
+    shareOpen,
+    setShareOpen,
+  ] = useState(false);
+
+  const [
+    shareUrl,
+    setShareUrl,
   ] = useState<
     string | null
   >(null);
@@ -988,6 +1058,167 @@ export function InvoiceDetail() {
     }
   }
 
+  async function handleOpenShare() {
+    if (!invoice) {
+      return;
+    }
+
+    setActionLoading(true);
+    setActionError(null);
+
+    try {
+      /*
+       * Backend hanya menyimpan hash token.
+       * Karena itu setiap sesi share membuat
+       * link baru dan merevoke link aktif lama.
+       */
+      const response =
+        await issueInvoicePublicLink(
+          invoice.id,
+        );
+
+      setShareUrl(
+        response.data.public_url,
+      );
+
+      setShareOpen(true);
+    } catch (caught) {
+      setActionError(
+        caught,
+      );
+    } finally {
+      setActionLoading(false);
+    }
+  }
+
+
+  async function handleCopyShareLink() {
+    if (!shareUrl) {
+      return;
+    }
+
+    try {
+      await navigator.clipboard
+        .writeText(
+          shareUrl,
+        );
+
+      setActionSuccess(
+        "Link Tagihan berhasil disalin.",
+      );
+    } catch {
+      setActionError(
+        new Error(
+          "Link belum berhasil disalin. Silakan salin secara manual.",
+        ),
+      );
+    }
+  }
+
+
+  function handleWhatsAppShare() {
+    if (
+      !invoice ||
+      !shareUrl
+    ) {
+      return;
+    }
+
+    const phone =
+      normalizeWhatsAppNumber(
+        invoice.customer
+          ?.phone,
+      );
+
+    if (!phone) {
+      setActionError(
+        new Error(
+          "Nomor WhatsApp pelanggan belum tersedia atau tidak valid.",
+        ),
+      );
+
+      return;
+    }
+
+    const customerName =
+      invoice.customer
+        ?.name?.trim();
+
+    const greeting =
+      customerName
+        ? `Halo Bapak/Ibu ${customerName},`
+        : "Halo,";
+
+    const lines =
+      invoice.status ===
+      "PAID"
+        ? [
+            greeting,
+            "",
+            `Tagihan ${invoice.invoice_number} telah LUNAS.`,
+            `Total Tagihan: ${money(
+              invoice.total,
+              invoice.currency,
+            )}`,
+            "",
+            "Informasi Tagihan dapat dilihat melalui link berikut:",
+            shareUrl,
+            "",
+            "Terima kasih.",
+          ]
+        : [
+            greeting,
+            "",
+            `Berikut informasi Tagihan ${invoice.invoice_number}.`,
+            `Total Tagihan: ${money(
+              invoice.total,
+              invoice.currency,
+            )}`,
+            `Sisa Tagihan: ${money(
+              invoice.outstanding_amount,
+              invoice.currency,
+            )}`,
+            invoice.due_at
+              ? `Jatuh tempo: ${localDate(
+                  invoice.due_at,
+                )}`
+              : null,
+            "",
+            "Informasi Tagihan dan cara pembayaran dapat dilihat melalui link berikut:",
+            shareUrl,
+            "",
+            "Terima kasih.",
+          ].filter(
+            (
+              line,
+            ): line is string =>
+              line !== null,
+          );
+
+    const whatsappUrl =
+      `https://wa.me/${phone}?text=${encodeURIComponent(
+        lines.join(
+          "\n",
+        ),
+      )}`;
+
+    const opened =
+      window.open(
+        whatsappUrl,
+        "_blank",
+        "noopener,noreferrer",
+      );
+
+    if (opened) {
+      opened.opener =
+        null;
+    } else {
+      window.location.href =
+        whatsappUrl;
+    }
+  }
+
+
   async function handlePdf() {
     if (!invoice) {
       return;
@@ -1159,6 +1390,21 @@ export function InvoiceDetail() {
     Number(
       invoice.outstanding_amount,
     ) > 0;
+
+  const canShare =
+    [
+      "ISSUED",
+      "PARTIALLY_PAID",
+      "PAID",
+    ].includes(
+      invoice.status,
+    );
+
+  const whatsappNumber =
+    normalizeWhatsAppNumber(
+      invoice.customer
+        ?.phone,
+    );
 
   return (
     <section
@@ -1343,6 +1589,28 @@ export function InvoiceDetail() {
               }
             >
               Terbitkan
+            </Button>
+          ) : null}
+
+          {canShare ? (
+            <Button
+              type="button"
+              variant="secondary"
+              loading={
+                actionLoading
+              }
+              loadingLabel="Menyiapkan Link..."
+              leadingIcon={
+                <Share2
+                  size={17}
+                />
+              }
+              onClick={
+                () =>
+                  void handleOpenShare()
+              }
+            >
+              Kirim ke Pelanggan
             </Button>
           ) : null}
 
@@ -2162,6 +2430,252 @@ export function InvoiceDetail() {
           )}
         </div>
       </section>
+
+      {shareOpen &&
+      shareUrl ? (
+        <div
+          className={
+            styles.sheetOverlay
+          }
+          onMouseDown={
+            () =>
+              setShareOpen(
+                false,
+              )
+          }
+        >
+          <section
+            className={
+              styles.shareSheet
+            }
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="share-invoice-title"
+            onMouseDown={
+              (
+                event,
+              ) => {
+                event.stopPropagation();
+              }
+            }
+          >
+            <header
+              className={
+                styles.dialogHeader
+              }
+            >
+              <div>
+                <span>
+                  Tagihan
+                </span>
+
+                <h2
+                  id="share-invoice-title"
+                >
+                  Kirim ke Pelanggan
+                </h2>
+
+                <p>
+                  Kirim link aman Tagihan kepada pelanggan.
+                </p>
+              </div>
+
+              <button
+                type="button"
+                className={
+                  styles.close
+                }
+                aria-label="Tutup"
+                onClick={
+                  () =>
+                    setShareOpen(
+                      false,
+                    )
+                }
+              >
+                <X
+                  size={19}
+                />
+              </button>
+            </header>
+
+            <div
+              className={
+                styles.shareSheetBody
+              }
+            >
+              <div
+                className={
+                  styles.shareCustomer
+                }
+              >
+                <div>
+                  <span>
+                    Pelanggan
+                  </span>
+
+                  <strong>
+                    {
+                      invoice.customer
+                        ?.name ??
+                      "-"
+                    }
+                  </strong>
+
+                  <small>
+                    {invoice.customer
+                      ?.phone ??
+                      "Nomor WhatsApp belum tersedia"}
+                  </small>
+                </div>
+
+                {!whatsappNumber &&
+                invoice.customer?.id ? (
+                  <Link
+                    href={`/app/pelanggan/${invoice.customer.id}/ubah`}
+                    className={
+                      styles.customerEditLink
+                    }
+                  >
+                    Ubah Pelanggan
+                  </Link>
+                ) : null}
+              </div>
+
+              <div
+                className={
+                  styles.sharePublicUrl
+                }
+              >
+                <span>
+                  Link pelanggan
+                </span>
+
+                <code>
+                  {shareUrl}
+                </code>
+              </div>
+
+              <div
+                className={
+                  styles.shareOptions
+                }
+              >
+                <button
+                  type="button"
+                  className={
+                    styles.shareOption
+                  }
+                  disabled={
+                    !whatsappNumber
+                  }
+                  onClick={
+                    handleWhatsAppShare
+                  }
+                >
+                  <span
+                    className={
+                      styles.shareOptionIcon
+                    }
+                  >
+                    <MessageCircle
+                      size={20}
+                    />
+                  </span>
+
+                  <span>
+                    <strong>
+                      WhatsApp
+                    </strong>
+
+                    <small>
+                      {whatsappNumber
+                        ? "Buka chat pelanggan dengan pesan Tagihan otomatis."
+                        : "Nomor WhatsApp pelanggan belum tersedia."}
+                    </small>
+                  </span>
+                </button>
+
+                <button
+                  type="button"
+                  className={
+                    styles.shareOption
+                  }
+                  onClick={
+                    () =>
+                      void handleCopyShareLink()
+                  }
+                >
+                  <span
+                    className={
+                      styles.shareOptionIcon
+                    }
+                  >
+                    <Copy
+                      size={20}
+                    />
+                  </span>
+
+                  <span>
+                    <strong>
+                      Salin Link
+                    </strong>
+
+                    <small>
+                      Salin link aman untuk dikirim melalui kanal lain.
+                    </small>
+                  </span>
+                </button>
+
+                <button
+                  type="button"
+                  className={
+                    styles.shareOption
+                  }
+                  onClick={
+                    () => {
+                      setShareOpen(
+                        false,
+                      );
+
+                      void handlePdf();
+                    }
+                  }
+                >
+                  <span
+                    className={
+                      styles.shareOptionIcon
+                    }
+                  >
+                    <FileDown
+                      size={20}
+                    />
+                  </span>
+
+                  <span>
+                    <strong>
+                      Buka PDF
+                    </strong>
+
+                    <small>
+                      Buka dokumen Tagihan dalam format PDF.
+                    </small>
+                  </span>
+                </button>
+              </div>
+
+              <p
+                className={
+                  styles.shareNotice
+                }
+              >
+                Membuat link baru akan menonaktifkan link pelanggan sebelumnya untuk Tagihan ini.
+              </p>
+            </div>
+          </section>
+        </div>
+      ) : null}
+
 
       {paymentOpen ? (
         <div

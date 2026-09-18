@@ -6,6 +6,7 @@ import {
 import type {
   InvoiceCreatePayload,
   InvoiceListResponse,
+  InvoicePublicLinkResponse,
   InvoiceResponse,
   InvoiceStatus,
   InvoiceUpdatePayload,
@@ -148,6 +149,20 @@ export async function issueInvoice(
     },
   );
 }
+
+export async function issueInvoicePublicLink(
+  id: string,
+): Promise<InvoicePublicLinkResponse> {
+  return authenticatedApiRequest<
+    InvoicePublicLinkResponse
+  >(
+    `/invoices/${id}/actions/issue-public-link`,
+    {
+      method: "POST",
+    },
+  );
+}
+
 
 export async function voidInvoice(
   id: string,

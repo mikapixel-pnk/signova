@@ -85,6 +85,55 @@ class InvoicePdfRendererTest extends TestCase
         }
     }
 
+    public function test_named_view_pdf_render_passes_through_render_html(): void
+    {
+        $renderer =
+            new class extends InvoicePdfRenderer
+            {
+                public bool $renderHtmlCalled =
+                    false;
+
+                public function renderHtml(
+                    ?string $view,
+                    array $viewModel,
+                    ?string $viewPath = null
+                ): string {
+                    $this->renderHtmlCalled =
+                        true;
+
+                    return <<<'HTML'
+<!doctype html>
+<html>
+<body>
+    <main>Tagihan SIGNOVA</main>
+</body>
+</html>
+HTML;
+                }
+            };
+
+        $content =
+            $renderer->render(
+                'invoice.fake-view',
+                [
+                    'document' => [
+                        'status' =>
+                            'PAID',
+                    ],
+                ]
+            );
+
+        $this->assertTrue(
+            $renderer->renderHtmlCalled
+        );
+
+        $this->assertStringStartsWith(
+            '%PDF',
+            $content
+        );
+    }
+
+
     private function temporaryTemplate(): string
     {
         $directory =
