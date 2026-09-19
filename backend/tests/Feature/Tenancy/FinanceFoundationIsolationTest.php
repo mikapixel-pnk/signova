@@ -100,6 +100,9 @@ class FinanceFoundationIsolationTest extends TestCase
             'tenant_id' =>
                 $first['tenant_id'],
 
+            'business_id' =>
+                $first['business_id'],
+
             'name' =>
                 'Kas Invalid Actor',
 
@@ -463,6 +466,9 @@ class FinanceFoundationIsolationTest extends TestCase
 
             'tenant_id' =>
                 $workspace['tenant_id'],
+
+            'business_id' =>
+                $workspace['business_id'],
         ];
     }
 
@@ -480,6 +486,9 @@ class FinanceFoundationIsolationTest extends TestCase
 
             'tenant_id' =>
                 $workspace['tenant_id'],
+
+            'business_id' =>
+                $workspace['business_id'],
 
             'name' =>
                 $name,
@@ -527,6 +536,9 @@ class FinanceFoundationIsolationTest extends TestCase
 
             'tenant_id' =>
                 $workspace['tenant_id'],
+
+            'business_id' =>
+                $workspace['business_id'],
 
             'cash_account_id' =>
                 $cashAccountId,
@@ -585,6 +597,9 @@ class FinanceFoundationIsolationTest extends TestCase
 
             'tenant_id' =>
                 $workspace['tenant_id'],
+
+            'business_id' =>
+                $workspace['business_id'],
 
             'cash_account_id' =>
                 $cashAccountId,

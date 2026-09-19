@@ -286,6 +286,9 @@ class IncomeFoundationIsolationTest extends TestCase
             'tenant_id' =>
                 $workspace['tenant_id'],
 
+            'business_id' =>
+                $workspace['business_id'],
+
             'cash_account_id' =>
                 $account,
 
@@ -334,6 +337,9 @@ class IncomeFoundationIsolationTest extends TestCase
 
             'tenant_id' =>
                 $workspace['tenant_id'],
+
+            'business_id' =>
+                $workspace['business_id'],
 
             'cash_account_id' =>
                 $account,
@@ -435,6 +441,9 @@ class IncomeFoundationIsolationTest extends TestCase
             'tenant_id' =>
                 $workspace['tenant_id'],
 
+            'business_id' =>
+                $workspace['business_id'],
+
             'name' =>
                 'Kas Income Test',
 
@@ -493,6 +502,9 @@ class IncomeFoundationIsolationTest extends TestCase
 
             'tenant_id' =>
                 $workspace['tenant_id'],
+
+            'business_id' =>
+                $workspace['business_id'],
 
             'cash_account_id' =>
                 $cashAccountId,
