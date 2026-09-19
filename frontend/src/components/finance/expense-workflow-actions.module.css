@@ -1,0 +1,281 @@
+.actionBar {
+  margin-top: 14px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.actionBar button,
+.modalFooter button,
+.deleteEvidenceButton {
+  min-height: 38px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 0 12px;
+  border-radius: 11px;
+  font: inherit;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.actionBar button:disabled,
+.modalFooter button:disabled,
+.deleteEvidenceButton:disabled {
+  cursor: default;
+  opacity: 0.55;
+}
+
+.primaryButton {
+  border: 1px solid #2868f0;
+  background: #2868f0;
+  color: #fff;
+}
+
+.secondaryButton {
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--foreground);
+}
+
+.dangerButton,
+.deleteEvidenceButton {
+  border:
+    1px solid
+    color-mix(
+      in srgb,
+      #e45757 38%,
+      var(--border)
+    );
+  background:
+    color-mix(
+      in srgb,
+      #e45757 8%,
+      var(--surface)
+    );
+  color: #e45757;
+}
+
+.feedbackError,
+.feedbackSuccess {
+  margin-top: 12px;
+  padding: 10px 12px;
+  display: grid;
+  gap: 3px;
+  border-radius: 11px;
+  font-size: 11px;
+  line-height: 1.45;
+}
+
+.feedbackError {
+  border:
+    1px solid
+    color-mix(
+      in srgb,
+      #e45757 30%,
+      var(--border)
+    );
+  background:
+    color-mix(
+      in srgb,
+      #e45757 7%,
+      var(--surface)
+    );
+}
+
+.feedbackSuccess {
+  border:
+    1px solid
+    color-mix(
+      in srgb,
+      #34b56f 30%,
+      var(--border)
+    );
+  background:
+    color-mix(
+      in srgb,
+      #34b56f 7%,
+      var(--surface)
+    );
+}
+
+.feedbackError small {
+  color: var(--muted-foreground);
+}
+
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 110;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  background: rgb(0 0 0 / 48%);
+}
+
+.modal,
+.reasonModal {
+  width: 100%;
+  max-height: 92dvh;
+  overflow: auto;
+  border: 1px solid var(--border);
+  border-bottom: 0;
+  border-radius: 22px 22px 0 0;
+  background: var(--background);
+  box-shadow:
+    0 -20px 60px
+    rgb(0 0 0 / 22%);
+}
+
+.modalHeader {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  padding: 17px 18px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  border-bottom: 1px solid var(--border);
+  background: var(--background);
+}
+
+.modalHeader span {
+  color: var(--muted-foreground);
+  font-size: 10px;
+  font-weight: 750;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.modalHeader h3 {
+  margin: 4px 0 0;
+  font-size: 19px;
+}
+
+.closeButton {
+  width: 38px;
+  height: 38px;
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--border);
+  border-radius: 11px;
+  background: var(--surface);
+  color: inherit;
+  cursor: pointer;
+}
+
+.modalBody {
+  padding: 18px;
+  display: grid;
+  gap: 14px;
+}
+
+.field {
+  display: grid;
+  gap: 7px;
+}
+
+.field > span {
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.field input,
+.field select,
+.field textarea {
+  width: 100%;
+  min-height: 44px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  outline: 0;
+  background: var(--surface);
+  color: inherit;
+  font: inherit;
+}
+
+.field textarea {
+  min-height: 92px;
+  resize: vertical;
+}
+
+.field small {
+  color: var(--muted-foreground);
+  font-size: 10px;
+  line-height: 1.45;
+}
+
+.field input:focus,
+.field select:focus,
+.field textarea:focus {
+  border-color: #2868f0;
+}
+
+.deleteEvidenceButton {
+  width: fit-content;
+}
+
+.modalFooter {
+  position: sticky;
+  bottom: 0;
+  padding:
+    14px 18px
+    calc(
+      14px +
+      env(safe-area-inset-bottom)
+    );
+  display: flex;
+  justify-content: flex-end;
+  gap: 9px;
+  border-top: 1px solid var(--border);
+  background: var(--background);
+}
+
+@media (max-width: 720px) {
+  .actionBar {
+    display: grid;
+    grid-template-columns:
+      repeat(
+        2,
+        minmax(0, 1fr)
+      );
+  }
+
+  .actionBar button {
+    width: 100%;
+  }
+
+  .modalFooter {
+    display: grid;
+    grid-template-columns:
+      minmax(0, 1fr)
+      minmax(0, 1fr);
+  }
+
+  .modalFooter button {
+    width: 100%;
+  }
+}
+
+@media (min-width: 721px) {
+  .overlay {
+    align-items: center;
+    padding: 20px;
+  }
+
+  .modal {
+    width: min(100%, 600px);
+    border-bottom: 1px solid var(--border);
+    border-radius: 22px;
+  }
+
+  .reasonModal {
+    width: min(100%, 480px);
+    border-bottom: 1px solid var(--border);
+    border-radius: 22px;
+  }
+}
