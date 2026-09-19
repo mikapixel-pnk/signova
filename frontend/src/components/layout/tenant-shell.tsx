@@ -49,6 +49,10 @@ import {
 } from "@/lib/auth/context";
 
 import {
+  getActiveCapabilities,
+} from "@/lib/auth/active-capabilities-service";
+
+import {
   logout,
 } from "@/lib/auth/logout";
 
@@ -102,10 +106,13 @@ type TenantShellProps = {
   children: React.ReactNode;
 };
 
-const navigationGroups:
-  NavigationGroup[] =
-  getNavigationModel(
+function buildNavigationGroups(
+  capabilityCodes:
+    readonly string[],
+): NavigationGroup[] {
+  return getNavigationModel(
     "desktop",
+    capabilityCodes,
   ).map(
     (group) => ({
       id: group.key,
@@ -141,6 +148,7 @@ const navigationGroups:
         ),
     }),
   );
+}
 
 function cleanHref(
   href: string,
@@ -457,8 +465,10 @@ function AccordionGroup({
 
 function SidebarNavigationGroups({
   pathname,
+  groups,
 }: {
   pathname: string;
+  groups: NavigationGroup[];
 }) {
   const searchParams =
     useSearchParams();
@@ -470,7 +480,7 @@ function SidebarNavigationGroups({
 
   return (
     <>
-      {navigationGroups.map(
+      {groups.map(
         (group) => (
           <AccordionGroup
             key={
@@ -520,6 +530,18 @@ export function TenantShell({
     "Pengguna",
   );
 
+  const [
+    visibleNavigationGroups,
+    setVisibleNavigationGroups,
+  ] = useState<
+    NavigationGroup[]
+  >(
+    () =>
+      buildNavigationGroups(
+        [],
+      ),
+  );
+
   useEffect(() => {
     let cancelled =
       false;
@@ -556,6 +578,31 @@ export function TenantShell({
       cancelled = true;
     };
   }, []);
+
+  async function refreshNavigationCapabilities() {
+    try {
+      const response =
+        await getActiveCapabilities();
+
+      setVisibleNavigationGroups(
+        buildNavigationGroups(
+          response.data
+            .capability_codes,
+        ),
+      );
+    } catch {
+      /*
+       * Backend tetap authority final.
+       * Jika capability belum dapat dimuat,
+       * menu protected tidak ditampilkan.
+       */
+      setVisibleNavigationGroups(
+        buildNavigationGroups(
+          [],
+        ),
+      );
+    }
+  }
 
   async function handleLogout() {
     if (loggingOut) {
@@ -622,6 +669,9 @@ export function TenantShell({
             <SidebarNavigationGroups
               pathname={
                 pathname
+              }
+              groups={
+                visibleNavigationGroups
               }
             />
           </Suspense>
@@ -770,7 +820,13 @@ export function TenantShell({
         >
           <TenantSessionGate
             onBusinessResolved={
-              setActiveBusinessName
+              (businessName) => {
+                setActiveBusinessName(
+                  businessName,
+                );
+
+                void refreshNavigationCapabilities();
+              }
             }
           >
             {children}

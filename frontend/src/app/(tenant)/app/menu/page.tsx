@@ -13,6 +13,7 @@ import {
 } from "next/navigation";
 
 import {
+  useEffect,
   useState,
 } from "react";
 
@@ -33,6 +34,10 @@ import {
 } from "@/lib/auth/logout";
 
 import {
+  getActiveCapabilities,
+} from "@/lib/auth/active-capabilities-service";
+
+import {
   getNavigationModel,
 } from "@/lib/module/navigation";
 
@@ -42,9 +47,10 @@ import {
 
 import styles from "./page.module.css";
 
-const navigation =
+const initialNavigation =
   getNavigationModel(
     "mobile",
+    [],
   );
 
 function MenuTile({
@@ -111,9 +117,52 @@ export default function MoreMenuPage() {
     useRouter();
 
   const [
+    navigation,
+    setNavigation,
+  ] = useState(
+    initialNavigation,
+  );
+
+  const [
     loggingOut,
     setLoggingOut,
   ] = useState(false);
+
+  useEffect(() => {
+    let cancelled =
+      false;
+
+    async function loadCapabilities() {
+      try {
+        const response =
+          await getActiveCapabilities();
+
+        if (cancelled) {
+          return;
+        }
+
+        setNavigation(
+          getNavigationModel(
+            "mobile",
+            response.data
+              .capability_codes,
+          ),
+        );
+      } catch {
+        if (!cancelled) {
+          setNavigation(
+            initialNavigation,
+          );
+        }
+      }
+    }
+
+    void loadCapabilities();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   async function handleLogout() {
     if (loggingOut) {

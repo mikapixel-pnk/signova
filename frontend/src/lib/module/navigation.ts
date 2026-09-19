@@ -42,7 +42,14 @@ export type NavigationModelGroup = {
 export function getNavigationModel(
   surface:
     NavigationSurface,
+  capabilityCodes:
+    readonly string[] = [],
 ): NavigationModelGroup[] {
+  const capabilities =
+    new Set(
+      capabilityCodes,
+    );
+
   return getNavigationGroups()
     .map(
       (group) => ({
@@ -53,14 +60,22 @@ export function getNavigationModel(
           false,
 
         modules:
-          surface ===
-          "desktop"
-            ? getDesktopModules(
-                group.key,
-              )
-            : getMobileModules(
-                group.key,
+          (
+            surface ===
+            "desktop"
+              ? getDesktopModules(
+                  group.key,
+                )
+              : getMobileModules(
+                  group.key,
+                )
+          ).filter(
+            (moduleDef) =>
+              !moduleDef.capability ||
+              capabilities.has(
+                moduleDef.capability,
               ),
+          ),
       }),
     )
     .filter(
