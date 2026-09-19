@@ -19,6 +19,7 @@ use App\Http\Controllers\Api\V1\Settings\PaymentSettingController;
 use App\Http\Controllers\Api\V1\Quotation\QuotationController;
 use App\Http\Controllers\Api\V1\Customer\CustomerController;
 use App\Http\Controllers\Api\V1\Supplier\SupplierController;
+use App\Http\Controllers\Api\V1\Purchasing\PurchaseRequestController;
 use App\Http\Controllers\Api\V1\Catalog\CatalogCategoryController;
 use App\Http\Controllers\Api\V1\Catalog\CatalogItemController;
 use App\Http\Controllers\Api\V1\Catalog\UnitController;
@@ -186,6 +187,78 @@ Route::prefix('v1')->group(function () {
         | Pemasok
         |--------------------------------------------------------------------------
         */
+
+        Route::get(
+            '/purchasing/requests',
+            [PurchaseRequestController::class, 'index']
+        )->middleware([
+            'business.context',
+            'capability:purchasing.request',
+        ]);
+
+        Route::post(
+            '/purchasing/requests',
+            [PurchaseRequestController::class, 'store']
+        )->middleware([
+            'business.context',
+            'capability:purchasing.request',
+        ]);
+
+        Route::get(
+            '/purchasing/requests/{purchaseRequestId}',
+            [PurchaseRequestController::class, 'show']
+        )->middleware([
+            'business.context',
+            'capability:purchasing.request',
+        ]);
+
+        Route::patch(
+            '/purchasing/requests/{purchaseRequestId}',
+            [PurchaseRequestController::class, 'update']
+        )->middleware([
+            'business.context',
+            'capability:purchasing.request',
+        ]);
+
+        Route::post(
+            '/purchasing/requests/{purchaseRequestId}/actions/submit',
+            [PurchaseRequestController::class, 'submit']
+        )->middleware([
+            'business.context',
+            'capability:purchasing.request',
+        ]);
+
+        Route::post(
+            '/purchasing/requests/{purchaseRequestId}/actions/approve',
+            [PurchaseRequestController::class, 'approve']
+        )->middleware([
+            'business.context',
+            'capability:purchasing.approve_request',
+        ]);
+
+        Route::post(
+            '/purchasing/requests/{purchaseRequestId}/actions/reject',
+            [PurchaseRequestController::class, 'reject']
+        )->middleware([
+            'business.context',
+            'capability:purchasing.approve_request',
+        ]);
+
+        Route::post(
+            '/purchasing/requests/{purchaseRequestId}/actions/revise',
+            [PurchaseRequestController::class, 'revise']
+        )->middleware([
+            'business.context',
+            'capability:purchasing.request',
+        ]);
+
+        Route::post(
+            '/purchasing/requests/{purchaseRequestId}/actions/cancel',
+            [PurchaseRequestController::class, 'cancel']
+        )->middleware([
+            'business.context',
+            'capability:purchasing.request',
+        ]);
 
         Route::get(
             '/suppliers',

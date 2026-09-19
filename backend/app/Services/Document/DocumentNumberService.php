@@ -36,6 +36,63 @@ class DocumentNumberService
         );
     }
 
+    public function nextPurchaseRequestNumber(): string
+    {
+        return $this->nextDefaultNumber(
+            documentType: 'PURCHASE_REQUEST',
+            prefix: 'PR',
+            defaultPadding: 4
+        );
+    }
+
+    public function nextPurchaseOrderNumber(): string
+    {
+        return $this->nextDefaultNumber(
+            documentType: 'PURCHASE_ORDER',
+            prefix: 'PO',
+            defaultPadding: 4
+        );
+    }
+
+    private function nextDefaultNumber(
+        string $documentType,
+        string $prefix,
+        int $defaultPadding
+    ): string {
+        $tenantId =
+            $this->tenantContext->tenantId();
+
+        $timezone =
+            DB::table('tenants')
+                ->where(
+                    'id',
+                    $tenantId
+                )
+                ->value('timezone')
+            ?? config(
+                'app.timezone',
+                'UTC'
+            );
+
+        $period =
+            CarbonImmutable::now(
+                $timezone
+            )->format('Ym');
+
+        return $this->next(
+            documentType: $documentType,
+            period: $period,
+            prefix:
+                strtoupper(
+                    trim($prefix)
+                )
+                . '-'
+                . $period
+                . '-',
+            defaultPadding: $defaultPadding
+        );
+    }
+
     private function nextConfiguredNumber(
         string $documentType,
         string $defaultPrefix,
