@@ -18,6 +18,7 @@ use App\Http\Controllers\Api\V1\Settings\InvoiceTemplateSettingController;
 use App\Http\Controllers\Api\V1\Settings\PaymentSettingController;
 use App\Http\Controllers\Api\V1\Quotation\QuotationController;
 use App\Http\Controllers\Api\V1\Customer\CustomerController;
+use App\Http\Controllers\Api\V1\Supplier\SupplierController;
 use App\Http\Controllers\Api\V1\Catalog\CatalogCategoryController;
 use App\Http\Controllers\Api\V1\Catalog\CatalogItemController;
 use App\Http\Controllers\Api\V1\Catalog\UnitController;
@@ -177,6 +178,45 @@ Route::prefix('v1')->group(function () {
         )->middleware([
             'business.context',
             'capability:customer.update',
+        ]);
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Pemasok
+        |--------------------------------------------------------------------------
+        */
+
+        Route::get(
+            '/suppliers',
+            [SupplierController::class, 'index']
+        )->middleware([
+            'business.context',
+            'capability:supplier.view',
+        ]);
+
+        Route::post(
+            '/suppliers',
+            [SupplierController::class, 'store']
+        )->middleware([
+            'business.context',
+            'capability:supplier.create',
+        ]);
+
+        Route::get(
+            '/suppliers/{supplierId}',
+            [SupplierController::class, 'show']
+        )->middleware([
+            'business.context',
+            'capability:supplier.view',
+        ]);
+
+        Route::patch(
+            '/suppliers/{supplierId}',
+            [SupplierController::class, 'update']
+        )->middleware([
+            'business.context',
+            'capability:supplier.update',
         ]);
 
 

@@ -30,6 +30,7 @@ class SignovaAccessControlSeeder extends Seeder
             'payment' => 'Pembayaran',
             'finance' => 'Keuangan',
             'project' => 'Proyek',
+            'supplier' => 'Pemasok',
             'team' => 'Tim & Hak Akses',
             'settings' => 'Pengaturan',
         ];
@@ -112,6 +113,11 @@ class SignovaAccessControlSeeder extends Seeder
             ['project', 'project.view', 'Melihat Proyek', false],
             ['project', 'project.create', 'Membuat Proyek', false],
             ['project', 'project.update', 'Mengubah Proyek', false],
+
+            ['supplier', 'supplier.view', 'Melihat Pemasok', false],
+            ['supplier', 'supplier.create', 'Membuat Pemasok', false],
+            ['supplier', 'supplier.update', 'Mengubah Pemasok', false],
+            ['supplier', 'supplier.view_price', 'Melihat Harga Pemasok', true],
 
             ['team', 'team.user.view', 'Melihat Pengguna', false],
             ['team', 'team.user.manage', 'Mengelola Pengguna', true],
