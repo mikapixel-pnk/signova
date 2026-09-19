@@ -19,6 +19,7 @@ use App\Http\Controllers\Api\V1\Settings\PaymentSettingController;
 use App\Http\Controllers\Api\V1\Quotation\QuotationController;
 use App\Http\Controllers\Api\V1\Customer\CustomerController;
 use App\Http\Controllers\Api\V1\Supplier\SupplierController;
+use App\Http\Controllers\Api\V1\Purchasing\PurchaseOrderController;
 use App\Http\Controllers\Api\V1\Purchasing\PurchaseRequestController;
 use App\Http\Controllers\Api\V1\Catalog\CatalogCategoryController;
 use App\Http\Controllers\Api\V1\Catalog\CatalogItemController;
@@ -258,6 +259,54 @@ Route::prefix('v1')->group(function () {
         )->middleware([
             'business.context',
             'capability:purchasing.request',
+        ]);
+
+        Route::get(
+            '/purchasing/orders',
+            [PurchaseOrderController::class, 'index']
+        )->middleware([
+            'business.context',
+            'capability:purchasing.create_po',
+        ]);
+
+        Route::post(
+            '/purchasing/orders',
+            [PurchaseOrderController::class, 'store']
+        )->middleware([
+            'business.context',
+            'capability:purchasing.create_po',
+        ]);
+
+        Route::get(
+            '/purchasing/orders/{purchaseOrderId}',
+            [PurchaseOrderController::class, 'show']
+        )->middleware([
+            'business.context',
+            'capability:purchasing.create_po',
+        ]);
+
+        Route::patch(
+            '/purchasing/orders/{purchaseOrderId}',
+            [PurchaseOrderController::class, 'update']
+        )->middleware([
+            'business.context',
+            'capability:purchasing.create_po',
+        ]);
+
+        Route::post(
+            '/purchasing/orders/{purchaseOrderId}/actions/issue',
+            [PurchaseOrderController::class, 'issue']
+        )->middleware([
+            'business.context',
+            'capability:purchasing.approve_po',
+        ]);
+
+        Route::post(
+            '/purchasing/orders/{purchaseOrderId}/actions/cancel',
+            [PurchaseOrderController::class, 'cancel']
+        )->middleware([
+            'business.context',
+            'capability:purchasing.cancel_po',
         ]);
 
         Route::get(
