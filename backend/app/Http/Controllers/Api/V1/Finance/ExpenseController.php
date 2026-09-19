@@ -27,6 +27,8 @@ class ExpenseController extends Controller
                 $data['search'] ?? null,
                 $data['status'] ?? null,
                 $data['cash_account_id'] ?? null,
+                $data['from'] ?? null,
+                $data['to'] ?? null,
                 $data['per_page'] ?? 20
             );
 

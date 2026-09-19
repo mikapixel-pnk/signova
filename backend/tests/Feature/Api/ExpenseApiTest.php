@@ -455,6 +455,158 @@ class ExpenseApiTest extends TestCase
             ]);
     }
 
+    public function test_expense_list_can_be_filtered_by_period(): void
+    {
+        $workspace = $this->workspace(
+            'expense-period@example.test',
+            'Expense Period'
+        );
+
+        $account =
+            $this->insertAccount(
+                $workspace,
+                'Kas Period'
+            );
+
+        $creatorId =
+            User::query()
+                ->where(
+                    'email',
+                    'expense-period@example.test'
+                )
+                ->value('id');
+
+        $this->assertNotNull(
+            $creatorId
+        );
+
+        DB::table('expenses')->insert([
+            [
+                'id' =>
+                    (string) Str::ulid(),
+
+                'tenant_id' =>
+                    $workspace['tenant_id'],
+
+                'business_id' =>
+                    $workspace['business_id'],
+
+                'cash_account_id' =>
+                    $account,
+
+                'amount' =>
+                    '10000.00',
+
+                'currency' =>
+                    'IDR',
+
+                'incurred_at' =>
+                    '2026-08-31 10:00:00',
+
+                'category' =>
+                    'UAT',
+
+                'description' =>
+                    'Di luar periode',
+
+                'status' =>
+                    'DRAFT',
+
+                'created_by_user_id' =>
+                    $creatorId,
+
+                'created_at' =>
+                    now(),
+
+                'updated_at' =>
+                    now(),
+            ],
+            [
+                'id' =>
+                    (string) Str::ulid(),
+
+                'tenant_id' =>
+                    $workspace['tenant_id'],
+
+                'business_id' =>
+                    $workspace['business_id'],
+
+                'cash_account_id' =>
+                    $account,
+
+                'amount' =>
+                    '20000.00',
+
+                'currency' =>
+                    'IDR',
+
+                'incurred_at' =>
+                    '2026-09-10 10:00:00',
+
+                'category' =>
+                    'UAT',
+
+                'description' =>
+                    'Di dalam periode',
+
+                'status' =>
+                    'DRAFT',
+
+                'created_by_user_id' =>
+                    $creatorId,
+
+                'created_at' =>
+                    now(),
+
+                'updated_at' =>
+                    now(),
+            ],
+        ]);
+
+        $this->actingAsWorkspace(
+            $workspace
+        );
+
+        $this->getJson(
+            '/api/v1/finance/expenses'
+            . '?from=2026-09-01'
+            . '&to=2026-09-30'
+        )
+            ->assertOk()
+            ->assertJsonCount(
+                1,
+                'data'
+            )
+            ->assertJsonPath(
+                'data.0.description',
+                'Di dalam periode'
+            );
+    }
+
+    public function test_expense_period_rejects_invalid_range(): void
+    {
+        $workspace = $this->workspace(
+            'expense-period-invalid@example.test',
+            'Expense Period Invalid'
+        );
+
+        $this->actingAsWorkspace(
+            $workspace
+        );
+
+        $this->getJson(
+            '/api/v1/finance/expenses'
+            . '?from=2026-09-30'
+            . '&to=2026-09-01'
+        )
+            ->assertUnprocessable()
+            ->assertJsonPath(
+                'error.code',
+                'VALIDATION_FAILED'
+            );
+    }
+
+
     public function test_draft_expense_can_be_updated(): void
     {
         $workspace = $this->workspace(

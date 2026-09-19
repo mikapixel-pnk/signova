@@ -28,6 +28,15 @@ class ListExpensesRequest extends FormRequest
                 'string',
                 'max:26',
             ],
+            'from' => [
+                'nullable',
+                'date_format:Y-m-d',
+            ],
+            'to' => [
+                'nullable',
+                'date_format:Y-m-d',
+                'after_or_equal:from',
+            ],
             'per_page' => [
                 'nullable',
                 'integer',

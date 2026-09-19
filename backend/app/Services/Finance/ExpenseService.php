@@ -26,6 +26,8 @@ class ExpenseService
         ?string $search = null,
         ?string $status = null,
         ?string $cashAccountId = null,
+        ?string $from = null,
+        ?string $to = null,
         int $perPage = 20
     ): LengthAwarePaginator {
         return $this->baseQuery()
@@ -64,6 +66,30 @@ class ExpenseService
                     $query->where(
                         'cash_account_id',
                         $cashAccountId
+                    )
+            )
+            ->when(
+                $from,
+                fn (
+                    Builder $query,
+                    string $from
+                ) =>
+                    $query->whereDate(
+                        'incurred_at',
+                        '>=',
+                        $from
+                    )
+            )
+            ->when(
+                $to,
+                fn (
+                    Builder $query,
+                    string $to
+                ) =>
+                    $query->whereDate(
+                        'incurred_at',
+                        '<=',
+                        $to
                     )
             )
             ->orderByDesc('incurred_at')
