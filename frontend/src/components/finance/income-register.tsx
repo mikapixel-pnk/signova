@@ -20,6 +20,10 @@ import {
 } from "@/components/feedback/action-feedback";
 
 import {
+  ManualIncomeAction,
+} from "@/components/finance/manual-income-action";
+
+import {
   apiErrorMessage,
   apiRequestId,
 } from "@/lib/api/error-message";
@@ -436,6 +440,11 @@ export function IncomeRegister() {
     string | null
   >(null);
 
+  const [
+    refreshVersion,
+    setRefreshVersion,
+  ] = useState(0);
+
 
   const range =
     useMemo(
@@ -522,7 +531,10 @@ export function IncomeRegister() {
     return () => {
       active = false;
     };
-  }, [range]);
+  }, [
+    range,
+    refreshVersion,
+  ]);
 
 
   useEffect(() => {
@@ -608,6 +620,7 @@ export function IncomeRegister() {
     group,
     debouncedSearch,
     page,
+    refreshVersion,
   ]);
 
 
@@ -650,6 +663,18 @@ export function IncomeRegister() {
           />
         </span>
       </header>
+
+
+      <ManualIncomeAction
+        onRecorded={() => {
+          setPage(1);
+
+          setRefreshVersion(
+            (current) =>
+              current + 1,
+          );
+        }}
+      />
 
 
       <section
