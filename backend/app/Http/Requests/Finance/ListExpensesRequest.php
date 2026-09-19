@@ -19,6 +19,8 @@ class ListExpensesRequest extends FormRequest
                 'nullable',
                 Rule::in([
                     'DRAFT',
+                    'PENDING_APPROVAL',
+                    'REJECTED',
                     'POSTED',
                     'VOID',
                 ]),
@@ -27,6 +29,15 @@ class ListExpensesRequest extends FormRequest
                 'nullable',
                 'string',
                 'max:26',
+            ],
+            'from' => [
+                'nullable',
+                'date_format:Y-m-d',
+            ],
+            'to' => [
+                'nullable',
+                'date_format:Y-m-d',
+                'after_or_equal:from',
             ],
             'per_page' => [
                 'nullable',

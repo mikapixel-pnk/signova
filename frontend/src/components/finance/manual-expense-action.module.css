@@ -1,0 +1,275 @@
+.actionArea {
+  display: grid;
+  gap: 10px;
+}
+
+.actionButton {
+  width: fit-content;
+}
+
+.success {
+  padding: 12px 14px;
+  border: 1px solid
+    color-mix(
+      in srgb,
+      #34b56f 30%,
+      var(--border)
+    );
+  border-radius: 14px;
+  background:
+    color-mix(
+      in srgb,
+      #34b56f 9%,
+      var(--surface)
+    );
+  font-size: 12px;
+  font-weight: 650;
+}
+
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  background: rgb(0 0 0 / 48%);
+}
+
+.sheet {
+  width: 100%;
+  max-height: 92dvh;
+  overflow: auto;
+  border: 1px solid var(--border);
+  border-bottom: 0;
+  border-radius: 22px 22px 0 0;
+  background: var(--background);
+  box-shadow:
+    0 -20px 60px
+    rgb(0 0 0 / 22%);
+}
+
+.sheetHeader {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  padding: 18px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+  border-bottom:
+    1px solid
+    var(--border);
+  background:
+    var(--background);
+}
+
+.sheetHeader > div {
+  min-width: 0;
+}
+
+.sheetHeader > div > span {
+  color:
+    var(--muted-foreground);
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.sheetHeader h2 {
+  margin: 4px 0 0;
+  font-size: 20px;
+}
+
+.sheetHeader p {
+  margin: 5px 0 0;
+  color:
+    var(--muted-foreground);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.closeButton {
+  width: 38px;
+  height: 38px;
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  border:
+    1px solid
+    var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+  color: inherit;
+  cursor: pointer;
+}
+
+.sheetBody {
+  padding: 18px;
+  display: grid;
+  gap: 15px;
+}
+
+.field {
+  display: grid;
+  gap: 7px;
+}
+
+.field > span {
+  font-size: 13px;
+  font-weight: 650;
+}
+
+.field input,
+.field select,
+.field textarea {
+  width: 100%;
+  min-height: 44px;
+  padding: 10px 12px;
+  border:
+    1px solid
+    var(--border);
+  border-radius: 13px;
+  outline: 0;
+  background: var(--surface);
+  color: inherit;
+  font: inherit;
+}
+
+.field textarea {
+  min-height: 92px;
+  resize: vertical;
+}
+
+.fieldHelp {
+  color: var(--muted-foreground);
+  font-size: 10px;
+  line-height: 1.45;
+}
+
+.field input:focus,
+.field select:focus,
+.field textarea:focus {
+  border-color:
+    var(--foreground);
+}
+
+.field input:disabled,
+.field select:disabled,
+.field textarea:disabled {
+  opacity: 0.65;
+}
+
+.accountEmpty {
+  padding: 13px 14px;
+  display: grid;
+  gap: 5px;
+  border-radius: 14px;
+  background: var(--muted);
+  color:
+    var(--muted-foreground);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.accountEmpty a {
+  width: fit-content;
+  color: #2868f0;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.errorBox {
+  padding: 13px 14px;
+  display: grid;
+  gap: 4px;
+  border:
+    1px solid
+    color-mix(
+      in srgb,
+      #e45757 28%,
+      var(--border)
+    );
+  border-radius: 14px;
+  background:
+    color-mix(
+      in srgb,
+      #e45757 8%,
+      var(--surface)
+    );
+  font-size: 12px;
+}
+
+.errorBox strong {
+  font-size: 13px;
+}
+
+.errorBox span,
+.errorBox small {
+  line-height: 1.5;
+}
+
+.errorBox small {
+  color:
+    var(--muted-foreground);
+}
+
+.sheetFooter {
+  position: sticky;
+  bottom: 0;
+  padding:
+    14px 18px
+    calc(
+      14px +
+      env(safe-area-inset-bottom)
+    );
+  display: flex;
+  justify-content: flex-end;
+  gap: 9px;
+  border-top:
+    1px solid
+    var(--border);
+  background:
+    var(--background);
+}
+
+@media (max-width: 720px) {
+  .actionButton {
+    width: 100%;
+  }
+
+  .sheetFooter {
+    display: grid;
+    grid-template-columns:
+      minmax(0, 1fr)
+      minmax(0, 1fr);
+  }
+
+  .sheetFooter button {
+    width: 100%;
+  }
+}
+
+@media (min-width: 721px) {
+  .overlay {
+    align-items: center;
+    padding: 20px;
+  }
+
+  .sheet {
+    width:
+      min(
+        100%,
+        560px
+      );
+    border-bottom:
+      1px solid
+      var(--border);
+    border-radius: 22px;
+    box-shadow:
+      0 22px 60px
+      rgb(0 0 0 / 24%);
+  }
+}

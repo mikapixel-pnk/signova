@@ -6,7 +6,9 @@ use App\Actions\Tenancy\CreateTenantWorkspaceAction;
 use App\Models\User;
 use Database\Seeders\SignovaAccessControlSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Tests\TestCase;
 
@@ -454,6 +456,158 @@ class ExpenseApiTest extends TestCase
                 ],
             ]);
     }
+
+    public function test_expense_list_can_be_filtered_by_period(): void
+    {
+        $workspace = $this->workspace(
+            'expense-period@example.test',
+            'Expense Period'
+        );
+
+        $account =
+            $this->insertAccount(
+                $workspace,
+                'Kas Period'
+            );
+
+        $creatorId =
+            User::query()
+                ->where(
+                    'email',
+                    'expense-period@example.test'
+                )
+                ->value('id');
+
+        $this->assertNotNull(
+            $creatorId
+        );
+
+        DB::table('expenses')->insert([
+            [
+                'id' =>
+                    (string) Str::ulid(),
+
+                'tenant_id' =>
+                    $workspace['tenant_id'],
+
+                'business_id' =>
+                    $workspace['business_id'],
+
+                'cash_account_id' =>
+                    $account,
+
+                'amount' =>
+                    '10000.00',
+
+                'currency' =>
+                    'IDR',
+
+                'incurred_at' =>
+                    '2026-08-31 10:00:00',
+
+                'category' =>
+                    'UAT',
+
+                'description' =>
+                    'Di luar periode',
+
+                'status' =>
+                    'DRAFT',
+
+                'created_by_user_id' =>
+                    $creatorId,
+
+                'created_at' =>
+                    now(),
+
+                'updated_at' =>
+                    now(),
+            ],
+            [
+                'id' =>
+                    (string) Str::ulid(),
+
+                'tenant_id' =>
+                    $workspace['tenant_id'],
+
+                'business_id' =>
+                    $workspace['business_id'],
+
+                'cash_account_id' =>
+                    $account,
+
+                'amount' =>
+                    '20000.00',
+
+                'currency' =>
+                    'IDR',
+
+                'incurred_at' =>
+                    '2026-09-10 10:00:00',
+
+                'category' =>
+                    'UAT',
+
+                'description' =>
+                    'Di dalam periode',
+
+                'status' =>
+                    'DRAFT',
+
+                'created_by_user_id' =>
+                    $creatorId,
+
+                'created_at' =>
+                    now(),
+
+                'updated_at' =>
+                    now(),
+            ],
+        ]);
+
+        $this->actingAsWorkspace(
+            $workspace
+        );
+
+        $this->getJson(
+            '/api/v1/finance/expenses'
+            . '?from=2026-09-01'
+            . '&to=2026-09-30'
+        )
+            ->assertOk()
+            ->assertJsonCount(
+                1,
+                'data'
+            )
+            ->assertJsonPath(
+                'data.0.description',
+                'Di dalam periode'
+            );
+    }
+
+    public function test_expense_period_rejects_invalid_range(): void
+    {
+        $workspace = $this->workspace(
+            'expense-period-invalid@example.test',
+            'Expense Period Invalid'
+        );
+
+        $this->actingAsWorkspace(
+            $workspace
+        );
+
+        $this->getJson(
+            '/api/v1/finance/expenses'
+            . '?from=2026-09-30'
+            . '&to=2026-09-01'
+        )
+            ->assertUnprocessable()
+            ->assertJsonPath(
+                'error.code',
+                'VALIDATION_FAILED'
+            );
+    }
+
 
     public function test_draft_expense_can_be_updated(): void
     {
@@ -1187,6 +1341,770 @@ class ExpenseApiTest extends TestCase
     }
 
 
+    public function test_manage_user_submits_expense_without_moving_cash(): void
+    {
+        $workspace = $this->workspace(
+            'expense-submit@example.test',
+            'Expense Submit'
+        );
+
+        $account =
+            $this->insertAccount(
+                $workspace,
+                'Kas Submit'
+            );
+
+        $this->actingAsWorkspace(
+            $workspace
+        );
+
+        $this->denyCapability(
+            $workspace,
+            'finance.expense.approve'
+        );
+
+        $response =
+            $this->postJson(
+                '/api/v1/finance/expenses',
+                [
+                    'cash_account_id' =>
+                        $account,
+
+                    'amount' =>
+                        '125000.00',
+
+                    'incurred_at' =>
+                        now()->toISOString(),
+
+                    'category' =>
+                        'Biaya Operasional Umum',
+
+                    'description' =>
+                        'Menunggu approval',
+                ]
+            )->assertCreated();
+
+        $expenseId =
+            $response->json('data.id');
+
+        $this->postJson(
+            '/api/v1/finance/expenses/'
+            . $expenseId
+            . '/actions/submit'
+        )
+            ->assertOk()
+            ->assertJsonPath(
+                'data.status',
+                'PENDING_APPROVAL'
+            );
+
+        $this->assertDatabaseHas(
+            'expense_status_history',
+            [
+                'expense_id' =>
+                    $expenseId,
+
+                'from_status' =>
+                    'DRAFT',
+
+                'to_status' =>
+                    'PENDING_APPROVAL',
+
+                'action' =>
+                    'SUBMITTED',
+            ]
+        );
+
+        $this->assertSame(
+            0,
+            DB::table('cash_transactions')
+                ->where(
+                    'source_type',
+                    'EXPENSE'
+                )
+                ->where(
+                    'source_id',
+                    $expenseId
+                )
+                ->count()
+        );
+    }
+
+    public function test_approver_can_approve_pending_expense_once(): void
+    {
+        $workspace = $this->workspace(
+            'expense-approve@example.test',
+            'Expense Approve'
+        );
+
+        $account =
+            $this->insertAccount(
+                $workspace,
+                'Kas Approve'
+            );
+
+        $this->actingAsWorkspace(
+            $workspace
+        );
+
+        $this->denyCapability(
+            $workspace,
+            'finance.expense.approve'
+        );
+
+        $response =
+            $this->postJson(
+                '/api/v1/finance/expenses',
+                [
+                    'cash_account_id' =>
+                        $account,
+
+                    'amount' =>
+                        '250000.00',
+
+                    'incurred_at' =>
+                        now()->toISOString(),
+
+                    'description' =>
+                        'Approval expense',
+                ]
+            )->assertCreated();
+
+        $expenseId =
+            $response->json('data.id');
+
+        $this->postJson(
+            '/api/v1/finance/expenses/'
+            . $expenseId
+            . '/actions/submit'
+        )->assertOk();
+
+        $this->allowCapability(
+            $workspace,
+            'finance.expense.approve'
+        );
+
+        $this->postJson(
+            '/api/v1/finance/expenses/'
+            . $expenseId
+            . '/actions/approve'
+        )
+            ->assertOk()
+            ->assertJsonPath(
+                'data.status',
+                'POSTED'
+            );
+
+        $this->assertDatabaseHas(
+            'expenses',
+            [
+                'id' =>
+                    $expenseId,
+
+                'status' =>
+                    'POSTED',
+
+                'approved_by_user_id' =>
+                    $workspace['user_id'],
+
+                'posted_by_user_id' =>
+                    $workspace['user_id'],
+            ]
+        );
+
+        $this->assertSame(
+            1,
+            DB::table('cash_transactions')
+                ->where(
+                    'source_type',
+                    'EXPENSE'
+                )
+                ->where(
+                    'source_id',
+                    $expenseId
+                )
+                ->where(
+                    'direction',
+                    'OUT'
+                )
+                ->count()
+        );
+
+        $this->assertDatabaseHas(
+            'expense_status_history',
+            [
+                'expense_id' =>
+                    $expenseId,
+
+                'action' =>
+                    'APPROVED',
+
+                'from_status' =>
+                    'PENDING_APPROVAL',
+
+                'to_status' =>
+                    'POSTED',
+            ]
+        );
+
+        $this->postJson(
+            '/api/v1/finance/expenses/'
+            . $expenseId
+            . '/actions/approve'
+        )
+            ->assertStatus(409);
+
+        $this->assertSame(
+            1,
+            DB::table('cash_transactions')
+                ->where(
+                    'source_type',
+                    'EXPENSE'
+                )
+                ->where(
+                    'source_id',
+                    $expenseId
+                )
+                ->count()
+        );
+    }
+
+    public function test_rejected_expense_can_be_revised_to_draft(): void
+    {
+        $workspace = $this->workspace(
+            'expense-reject@example.test',
+            'Expense Reject'
+        );
+
+        $account =
+            $this->insertAccount(
+                $workspace,
+                'Kas Reject'
+            );
+
+        $this->actingAsWorkspace(
+            $workspace
+        );
+
+        $response =
+            $this->postJson(
+                '/api/v1/finance/expenses',
+                [
+                    'cash_account_id' =>
+                        $account,
+
+                    'amount' =>
+                        '80000.00',
+
+                    'incurred_at' =>
+                        now()->toISOString(),
+
+                    'description' =>
+                        'Expense untuk ditolak',
+                ]
+            )->assertCreated();
+
+        $expenseId =
+            $response->json('data.id');
+
+        $this->postJson(
+            '/api/v1/finance/expenses/'
+            . $expenseId
+            . '/actions/submit'
+        )->assertOk();
+
+        $this->postJson(
+            '/api/v1/finance/expenses/'
+            . $expenseId
+            . '/actions/reject',
+            [
+                'reason' =>
+                    'Bukti belum lengkap',
+            ]
+        )
+            ->assertOk()
+            ->assertJsonPath(
+                'data.status',
+                'REJECTED'
+            )
+            ->assertJsonPath(
+                'data.rejection_reason',
+                'Bukti belum lengkap'
+            );
+
+        $this->assertSame(
+            0,
+            DB::table('cash_transactions')
+                ->where(
+                    'source_id',
+                    $expenseId
+                )
+                ->count()
+        );
+
+        $this->postJson(
+            '/api/v1/finance/expenses/'
+            . $expenseId
+            . '/actions/revise'
+        )
+            ->assertOk()
+            ->assertJsonPath(
+                'data.status',
+                'DRAFT'
+            )
+            ->assertJsonPath(
+                'data.rejection_reason',
+                null
+            );
+
+        $this->assertDatabaseHas(
+            'expense_status_history',
+            [
+                'expense_id' =>
+                    $expenseId,
+
+                'action' =>
+                    'REJECTED',
+            ]
+        );
+
+        $this->assertDatabaseHas(
+            'expense_status_history',
+            [
+                'expense_id' =>
+                    $expenseId,
+
+                'action' =>
+                    'REVISED',
+            ]
+        );
+    }
+
+    public function test_direct_record_requires_expense_approve_capability(): void
+    {
+        $workspace = $this->workspace(
+            'expense-direct-cap@example.test',
+            'Expense Direct Capability'
+        );
+
+        $account =
+            $this->insertAccount(
+                $workspace,
+                'Kas Direct Capability'
+            );
+
+        $this->actingAsWorkspace(
+            $workspace
+        );
+
+        $this->denyCapability(
+            $workspace,
+            'finance.expense.approve'
+        );
+
+        $this->postJson(
+            '/api/v1/finance/expenses/actions/record',
+            [
+                'cash_account_id' =>
+                    $account,
+
+                'amount' =>
+                    '50000.00',
+
+                'incurred_at' =>
+                    now()->toISOString(),
+
+                'description' =>
+                    'Tidak boleh direct post',
+            ]
+        )
+            ->assertForbidden()
+            ->assertJsonPath(
+                'error.code',
+                'FORBIDDEN_CAPABILITY'
+            );
+    }
+
+
+    public function test_draft_expense_evidence_is_private_replaceable_previewable_and_removable(): void
+    {
+        Storage::fake('local');
+
+        config()->set(
+            'filesystems.private_disk',
+            'local'
+        );
+
+        $workspace = $this->workspace(
+            'expense-evidence@example.test',
+            'Expense Evidence'
+        );
+
+        $account =
+            $this->insertAccount(
+                $workspace,
+                'Kas Evidence'
+            );
+
+        $this->actingAsWorkspace(
+            $workspace
+        );
+
+        $response =
+            $this->postJson(
+                '/api/v1/finance/expenses',
+                [
+                    'cash_account_id' =>
+                        $account,
+
+                    'amount' =>
+                        '175000.00',
+
+                    'incurred_at' =>
+                        now()->toISOString(),
+
+                    'category' =>
+                        'Biaya Operasional Umum',
+
+                    'description' =>
+                        'Expense evidence',
+                ]
+            )->assertCreated();
+
+        $expenseId =
+            $response->json('data.id');
+
+        $this->post(
+            '/api/v1/finance/expenses/'
+            . $expenseId
+            . '/evidence',
+            [
+                'evidence' =>
+                    UploadedFile::fake()
+                        ->image(
+                            'nota-lama.png',
+                            800,
+                            800
+                        ),
+            ]
+        )
+            ->assertOk()
+            ->assertJsonPath(
+                'data.has_evidence',
+                true
+            )
+            ->assertJsonPath(
+                'data.evidence.mime_type',
+                'image/png'
+            );
+
+        $oldFile =
+            DB::table('files')
+                ->where(
+                    'tenant_id',
+                    $workspace['tenant_id']
+                )
+                ->where(
+                    'purpose',
+                    'EXPENSE_PROOF'
+                )
+                ->first();
+
+        $this->assertNotNull(
+            $oldFile
+        );
+
+        $this->assertSame(
+            'PRIVATE',
+            $oldFile->visibility
+        );
+
+        $this->assertStringStartsWith(
+            'tenants/'
+                . $workspace['tenant_id']
+                . '/expense-proofs/',
+            $oldFile->object_key
+        );
+
+        Storage::disk('local')
+            ->assertExists(
+                $oldFile->object_key
+            );
+
+        $this->post(
+            '/api/v1/finance/expenses/'
+            . $expenseId
+            . '/evidence',
+            [
+                'evidence' =>
+                    UploadedFile::fake()
+                        ->image(
+                            'nota-baru.png'
+                        ),
+            ]
+        )->assertOk();
+
+        $currentFileId =
+            DB::table('expenses')
+                ->where(
+                    'id',
+                    $expenseId
+                )
+                ->value(
+                    'evidence_file_id'
+                );
+
+        $this->assertNotNull(
+            $currentFileId
+        );
+
+        $this->assertNotSame(
+            $oldFile->id,
+            $currentFileId
+        );
+
+        $newFile =
+            DB::table('files')
+                ->where(
+                    'id',
+                    $currentFileId
+                )
+                ->first();
+
+        $this->assertNotNull(
+            $newFile
+        );
+
+        $this->assertDatabaseMissing(
+            'files',
+            [
+                'id' =>
+                    $oldFile->id,
+            ]
+        );
+
+        Storage::disk('local')
+            ->assertMissing(
+                $oldFile->object_key
+            );
+
+        Storage::disk('local')
+            ->assertExists(
+                $newFile->object_key
+            );
+
+        $this->get(
+            '/api/v1/finance/expenses/'
+            . $expenseId
+            . '/evidence'
+        )
+            ->assertOk()
+            ->assertHeader(
+                'Content-Type',
+                'image/png'
+            )
+            ->assertHeader(
+                'X-Content-Type-Options',
+                'nosniff'
+            );
+
+        $this->deleteJson(
+            '/api/v1/finance/expenses/'
+            . $expenseId
+            . '/evidence'
+        )
+            ->assertOk()
+            ->assertJsonPath(
+                'data.has_evidence',
+                false
+            );
+
+        $this->assertDatabaseMissing(
+            'files',
+            [
+                'id' =>
+                    $newFile->id,
+            ]
+        );
+
+        Storage::disk('local')
+            ->assertMissing(
+                $newFile->object_key
+            );
+    }
+
+    public function test_submitted_expense_evidence_is_locked(): void
+    {
+        Storage::fake('local');
+
+        config()->set(
+            'filesystems.private_disk',
+            'local'
+        );
+
+        $workspace = $this->workspace(
+            'expense-evidence-lock@example.test',
+            'Expense Evidence Lock'
+        );
+
+        $account =
+            $this->insertAccount(
+                $workspace,
+                'Kas Evidence Lock'
+            );
+
+        $this->actingAsWorkspace(
+            $workspace
+        );
+
+        $response =
+            $this->postJson(
+                '/api/v1/finance/expenses',
+                [
+                    'cash_account_id' =>
+                        $account,
+
+                    'amount' =>
+                        '99000.00',
+
+                    'incurred_at' =>
+                        now()->toISOString(),
+
+                    'description' =>
+                        'Evidence locked after submit',
+                ]
+            )->assertCreated();
+
+        $expenseId =
+            $response->json('data.id');
+
+        $this->post(
+            '/api/v1/finance/expenses/'
+            . $expenseId
+            . '/evidence',
+            [
+                'evidence' =>
+                    UploadedFile::fake()
+                        ->image(
+                            'nota.png'
+                        ),
+            ]
+        )->assertOk();
+
+        $this->postJson(
+            '/api/v1/finance/expenses/'
+            . $expenseId
+            . '/actions/submit'
+        )
+            ->assertOk()
+            ->assertJsonPath(
+                'data.status',
+                'PENDING_APPROVAL'
+            );
+
+        $this->post(
+            '/api/v1/finance/expenses/'
+            . $expenseId
+            . '/evidence',
+            [
+                'evidence' =>
+                    UploadedFile::fake()
+                        ->image(
+                            'nota-baru.png'
+                        ),
+            ]
+        )
+            ->assertStatus(409)
+            ->assertJsonPath(
+                'error.code',
+                'ENTITY_STATE_CONFLICT'
+            );
+
+        $this->deleteJson(
+            '/api/v1/finance/expenses/'
+            . $expenseId
+            . '/evidence'
+        )
+            ->assertStatus(409)
+            ->assertJsonPath(
+                'error.code',
+                'ENTITY_STATE_CONFLICT'
+            );
+
+        $this->assertNotNull(
+            DB::table('expenses')
+                ->where(
+                    'id',
+                    $expenseId
+                )
+                ->value(
+                    'evidence_file_id'
+                )
+        );
+    }
+
+    public function test_expense_evidence_is_business_scoped(): void
+    {
+        Storage::fake('local');
+
+        config()->set(
+            'filesystems.private_disk',
+            'local'
+        );
+
+        $workspace = $this->workspace(
+            'expense-evidence-business@example.test',
+            'Expense Evidence Business'
+        );
+
+        $otherBusiness =
+            $this->secondBusinessWorkspace(
+                $workspace,
+                'Expense Evidence Business B'
+            );
+
+        $account =
+            $this->insertAccount(
+                $otherBusiness,
+                'Kas Evidence Business B'
+            );
+
+        $expenseId =
+            $this->insertExpense(
+                $otherBusiness,
+                $account,
+                'Expense business B'
+            );
+
+        $this->actingAsWorkspace(
+            $otherBusiness
+        );
+
+        $this->post(
+            '/api/v1/finance/expenses/'
+            . $expenseId
+            . '/evidence',
+            [
+                'evidence' =>
+                    UploadedFile::fake()
+                        ->image(
+                            'nota-business-b.png'
+                        ),
+            ]
+        )->assertOk();
+
+        $this->actingAsWorkspace(
+            $workspace
+        );
+
+        $this->get(
+            '/api/v1/finance/expenses/'
+            . $expenseId
+            . '/evidence'
+        )->assertNotFound();
+    }
+
+
     private function secondBusinessWorkspace(
         array $workspace,
         string $name
@@ -1468,6 +2386,48 @@ class ExpenseApiTest extends TestCase
 
         return $id;
     }
+
+    private function allowCapability(
+        array $workspace,
+        string $capabilityCode
+    ): void {
+        $capabilityId =
+            DB::table('capabilities')
+                ->where(
+                    'code',
+                    $capabilityCode
+                )
+                ->value('id');
+
+        $this->assertNotNull(
+            $capabilityId
+        );
+
+        DB::table(
+            'role_capabilities'
+        )->updateOrInsert(
+            [
+                'role_id' =>
+                    $workspace[
+                        'owner_role_id'
+                    ],
+
+                'capability_id' =>
+                    $capabilityId,
+            ],
+            [
+                'effect' =>
+                    'ALLOW',
+
+                'created_at' =>
+                    now(),
+
+                'updated_at' =>
+                    now(),
+            ]
+        );
+    }
+
 
     private function denyCapability(
         array $workspace,

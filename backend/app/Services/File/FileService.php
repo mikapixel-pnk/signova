@@ -24,6 +24,13 @@ class FileService
         'application/pdf' => 'pdf',
     ];
 
+    private const EXPENSE_PROOF_MIME_MAP = [
+        'image/png' => 'png',
+        'image/jpeg' => 'jpg',
+        'image/webp' => 'webp',
+        'application/pdf' => 'pdf',
+    ];
+
     public function __construct(
         private readonly TenantContext $tenantContext
     ) {
@@ -51,6 +58,17 @@ class FileService
             'PAYMENT_PROOF',
             'payment-proofs',
             self::PAYMENT_PROOF_MIME_MAP
+        );
+    }
+
+    public function storeExpenseProof(
+        UploadedFile $uploadedFile
+    ): FileAsset {
+        return $this->storePrivateFile(
+            $uploadedFile,
+            'EXPENSE_PROOF',
+            'expense-proofs',
+            self::EXPENSE_PROOF_MIME_MAP
         );
     }
 

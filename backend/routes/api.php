@@ -697,7 +697,7 @@ Route::prefix('v1')->group(function () {
             [ExpenseController::class, 'record']
         )->middleware([
             'business.context',
-            'capability:finance.expense.manage',
+            'capability:finance.expense.approve',
         ]);
 
         Route::get(
@@ -725,11 +725,67 @@ Route::prefix('v1')->group(function () {
         ]);
 
         Route::post(
+            '/finance/expenses/{expenseId}/evidence',
+            [ExpenseController::class, 'uploadEvidence']
+        )->middleware([
+            'business.context',
+            'capability:finance.expense.manage',
+        ]);
+
+        Route::get(
+            '/finance/expenses/{expenseId}/evidence',
+            [ExpenseController::class, 'evidence']
+        )->middleware([
+            'business.context',
+            'capability:finance.expense.view',
+        ]);
+
+        Route::delete(
+            '/finance/expenses/{expenseId}/evidence',
+            [ExpenseController::class, 'destroyEvidence']
+        )->middleware([
+            'business.context',
+            'capability:finance.expense.manage',
+        ]);
+
+        Route::post(
+            '/finance/expenses/{expenseId}/actions/submit',
+            [ExpenseController::class, 'submit']
+        )->middleware([
+            'business.context',
+            'capability:finance.expense.manage',
+        ]);
+
+        Route::post(
+            '/finance/expenses/{expenseId}/actions/revise',
+            [ExpenseController::class, 'revise']
+        )->middleware([
+            'business.context',
+            'capability:finance.expense.manage',
+        ]);
+
+        Route::post(
+            '/finance/expenses/{expenseId}/actions/approve',
+            [ExpenseController::class, 'approve']
+        )->middleware([
+            'business.context',
+            'capability:finance.expense.approve',
+        ]);
+
+        Route::post(
+            '/finance/expenses/{expenseId}/actions/reject',
+            [ExpenseController::class, 'reject']
+        )->middleware([
+            'business.context',
+            'capability:finance.expense.approve',
+        ]);
+
+        Route::post(
             '/finance/expenses/{expenseId}/actions/post',
             [ExpenseController::class, 'post']
         )->middleware([
             'business.context',
-            'capability:finance.expense.manage',
+            'capability:finance.expense.approve',
         ]);
 
         Route::post(
@@ -737,7 +793,7 @@ Route::prefix('v1')->group(function () {
             [ExpenseController::class, 'void']
         )->middleware([
             'business.context',
-            'capability:finance.expense.manage',
+            'capability:finance.expense.approve',
         ]);
 
 

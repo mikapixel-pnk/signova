@@ -27,6 +27,33 @@ class ExpenseResource extends JsonResource
                     ]
                     : null,
 
+            'has_evidence' =>
+                $this->evidence_file_id !== null,
+
+            'evidence' =>
+                $this->whenLoaded(
+                    'evidenceFile',
+                    fn () =>
+                        $this->evidenceFile === null
+                            ? null
+                            : [
+                                'id' =>
+                                    $this->evidenceFile->id,
+
+                                'original_name' =>
+                                    $this->evidenceFile
+                                        ->original_name,
+
+                                'mime_type' =>
+                                    $this->evidenceFile
+                                        ->mime_type,
+
+                                'size_bytes' =>
+                                    $this->evidenceFile
+                                        ->size_bytes,
+                            ]
+                ),
+
             'amount' =>
                 number_format(
                     (float) $this->amount,
@@ -49,6 +76,18 @@ class ExpenseResource extends JsonResource
 
             'status' =>
                 $this->status,
+
+            'submitted_at' =>
+                $this->submitted_at?->toISOString(),
+
+            'approved_at' =>
+                $this->approved_at?->toISOString(),
+
+            'rejected_at' =>
+                $this->rejected_at?->toISOString(),
+
+            'rejection_reason' =>
+                $this->rejection_reason,
 
             'posted_at' =>
                 $this->posted_at?->toISOString(),
