@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\V1\Finance;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Finance\ListExpensesRequest;
+use App\Http\Requests\Finance\RecordExpenseRequest;
 use App\Http\Requests\Finance\StoreExpenseRequest;
 use App\Http\Requests\Finance\UpdateExpenseRequest;
 use App\Http\Requests\Finance\VoidExpenseRequest;
@@ -80,6 +81,26 @@ class ExpenseController extends Controller
             'Pengeluaran berhasil dibuat.'
         );
     }
+
+    public function record(
+        RecordExpenseRequest $request,
+        ExpenseService $service
+    ): JsonResponse {
+        $expense =
+            $service->record(
+                $request->validated()
+            );
+
+        return ApiResponse::success(
+            $request,
+            (new ExpenseResource(
+                $expense
+            ))->resolve($request),
+            201,
+            'Pengeluaran berhasil dicatat.'
+        );
+    }
+
 
     public function show(
         Request $request,

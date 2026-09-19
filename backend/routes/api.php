@@ -692,6 +692,14 @@ Route::prefix('v1')->group(function () {
             'capability:finance.expense.manage',
         ]);
 
+        Route::post(
+            '/finance/expenses/actions/record',
+            [ExpenseController::class, 'record']
+        )->middleware([
+            'business.context',
+            'capability:finance.expense.manage',
+        ]);
+
         Route::get(
             '/finance/expenses/{expenseId}',
             [ExpenseController::class, 'show']

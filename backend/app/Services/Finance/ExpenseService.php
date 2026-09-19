@@ -145,6 +145,34 @@ class ExpenseService
         );
     }
 
+    public function record(
+        array $data
+    ): Expense {
+        /*
+         * Satu aksi pengguna harus atomik:
+         * Expense dan CashTransaction harus sama-sama
+         * tersimpan atau sama-sama rollback.
+         *
+         * create() dan post() memiliki transaction
+         * masing-masing. Transaction luar ini tetap
+         * menjadi commit boundary final.
+         */
+        return DB::transaction(
+            function () use ($data): Expense {
+                $expense =
+                    $this->create(
+                        $data
+                    );
+
+                return $this->post(
+                    $expense->id
+                );
+            },
+            3
+        );
+    }
+
+
     public function update(
         string $expenseId,
         array $data

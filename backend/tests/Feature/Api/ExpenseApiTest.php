@@ -23,6 +23,237 @@ class ExpenseApiTest extends TestCase
         );
     }
 
+    public function test_expense_can_be_recorded_atomically(): void
+    {
+        $workspace = $this->workspace(
+            'expense-record@example.test',
+            'Expense Record'
+        );
+
+        $account =
+            $this->insertAccount(
+                $workspace,
+                'Kas Record'
+            );
+
+        $this->actingAsWorkspace(
+            $workspace
+        );
+
+        $response =
+            $this->postJson(
+                '/api/v1/finance/expenses/actions/record',
+                [
+                    'cash_account_id' =>
+                        $account,
+
+                    'amount' =>
+                        '175000.00',
+
+                    'incurred_at' =>
+                        now()->toISOString(),
+
+                    'category' =>
+                        'Operasional',
+
+                    'description' =>
+                        'Pengeluaran atomik',
+                ]
+            )
+                ->assertCreated()
+                ->assertJsonPath(
+                    'data.status',
+                    'POSTED'
+                )
+                ->assertJsonPath(
+                    'data.amount',
+                    '175000.00'
+                )
+                ->assertJsonPath(
+                    'data.cash_account.id',
+                    $account
+                );
+
+        $expenseId =
+            $response->json(
+                'data.id'
+            );
+
+        $this->assertDatabaseHas(
+            'expenses',
+            [
+                'id' =>
+                    $expenseId,
+
+                'tenant_id' =>
+                    $workspace[
+                        'tenant_id'
+                    ],
+
+                'business_id' =>
+                    $workspace[
+                        'business_id'
+                    ],
+
+                'cash_account_id' =>
+                    $account,
+
+                'status' =>
+                    'POSTED',
+
+                'amount' =>
+                    '175000.00',
+            ]
+        );
+
+        $this->assertDatabaseHas(
+            'cash_transactions',
+            [
+                'tenant_id' =>
+                    $workspace[
+                        'tenant_id'
+                    ],
+
+                'business_id' =>
+                    $workspace[
+                        'business_id'
+                    ],
+
+                'cash_account_id' =>
+                    $account,
+
+                'direction' =>
+                    'OUT',
+
+                'amount' =>
+                    '175000.00',
+
+                'currency' =>
+                    'IDR',
+
+                'source_type' =>
+                    'EXPENSE',
+
+                'source_id' =>
+                    $expenseId,
+            ]
+        );
+    }
+
+    public function test_record_expense_rolls_back_when_account_is_inactive(): void
+    {
+        $workspace = $this->workspace(
+            'expense-record-rollback@example.test',
+            'Expense Record Rollback'
+        );
+
+        $account =
+            $this->insertAccount(
+                $workspace,
+                'Kas Nonaktif',
+                'INACTIVE'
+            );
+
+        $beforeExpenses =
+            DB::table('expenses')
+                ->where(
+                    'tenant_id',
+                    $workspace[
+                        'tenant_id'
+                    ]
+                )
+                ->where(
+                    'business_id',
+                    $workspace[
+                        'business_id'
+                    ]
+                )
+                ->count();
+
+        $beforeTransactions =
+            DB::table(
+                'cash_transactions'
+            )
+                ->where(
+                    'tenant_id',
+                    $workspace[
+                        'tenant_id'
+                    ]
+                )
+                ->where(
+                    'business_id',
+                    $workspace[
+                        'business_id'
+                    ]
+                )
+                ->count();
+
+        $this->actingAsWorkspace(
+            $workspace
+        );
+
+        $this->postJson(
+            '/api/v1/finance/expenses/actions/record',
+            [
+                'cash_account_id' =>
+                    $account,
+
+                'amount' =>
+                    '90000.00',
+
+                'incurred_at' =>
+                    now()->toISOString(),
+
+                'description' =>
+                    'Harus rollback',
+            ]
+        )
+            ->assertStatus(409)
+            ->assertJsonPath(
+                'error.code',
+                'ENTITY_STATE_CONFLICT'
+            );
+
+        $this->assertSame(
+            $beforeExpenses,
+            DB::table('expenses')
+                ->where(
+                    'tenant_id',
+                    $workspace[
+                        'tenant_id'
+                    ]
+                )
+                ->where(
+                    'business_id',
+                    $workspace[
+                        'business_id'
+                    ]
+                )
+                ->count()
+        );
+
+        $this->assertSame(
+            $beforeTransactions,
+            DB::table(
+                'cash_transactions'
+            )
+                ->where(
+                    'tenant_id',
+                    $workspace[
+                        'tenant_id'
+                    ]
+                )
+                ->where(
+                    'business_id',
+                    $workspace[
+                        'business_id'
+                    ]
+                )
+                ->count()
+        );
+    }
+
+
     public function test_expense_can_be_created_as_draft(): void
     {
         $workspace = $this->workspace(
