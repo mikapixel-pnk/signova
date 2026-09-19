@@ -25,6 +25,7 @@ export type ModuleGroupKey =
 
 export type ModuleKey =
   | "customers"
+  | "suppliers"
   | "catalog"
   | "categories"
   | "units"

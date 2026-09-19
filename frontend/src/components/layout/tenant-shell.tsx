@@ -20,6 +20,7 @@ import {
 
 import {
   Suspense,
+  useCallback,
   useEffect,
   useState,
 } from "react";
@@ -579,30 +580,48 @@ export function TenantShell({
     };
   }, []);
 
-  async function refreshNavigationCapabilities() {
-    try {
-      const response =
-        await getActiveCapabilities();
+  const refreshNavigationCapabilities =
+    useCallback(
+      async () => {
+        try {
+          const response =
+            await getActiveCapabilities();
 
-      setVisibleNavigationGroups(
-        buildNavigationGroups(
-          response.data
-            .capability_codes,
-        ),
-      );
-    } catch {
-      /*
-       * Backend tetap authority final.
-       * Jika capability belum dapat dimuat,
-       * menu protected tidak ditampilkan.
-       */
-      setVisibleNavigationGroups(
-        buildNavigationGroups(
-          [],
-        ),
-      );
-    }
-  }
+          setVisibleNavigationGroups(
+            buildNavigationGroups(
+              response.data
+                .capability_codes,
+            ),
+          );
+        } catch {
+          /*
+           * Backend tetap authority final.
+           * Jika capability belum dapat dimuat,
+           * menu protected tidak ditampilkan.
+           */
+          setVisibleNavigationGroups(
+            buildNavigationGroups(
+              [],
+            ),
+          );
+        }
+      },
+      [],
+    );
+
+  const handleBusinessResolved =
+    useCallback(
+      (businessName: string) => {
+        setActiveBusinessName(
+          businessName,
+        );
+
+        void refreshNavigationCapabilities();
+      },
+      [
+        refreshNavigationCapabilities,
+      ],
+    );
 
   async function handleLogout() {
     if (loggingOut) {
@@ -820,13 +839,7 @@ export function TenantShell({
         >
           <TenantSessionGate
             onBusinessResolved={
-              (businessName) => {
-                setActiveBusinessName(
-                  businessName,
-                );
-
-                void refreshNavigationCapabilities();
-              }
+              handleBusinessResolved
             }
           >
             {children}

@@ -1,0 +1,172 @@
+.page {
+  display: grid;
+  gap: 20px;
+}
+
+.loading {
+  padding: 28px;
+  text-align: center;
+  opacity: 0.7;
+}
+
+.backLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  width: fit-content;
+  color: inherit;
+  text-decoration: none;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.form {
+  display: grid;
+  gap: 16px;
+}
+
+.card {
+  display: grid;
+  gap: 18px;
+  padding: 18px;
+  border: 1px solid color-mix(in srgb, currentColor 13%, transparent);
+  border-radius: 18px;
+  background: color-mix(in srgb, currentColor 3%, transparent);
+}
+
+.card header {
+  display: grid;
+  gap: 5px;
+}
+
+.card h2,
+.card p {
+  margin: 0;
+}
+
+.card h2 {
+  font-size: 16px;
+}
+
+.card p {
+  font-size: 13px;
+  opacity: 0.65;
+}
+
+.fields {
+  display: grid;
+  gap: 14px;
+}
+
+.fields label {
+  display: grid;
+  gap: 7px;
+  min-width: 0;
+}
+
+.fields label > span {
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.fields input,
+.fields textarea,
+.fields select {
+  width: 100%;
+  box-sizing: border-box;
+  border: 1px solid color-mix(in srgb, currentColor 15%, transparent);
+  border-radius: 12px;
+  background: transparent;
+  color: inherit;
+  padding: 11px 12px;
+  font: inherit;
+}
+
+.fields input,
+.fields select {
+  min-height: 44px;
+}
+
+.fields select {
+  appearance: auto;
+}
+
+.fields textarea {
+  resize: vertical;
+}
+
+.fields input:focus,
+.fields textarea:focus,
+.fields select:focus {
+  outline: 2px solid color-mix(in srgb, #16a34a 35%, transparent);
+  outline-offset: 1px;
+}
+
+.error {
+  color: #dc2626;
+  font-size: 12px;
+}
+
+.submitBar {
+  position: sticky;
+  bottom: 78px;
+  z-index: 5;
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid color-mix(in srgb, currentColor 13%, transparent);
+  border-radius: 16px;
+  background: color-mix(in srgb, Canvas 92%, transparent);
+  backdrop-filter: blur(12px);
+}
+
+.secondaryButton,
+.submitButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 42px;
+  padding: 0 16px;
+  border-radius: 12px;
+  font: inherit;
+  font-weight: 700;
+}
+
+.secondaryButton {
+  border: 1px solid color-mix(in srgb, currentColor 16%, transparent);
+  color: inherit;
+  text-decoration: none;
+}
+
+.submitButton {
+  border: 0;
+  background: #16a34a;
+  color: white;
+  cursor: pointer;
+}
+
+.submitButton:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+
+@media (min-width: 720px) {
+  .card {
+    padding: 22px;
+  }
+
+  .fields {
+    grid-template-columns:
+      repeat(2, minmax(0, 1fr));
+  }
+
+  .fieldWide {
+    grid-column: 1 / -1;
+  }
+
+  .submitBar {
+    bottom: 20px;
+  }
+}

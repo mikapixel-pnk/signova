@@ -597,6 +597,43 @@ export const modules:
     },
   },
 
+  suppliers: {
+    key: "suppliers",
+    group: "master-data",
+    label: "Pemasok",
+    eyebrow: "Data Pemasok",
+    href: "/app/pemasok",
+    tone: "green",
+    icon: Building2,
+    plan: "pro",
+    capability:
+      "supplier.view",
+    description:
+      "Kelola data pemasok untuk kebutuhan pembelian dan operasional usaha.",
+    insight: {
+      title:
+        "Pemasok yang rapi mempermudah proses pembelian",
+      description:
+        "Simpan kontak, alamat, dan termin pembayaran pemasok agar dapat digunakan kembali saat proses purchasing berkembang.",
+    },
+    footer: {
+      title:
+        "Fondasi pembelian dimulai dari data pemasok",
+      description:
+        "Data pemasok akan digunakan kembali pada pembelian, penerimaan barang, tagihan pemasok, dan pembayaran.",
+    },
+    highlights: [
+      "Data pemasok terpisah untuk setiap usaha",
+      "Kontak dan termin pembayaran mudah ditemukan",
+      "Siap digunakan pada proses purchasing berikutnya",
+    ],
+    navigation: {
+      desktop: true,
+      mobile: true,
+      order: 35,
+    },
+  },
+
   operations: {
     key: "operations",
     group: "fitur-lanjutan",
