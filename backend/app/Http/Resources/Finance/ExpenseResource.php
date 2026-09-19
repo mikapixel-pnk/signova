@@ -50,6 +50,18 @@ class ExpenseResource extends JsonResource
             'status' =>
                 $this->status,
 
+            'submitted_at' =>
+                $this->submitted_at?->toISOString(),
+
+            'approved_at' =>
+                $this->approved_at?->toISOString(),
+
+            'rejected_at' =>
+                $this->rejected_at?->toISOString(),
+
+            'rejection_reason' =>
+                $this->rejection_reason,
+
             'posted_at' =>
                 $this->posted_at?->toISOString(),
 

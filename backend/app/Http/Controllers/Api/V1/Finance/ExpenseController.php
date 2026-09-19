@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\V1\Finance;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Finance\ListExpensesRequest;
 use App\Http\Requests\Finance\RecordExpenseRequest;
+use App\Http\Requests\Finance\RejectExpenseRequest;
 use App\Http\Requests\Finance\StoreExpenseRequest;
 use App\Http\Requests\Finance\UpdateExpenseRequest;
 use App\Http\Requests\Finance\VoidExpenseRequest;
@@ -157,6 +158,87 @@ class ExpenseController extends Controller
             ],
             200,
             'Pengeluaran berhasil dihapus.'
+        );
+    }
+
+    public function submit(
+        Request $request,
+        string $expenseId,
+        ExpenseService $service
+    ): JsonResponse {
+        $expense =
+            $service->submit(
+                $expenseId
+            );
+
+        return ApiResponse::success(
+            $request,
+            (new ExpenseResource(
+                $expense
+            ))->resolve($request),
+            200,
+            'Pengeluaran berhasil diajukan.'
+        );
+    }
+
+    public function approve(
+        Request $request,
+        string $expenseId,
+        ExpenseService $service
+    ): JsonResponse {
+        $expense =
+            $service->approve(
+                $expenseId
+            );
+
+        return ApiResponse::success(
+            $request,
+            (new ExpenseResource(
+                $expense
+            ))->resolve($request),
+            200,
+            'Pengeluaran berhasil disetujui.'
+        );
+    }
+
+    public function reject(
+        RejectExpenseRequest $request,
+        string $expenseId,
+        ExpenseService $service
+    ): JsonResponse {
+        $expense =
+            $service->reject(
+                $expenseId,
+                $request->validated()['reason']
+            );
+
+        return ApiResponse::success(
+            $request,
+            (new ExpenseResource(
+                $expense
+            ))->resolve($request),
+            200,
+            'Pengeluaran berhasil ditolak.'
+        );
+    }
+
+    public function revise(
+        Request $request,
+        string $expenseId,
+        ExpenseService $service
+    ): JsonResponse {
+        $expense =
+            $service->revise(
+                $expenseId
+            );
+
+        return ApiResponse::success(
+            $request,
+            (new ExpenseResource(
+                $expense
+            ))->resolve($request),
+            200,
+            'Pengeluaran dikembalikan ke Draf.'
         );
     }
 

@@ -19,6 +19,8 @@ class ListExpensesRequest extends FormRequest
                 'nullable',
                 Rule::in([
                     'DRAFT',
+                    'PENDING_APPROVAL',
+                    'REJECTED',
                     'POSTED',
                     'VOID',
                 ]),

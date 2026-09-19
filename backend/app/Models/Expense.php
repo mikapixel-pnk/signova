@@ -21,6 +21,13 @@ class Expense extends Model
         'description',
         'status',
         'created_by_user_id',
+        'submitted_by_user_id',
+        'submitted_at',
+        'approved_by_user_id',
+        'approved_at',
+        'rejected_by_user_id',
+        'rejected_at',
+        'rejection_reason',
         'posted_by_user_id',
         'posted_at',
         'voided_by_user_id',
@@ -31,6 +38,9 @@ class Expense extends Model
     protected $casts = [
         'amount' => 'decimal:2',
         'incurred_at' => 'datetime',
+        'submitted_at' => 'datetime',
+        'approved_at' => 'datetime',
+        'rejected_at' => 'datetime',
         'posted_at' => 'datetime',
         'voided_at' => 'datetime',
     ];
