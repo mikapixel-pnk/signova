@@ -14,6 +14,7 @@ class Expense extends Model
         'tenant_id',
         'business_id',
         'cash_account_id',
+        'evidence_file_id',
         'amount',
         'currency',
         'incurred_at',
@@ -49,6 +50,14 @@ class Expense extends Model
     {
         return $this->belongsTo(
             CashAccount::class
+        );
+    }
+
+    public function evidenceFile(): BelongsTo
+    {
+        return $this->belongsTo(
+            FileAsset::class,
+            'evidence_file_id'
         );
     }
 }

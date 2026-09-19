@@ -7,13 +7,16 @@ use App\Http\Requests\Finance\ListExpensesRequest;
 use App\Http\Requests\Finance\RecordExpenseRequest;
 use App\Http\Requests\Finance\RejectExpenseRequest;
 use App\Http\Requests\Finance\StoreExpenseRequest;
+use App\Http\Requests\Finance\UploadExpenseEvidenceRequest;
 use App\Http\Requests\Finance\UpdateExpenseRequest;
 use App\Http\Requests\Finance\VoidExpenseRequest;
 use App\Http\Resources\Finance\ExpenseResource;
+use App\Services\File\FileService;
 use App\Services\Finance\ExpenseService;
 use App\Support\Api\ApiResponse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class ExpenseController extends Controller
 {
@@ -158,6 +161,97 @@ class ExpenseController extends Controller
             ],
             200,
             'Pengeluaran berhasil dihapus.'
+        );
+    }
+
+    public function uploadEvidence(
+        UploadExpenseEvidenceRequest $request,
+        string $expenseId,
+        ExpenseService $service
+    ): JsonResponse {
+        $expense =
+            $service->replaceEvidence(
+                $expenseId,
+                $request->file(
+                    'evidence'
+                )
+            );
+
+        return ApiResponse::success(
+            $request,
+            (new ExpenseResource(
+                $expense
+            ))->resolve($request),
+            200,
+            'Bukti pengeluaran berhasil disimpan.'
+        );
+    }
+
+    public function evidence(
+        string $expenseId,
+        ExpenseService $service,
+        FileService $fileService
+    ): StreamedResponse {
+        $file =
+            $service->evidenceFile(
+                $expenseId
+            );
+
+        abort_if(
+            $file === null,
+            404
+        );
+
+        $stream =
+            $fileService->readStream(
+                $file
+            );
+
+        return response()->stream(
+            function () use ($stream): void {
+                fpassthru($stream);
+
+                if (is_resource($stream)) {
+                    fclose($stream);
+                }
+            },
+            200,
+            [
+                'Content-Type' =>
+                    $file->mime_type,
+
+                'Content-Length' =>
+                    (string) $file->size_bytes,
+
+                'Content-Disposition' =>
+                    'inline',
+
+                'X-Content-Type-Options' =>
+                    'nosniff',
+
+                'Cache-Control' =>
+                    'private, no-store',
+            ]
+        );
+    }
+
+    public function destroyEvidence(
+        Request $request,
+        string $expenseId,
+        ExpenseService $service
+    ): JsonResponse {
+        $expense =
+            $service->removeEvidence(
+                $expenseId
+            );
+
+        return ApiResponse::success(
+            $request,
+            (new ExpenseResource(
+                $expense
+            ))->resolve($request),
+            200,
+            'Bukti pengeluaran berhasil dihapus.'
         );
     }
 

@@ -725,6 +725,30 @@ Route::prefix('v1')->group(function () {
         ]);
 
         Route::post(
+            '/finance/expenses/{expenseId}/evidence',
+            [ExpenseController::class, 'uploadEvidence']
+        )->middleware([
+            'business.context',
+            'capability:finance.expense.manage',
+        ]);
+
+        Route::get(
+            '/finance/expenses/{expenseId}/evidence',
+            [ExpenseController::class, 'evidence']
+        )->middleware([
+            'business.context',
+            'capability:finance.expense.view',
+        ]);
+
+        Route::delete(
+            '/finance/expenses/{expenseId}/evidence',
+            [ExpenseController::class, 'destroyEvidence']
+        )->middleware([
+            'business.context',
+            'capability:finance.expense.manage',
+        ]);
+
+        Route::post(
             '/finance/expenses/{expenseId}/actions/submit',
             [ExpenseController::class, 'submit']
         )->middleware([

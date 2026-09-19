@@ -7,9 +7,12 @@ use App\Exceptions\Finance\ExpenseStateConflictException;
 use App\Models\CashAccount;
 use App\Models\CashTransaction;
 use App\Models\Expense;
+use App\Models\FileAsset;
+use App\Services\File\FileService;
 use App\Tenancy\BusinessContext;
 use App\Tenancy\TenantContext;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -19,6 +22,7 @@ class ExpenseService
     public function __construct(
         private readonly TenantContext $tenantContext,
         private readonly BusinessContext $businessContext,
+        private readonly FileService $fileService,
     ) {
     }
 
@@ -691,6 +695,187 @@ class ExpenseService
         );
     }
 
+    public function replaceEvidence(
+        string $expenseId,
+        UploadedFile $uploadedFile
+    ): Expense {
+        $newFile =
+            $this->fileService
+                ->storeExpenseProof(
+                    $uploadedFile
+                );
+
+        $oldFile = null;
+
+        try {
+            DB::transaction(
+                function () use (
+                    $expenseId,
+                    $newFile,
+                    &$oldFile
+                ): void {
+                    $expense =
+                        $this->locked(
+                            $expenseId
+                        );
+
+                    if ($expense->status !== 'DRAFT') {
+                        throw new ExpenseStateConflictException(
+                            'Bukti pengeluaran hanya dapat diubah saat status DRAFT.'
+                        );
+                    }
+
+                    if (
+                        $expense->evidence_file_id
+                        !== null
+                    ) {
+                        $oldFile =
+                            FileAsset::query()
+                                ->where(
+                                    'tenant_id',
+                                    $this->tenantContext
+                                        ->tenantId()
+                                )
+                                ->where(
+                                    'id',
+                                    $expense
+                                        ->evidence_file_id
+                                )
+                                ->where(
+                                    'purpose',
+                                    'EXPENSE_PROOF'
+                                )
+                                ->first();
+                    }
+
+                    $expense->evidence_file_id =
+                        $newFile->id;
+
+                    $expense->save();
+                }
+            );
+        } catch (\Throwable $exception) {
+            $this->fileService
+                ->deleteObject(
+                    $newFile
+                );
+
+            $newFile->delete();
+
+            throw $exception;
+        }
+
+        if ($oldFile !== null) {
+            $this->fileService
+                ->deleteObject(
+                    $oldFile
+                );
+
+            $oldFile->delete();
+        }
+
+        return $this->withRelations(
+            $expenseId
+        );
+    }
+
+    public function evidenceFile(
+        string $expenseId
+    ): ?FileAsset {
+        $expense =
+            $this->findOrFail(
+                $expenseId
+            );
+
+        if (
+            $expense->evidence_file_id
+            === null
+        ) {
+            return null;
+        }
+
+        return FileAsset::query()
+            ->where(
+                'tenant_id',
+                $this->tenantContext
+                    ->tenantId()
+            )
+            ->where(
+                'id',
+                $expense->evidence_file_id
+            )
+            ->where(
+                'purpose',
+                'EXPENSE_PROOF'
+            )
+            ->first();
+    }
+
+    public function removeEvidence(
+        string $expenseId
+    ): Expense {
+        $oldFile = null;
+
+        DB::transaction(
+            function () use (
+                $expenseId,
+                &$oldFile
+            ): void {
+                $expense =
+                    $this->locked(
+                        $expenseId
+                    );
+
+                if ($expense->status !== 'DRAFT') {
+                    throw new ExpenseStateConflictException(
+                        'Bukti pengeluaran hanya dapat dihapus saat status DRAFT.'
+                    );
+                }
+
+                if (
+                    $expense->evidence_file_id
+                    !== null
+                ) {
+                    $oldFile =
+                        FileAsset::query()
+                            ->where(
+                                'tenant_id',
+                                $this->tenantContext
+                                    ->tenantId()
+                            )
+                            ->where(
+                                'id',
+                                $expense
+                                    ->evidence_file_id
+                            )
+                            ->where(
+                                'purpose',
+                                'EXPENSE_PROOF'
+                            )
+                            ->first();
+                }
+
+                $expense->evidence_file_id =
+                    null;
+
+                $expense->save();
+            }
+        );
+
+        if ($oldFile !== null) {
+            $this->fileService
+                ->deleteObject(
+                    $oldFile
+                );
+
+            $oldFile->delete();
+        }
+
+        return $this->withRelations(
+            $expenseId
+        );
+    }
+
     private function finalizePostedExpense(
         Expense $expense,
         string $fromStatus,
@@ -910,9 +1095,10 @@ class ExpenseService
     private function baseQuery(): Builder
     {
         return $this->tenantQuery()
-            ->with(
-                'cashAccount'
-            );
+            ->with([
+                'cashAccount',
+                'evidenceFile',
+            ]);
     }
 
     private function withRelations(

@@ -6,7 +6,9 @@ use App\Actions\Tenancy\CreateTenantWorkspaceAction;
 use App\Models\User;
 use Database\Seeders\SignovaAccessControlSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Tests\TestCase;
 
@@ -1721,6 +1723,385 @@ class ExpenseApiTest extends TestCase
                 'error.code',
                 'FORBIDDEN_CAPABILITY'
             );
+    }
+
+
+    public function test_draft_expense_evidence_is_private_replaceable_previewable_and_removable(): void
+    {
+        Storage::fake('local');
+
+        config()->set(
+            'filesystems.private_disk',
+            'local'
+        );
+
+        $workspace = $this->workspace(
+            'expense-evidence@example.test',
+            'Expense Evidence'
+        );
+
+        $account =
+            $this->insertAccount(
+                $workspace,
+                'Kas Evidence'
+            );
+
+        $this->actingAsWorkspace(
+            $workspace
+        );
+
+        $response =
+            $this->postJson(
+                '/api/v1/finance/expenses',
+                [
+                    'cash_account_id' =>
+                        $account,
+
+                    'amount' =>
+                        '175000.00',
+
+                    'incurred_at' =>
+                        now()->toISOString(),
+
+                    'category' =>
+                        'Biaya Operasional Umum',
+
+                    'description' =>
+                        'Expense evidence',
+                ]
+            )->assertCreated();
+
+        $expenseId =
+            $response->json('data.id');
+
+        $this->post(
+            '/api/v1/finance/expenses/'
+            . $expenseId
+            . '/evidence',
+            [
+                'evidence' =>
+                    UploadedFile::fake()
+                        ->image(
+                            'nota-lama.png',
+                            800,
+                            800
+                        ),
+            ]
+        )
+            ->assertOk()
+            ->assertJsonPath(
+                'data.has_evidence',
+                true
+            )
+            ->assertJsonPath(
+                'data.evidence.mime_type',
+                'image/png'
+            );
+
+        $oldFile =
+            DB::table('files')
+                ->where(
+                    'tenant_id',
+                    $workspace['tenant_id']
+                )
+                ->where(
+                    'purpose',
+                    'EXPENSE_PROOF'
+                )
+                ->first();
+
+        $this->assertNotNull(
+            $oldFile
+        );
+
+        $this->assertSame(
+            'PRIVATE',
+            $oldFile->visibility
+        );
+
+        $this->assertStringStartsWith(
+            'tenants/'
+                . $workspace['tenant_id']
+                . '/expense-proofs/',
+            $oldFile->object_key
+        );
+
+        Storage::disk('local')
+            ->assertExists(
+                $oldFile->object_key
+            );
+
+        $this->post(
+            '/api/v1/finance/expenses/'
+            . $expenseId
+            . '/evidence',
+            [
+                'evidence' =>
+                    UploadedFile::fake()
+                        ->image(
+                            'nota-baru.png'
+                        ),
+            ]
+        )->assertOk();
+
+        $currentFileId =
+            DB::table('expenses')
+                ->where(
+                    'id',
+                    $expenseId
+                )
+                ->value(
+                    'evidence_file_id'
+                );
+
+        $this->assertNotNull(
+            $currentFileId
+        );
+
+        $this->assertNotSame(
+            $oldFile->id,
+            $currentFileId
+        );
+
+        $newFile =
+            DB::table('files')
+                ->where(
+                    'id',
+                    $currentFileId
+                )
+                ->first();
+
+        $this->assertNotNull(
+            $newFile
+        );
+
+        $this->assertDatabaseMissing(
+            'files',
+            [
+                'id' =>
+                    $oldFile->id,
+            ]
+        );
+
+        Storage::disk('local')
+            ->assertMissing(
+                $oldFile->object_key
+            );
+
+        Storage::disk('local')
+            ->assertExists(
+                $newFile->object_key
+            );
+
+        $this->get(
+            '/api/v1/finance/expenses/'
+            . $expenseId
+            . '/evidence'
+        )
+            ->assertOk()
+            ->assertHeader(
+                'Content-Type',
+                'image/png'
+            )
+            ->assertHeader(
+                'X-Content-Type-Options',
+                'nosniff'
+            );
+
+        $this->deleteJson(
+            '/api/v1/finance/expenses/'
+            . $expenseId
+            . '/evidence'
+        )
+            ->assertOk()
+            ->assertJsonPath(
+                'data.has_evidence',
+                false
+            );
+
+        $this->assertDatabaseMissing(
+            'files',
+            [
+                'id' =>
+                    $newFile->id,
+            ]
+        );
+
+        Storage::disk('local')
+            ->assertMissing(
+                $newFile->object_key
+            );
+    }
+
+    public function test_submitted_expense_evidence_is_locked(): void
+    {
+        Storage::fake('local');
+
+        config()->set(
+            'filesystems.private_disk',
+            'local'
+        );
+
+        $workspace = $this->workspace(
+            'expense-evidence-lock@example.test',
+            'Expense Evidence Lock'
+        );
+
+        $account =
+            $this->insertAccount(
+                $workspace,
+                'Kas Evidence Lock'
+            );
+
+        $this->actingAsWorkspace(
+            $workspace
+        );
+
+        $response =
+            $this->postJson(
+                '/api/v1/finance/expenses',
+                [
+                    'cash_account_id' =>
+                        $account,
+
+                    'amount' =>
+                        '99000.00',
+
+                    'incurred_at' =>
+                        now()->toISOString(),
+
+                    'description' =>
+                        'Evidence locked after submit',
+                ]
+            )->assertCreated();
+
+        $expenseId =
+            $response->json('data.id');
+
+        $this->post(
+            '/api/v1/finance/expenses/'
+            . $expenseId
+            . '/evidence',
+            [
+                'evidence' =>
+                    UploadedFile::fake()
+                        ->image(
+                            'nota.png'
+                        ),
+            ]
+        )->assertOk();
+
+        $this->postJson(
+            '/api/v1/finance/expenses/'
+            . $expenseId
+            . '/actions/submit'
+        )
+            ->assertOk()
+            ->assertJsonPath(
+                'data.status',
+                'PENDING_APPROVAL'
+            );
+
+        $this->post(
+            '/api/v1/finance/expenses/'
+            . $expenseId
+            . '/evidence',
+            [
+                'evidence' =>
+                    UploadedFile::fake()
+                        ->image(
+                            'nota-baru.png'
+                        ),
+            ]
+        )
+            ->assertStatus(409)
+            ->assertJsonPath(
+                'error.code',
+                'ENTITY_STATE_CONFLICT'
+            );
+
+        $this->deleteJson(
+            '/api/v1/finance/expenses/'
+            . $expenseId
+            . '/evidence'
+        )
+            ->assertStatus(409)
+            ->assertJsonPath(
+                'error.code',
+                'ENTITY_STATE_CONFLICT'
+            );
+
+        $this->assertNotNull(
+            DB::table('expenses')
+                ->where(
+                    'id',
+                    $expenseId
+                )
+                ->value(
+                    'evidence_file_id'
+                )
+        );
+    }
+
+    public function test_expense_evidence_is_business_scoped(): void
+    {
+        Storage::fake('local');
+
+        config()->set(
+            'filesystems.private_disk',
+            'local'
+        );
+
+        $workspace = $this->workspace(
+            'expense-evidence-business@example.test',
+            'Expense Evidence Business'
+        );
+
+        $otherBusiness =
+            $this->secondBusinessWorkspace(
+                $workspace,
+                'Expense Evidence Business B'
+            );
+
+        $account =
+            $this->insertAccount(
+                $otherBusiness,
+                'Kas Evidence Business B'
+            );
+
+        $expenseId =
+            $this->insertExpense(
+                $otherBusiness,
+                $account,
+                'Expense business B'
+            );
+
+        $this->actingAsWorkspace(
+            $otherBusiness
+        );
+
+        $this->post(
+            '/api/v1/finance/expenses/'
+            . $expenseId
+            . '/evidence',
+            [
+                'evidence' =>
+                    UploadedFile::fake()
+                        ->image(
+                            'nota-business-b.png'
+                        ),
+            ]
+        )->assertOk();
+
+        $this->actingAsWorkspace(
+            $workspace
+        );
+
+        $this->get(
+            '/api/v1/finance/expenses/'
+            . $expenseId
+            . '/evidence'
+        )->assertNotFound();
     }
 
 
