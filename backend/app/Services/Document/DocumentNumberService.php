@@ -54,6 +54,15 @@ class DocumentNumberService
         );
     }
 
+    public function nextGoodsReceiptNumber(): string
+    {
+        return $this->nextDefaultNumber(
+            documentType: 'GOODS_RECEIPT',
+            prefix: 'GR',
+            defaultPadding: 4
+        );
+    }
+
     private function nextDefaultNumber(
         string $documentType,
         string $prefix,

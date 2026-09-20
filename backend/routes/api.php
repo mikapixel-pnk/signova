@@ -23,6 +23,7 @@ use App\Http\Controllers\Api\V1\Purchasing\PurchaseOrderController;
 use App\Http\Controllers\Api\V1\Purchasing\PurchaseRequestController;
 use App\Http\Controllers\Api\V1\Inventory\MaterialController;
 use App\Http\Controllers\Api\V1\Inventory\WarehouseController;
+use App\Http\Controllers\Api\V1\Inventory\GoodsReceiptController;
 use App\Http\Controllers\Api\V1\Catalog\CatalogCategoryController;
 use App\Http\Controllers\Api\V1\Catalog\CatalogItemController;
 use App\Http\Controllers\Api\V1\Catalog\UnitController;
@@ -309,6 +310,54 @@ Route::prefix('v1')->group(function () {
         )->middleware([
             'business.context',
             'capability:purchasing.cancel_po',
+        ]);
+
+        Route::get(
+            '/inventory/receipts',
+            [GoodsReceiptController::class, 'index']
+        )->middleware([
+            'business.context',
+            'capability:inventory.view',
+        ]);
+
+        Route::post(
+            '/inventory/receipts',
+            [GoodsReceiptController::class, 'store']
+        )->middleware([
+            'business.context',
+            'capability:inventory.receive',
+        ]);
+
+        Route::get(
+            '/inventory/receipts/{goodsReceiptId}',
+            [GoodsReceiptController::class, 'show']
+        )->middleware([
+            'business.context',
+            'capability:inventory.view',
+        ]);
+
+        Route::patch(
+            '/inventory/receipts/{goodsReceiptId}',
+            [GoodsReceiptController::class, 'update']
+        )->middleware([
+            'business.context',
+            'capability:inventory.receive',
+        ]);
+
+        Route::post(
+            '/inventory/receipts/{goodsReceiptId}/actions/post',
+            [GoodsReceiptController::class, 'post']
+        )->middleware([
+            'business.context',
+            'capability:inventory.receive',
+        ]);
+
+        Route::post(
+            '/inventory/receipts/{goodsReceiptId}/actions/reverse',
+            [GoodsReceiptController::class, 'reverse']
+        )->middleware([
+            'business.context',
+            'capability:inventory.receive',
         ]);
 
         Route::get(
