@@ -809,8 +809,7 @@ class SupplierBillService
             )
             ->where(
                 'sp.status',
-                '<>',
-                'REVERSED'
+                'POSTED'
             )
             ->exists();
     }

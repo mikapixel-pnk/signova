@@ -72,6 +72,15 @@ class DocumentNumberService
         );
     }
 
+    public function nextSupplierPaymentNumber(): string
+    {
+        return $this->nextDefaultNumber(
+            documentType: 'SUPPLIER_PAYMENT',
+            prefix: 'SP',
+            defaultPadding: 4
+        );
+    }
+
     private function nextDefaultNumber(
         string $documentType,
         string $prefix,
