@@ -21,6 +21,8 @@ use App\Http\Controllers\Api\V1\Customer\CustomerController;
 use App\Http\Controllers\Api\V1\Supplier\SupplierController;
 use App\Http\Controllers\Api\V1\Purchasing\PurchaseOrderController;
 use App\Http\Controllers\Api\V1\Purchasing\PurchaseRequestController;
+use App\Http\Controllers\Api\V1\Inventory\MaterialController;
+use App\Http\Controllers\Api\V1\Inventory\WarehouseController;
 use App\Http\Controllers\Api\V1\Catalog\CatalogCategoryController;
 use App\Http\Controllers\Api\V1\Catalog\CatalogItemController;
 use App\Http\Controllers\Api\V1\Catalog\UnitController;
@@ -307,6 +309,54 @@ Route::prefix('v1')->group(function () {
         )->middleware([
             'business.context',
             'capability:purchasing.cancel_po',
+        ]);
+
+        Route::get(
+            '/inventory/materials',
+            [MaterialController::class, 'index']
+        )->middleware([
+            'business.context',
+            'capability:inventory.view',
+        ]);
+
+        Route::post(
+            '/inventory/materials',
+            [MaterialController::class, 'store']
+        )->middleware([
+            'business.context',
+            'capability:inventory.receive',
+        ]);
+
+        Route::patch(
+            '/inventory/materials/{materialId}',
+            [MaterialController::class, 'update']
+        )->middleware([
+            'business.context',
+            'capability:inventory.receive',
+        ]);
+
+        Route::get(
+            '/inventory/warehouses',
+            [WarehouseController::class, 'index']
+        )->middleware([
+            'business.context',
+            'capability:inventory.view',
+        ]);
+
+        Route::post(
+            '/inventory/warehouses',
+            [WarehouseController::class, 'store']
+        )->middleware([
+            'business.context',
+            'capability:inventory.receive',
+        ]);
+
+        Route::patch(
+            '/inventory/warehouses/{warehouseId}',
+            [WarehouseController::class, 'update']
+        )->middleware([
+            'business.context',
+            'capability:inventory.receive',
         ]);
 
         Route::get(
