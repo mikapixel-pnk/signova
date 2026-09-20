@@ -12,6 +12,8 @@ use App\Models\SupplierPaymentStatusHistory;
 use App\Services\Document\DocumentNumberService;
 use App\Tenancy\BusinessContext;
 use App\Tenancy\TenantContext;
+use Brick\Math\BigDecimal;
+use Brick\Math\RoundingMode;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -860,14 +862,10 @@ class SupplierPaymentService
             }
 
             $amount =
-                number_format(
-                    (float)
-                        $allocation[
-                            'amount'
-                        ],
-                    2,
-                    '.',
-                    ''
+                $this->money(
+                    $allocation[
+                        'amount'
+                    ]
                 );
 
             if (
@@ -1018,17 +1016,29 @@ class SupplierPaymentService
                         ],
 
                     'amount' =>
-                        number_format(
-                            (float)
-                                $allocation[
-                                    'amount'
-                                ],
-                            2,
-                            '.',
-                            ''
+                        $this->money(
+                            $allocation[
+                                'amount'
+                            ]
                         ),
                 ]);
         }
+    }
+
+    private function money(
+        mixed $value
+    ): string {
+        return BigDecimal::of(
+            (string) (
+                $value
+                ?? '0'
+            )
+        )
+            ->toScale(
+                2,
+                RoundingMode::HalfUp
+            )
+            ->__toString();
     }
 
     private function recalculateBillStatus(
@@ -1066,11 +1076,8 @@ class SupplierPaymentService
                 );
 
         $paid =
-            number_format(
-                (float) $paid,
-                2,
-                '.',
-                ''
+            $this->money(
+                $paid
             );
 
         if (

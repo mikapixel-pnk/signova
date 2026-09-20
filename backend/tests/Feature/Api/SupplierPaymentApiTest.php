@@ -299,6 +299,143 @@ class SupplierPaymentApiTest extends TestCase
         );
     }
 
+    public function test_allocation_money_is_normalized_consistently_before_posting(): void
+    {
+        $workspace =
+            $this->workspace(
+                'supplier-payment-precision@example.test',
+                'Supplier Payment Precision'
+            );
+
+        $this->actingAsWorkspace(
+            $workspace
+        );
+
+        $supplierId =
+            $this->createSupplier(
+                'Pemasok Precision'
+            );
+
+        $warehouseId =
+            $this->createWarehouse(
+                'Gudang Precision'
+            );
+
+        $billId =
+            $this->createPostedBill(
+                $supplierId,
+                $warehouseId,
+                100,
+                'PRECISION-001'
+            );
+
+        $cashAccountId =
+            $this->createCashAccount(
+                'Kas Precision'
+            );
+
+        $payment =
+            $this->postJson(
+                '/api/v1/finance/payables/payments',
+                [
+                    'cash_account_id' =>
+                        $cashAccountId,
+
+                    'reference' =>
+                        'PAY-PRECISION-001',
+
+                    'allocations' => [
+                        [
+                            'supplier_bill_id' =>
+                                $billId,
+
+                            'amount' =>
+                                '0.005',
+                        ],
+                    ],
+                ]
+            )
+                ->assertCreated()
+                ->assertJsonPath(
+                    'data.status',
+                    'DRAFT'
+                )
+                ->assertJsonPath(
+                    'data.amount',
+                    '0.01'
+                )
+                ->assertJsonPath(
+                    'data.allocations.0.amount',
+                    '0.01'
+                );
+
+        $paymentId =
+            (string) $payment->json(
+                'data.id'
+            );
+
+        $this->assertDatabaseHas(
+            'supplier_payment_allocations',
+            [
+                'supplier_payment_id' =>
+                    $paymentId,
+
+                'supplier_bill_id' =>
+                    $billId,
+
+                'amount' =>
+                    '0.01',
+            ]
+        );
+
+        $this->postJson(
+            "/api/v1/finance/payables/payments/{$paymentId}/actions/post"
+        )
+            ->assertOk()
+            ->assertJsonPath(
+                'data.status',
+                'POSTED'
+            )
+            ->assertJsonPath(
+                'data.amount',
+                '0.01'
+            );
+
+        $this->assertDatabaseHas(
+            'cash_transactions',
+            [
+                'source_type' =>
+                    'SUPPLIER_PAYMENT',
+
+                'source_id' =>
+                    $paymentId,
+
+                'direction' =>
+                    'OUT',
+
+                'amount' =>
+                    '0.01',
+            ]
+        );
+
+        $this->getJson(
+            "/api/v1/finance/payables/bills/{$billId}"
+        )
+            ->assertOk()
+            ->assertJsonPath(
+                'data.paid_amount',
+                '0.01'
+            )
+            ->assertJsonPath(
+                'data.outstanding_amount',
+                '99.99'
+            )
+            ->assertJsonPath(
+                'data.status',
+                'PARTIALLY_PAID'
+            );
+    }
+
     public function test_reversal_creates_cash_in_and_recalculates_supplier_bill(): void
     {
         $workspace =
