@@ -561,6 +561,35 @@ class GoodsReceiptService
                             ->purchase_order_id
                     );
 
+                $hasSupplierBill =
+                    DB::table(
+                        'supplier_bills'
+                    )
+                        ->where(
+                            'tenant_id',
+                            $receipt->tenant_id
+                        )
+                        ->where(
+                            'business_id',
+                            $receipt->business_id
+                        )
+                        ->where(
+                            'goods_receipt_id',
+                            $receipt->id
+                        )
+                        ->where(
+                            'status',
+                            '<>',
+                            'CANCELLED'
+                        )
+                        ->exists();
+
+                if ($hasSupplierBill) {
+                    throw new GoodsReceiptStateConflictException(
+                        'Penerimaan yang sudah memiliki Tagihan Pemasok aktif tidak dapat dikoreksi. Batalkan Tagihan Pemasok terlebih dahulu.'
+                    );
+                }
+
                 $receiptItemIds =
                     GoodsReceiptItem::query()
                         ->where(

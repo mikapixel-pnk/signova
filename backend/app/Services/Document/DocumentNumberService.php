@@ -63,6 +63,15 @@ class DocumentNumberService
         );
     }
 
+    public function nextSupplierBillNumber(): string
+    {
+        return $this->nextDefaultNumber(
+            documentType: 'SUPPLIER_BILL',
+            prefix: 'SB',
+            defaultPadding: 4
+        );
+    }
+
     private function nextDefaultNumber(
         string $documentType,
         string $prefix,

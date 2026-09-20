@@ -9,6 +9,7 @@ use App\Http\Controllers\Api\V1\Finance\ExpenseController;
 use App\Http\Controllers\Api\V1\Finance\FinanceSummaryController;
 use App\Http\Controllers\Api\V1\Finance\IncomeController;
 use App\Http\Controllers\Api\V1\Finance\IncomeRegisterController;
+use App\Http\Controllers\Api\V1\Finance\SupplierBillController;
 use App\Http\Controllers\Api\V1\Invoice\InvoiceController;
 use App\Http\Controllers\Api\V1\Invoice\InvoicePublicLinkController;
 use App\Http\Controllers\Api\V1\Payment\PaymentController;
@@ -888,6 +889,61 @@ Route::prefix('v1')->group(function () {
         )->middleware([
             'business.context',
             'capability:finance.income.manage',
+        ]);
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Utang Usaha
+        |--------------------------------------------------------------------------
+        */
+
+        Route::get(
+            '/finance/payables/bills',
+            [SupplierBillController::class, 'index']
+        )->middleware([
+            'business.context',
+            'capability:finance.payable.view',
+        ]);
+
+        Route::post(
+            '/finance/payables/bills',
+            [SupplierBillController::class, 'store']
+        )->middleware([
+            'business.context',
+            'capability:finance.payable.manage',
+        ]);
+
+        Route::get(
+            '/finance/payables/bills/{supplierBillId}',
+            [SupplierBillController::class, 'show']
+        )->middleware([
+            'business.context',
+            'capability:finance.payable.view',
+        ]);
+
+        Route::patch(
+            '/finance/payables/bills/{supplierBillId}',
+            [SupplierBillController::class, 'update']
+        )->middleware([
+            'business.context',
+            'capability:finance.payable.manage',
+        ]);
+
+        Route::post(
+            '/finance/payables/bills/{supplierBillId}/actions/post',
+            [SupplierBillController::class, 'post']
+        )->middleware([
+            'business.context',
+            'capability:finance.payable.manage',
+        ]);
+
+        Route::post(
+            '/finance/payables/bills/{supplierBillId}/actions/cancel',
+            [SupplierBillController::class, 'cancel']
+        )->middleware([
+            'business.context',
+            'capability:finance.payable.manage',
         ]);
 
 
