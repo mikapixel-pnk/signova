@@ -1,4 +1,11 @@
+"use client";
+
 import Link from "next/link";
+
+import {
+  useEffect,
+  useState,
+} from "react";
 
 import {
   ChevronRight,
@@ -19,6 +26,10 @@ import {
 import type {
   ModuleDefinition,
 } from "@/config/module-types";
+
+import {
+  getActiveCapabilities,
+} from "@/lib/auth/active-capabilities-service";
 
 import {
   getModule,
@@ -75,6 +86,39 @@ function FinanceCard({
 
 
 export function FinanceHub() {
+  const [
+    canViewPayables,
+    setCanViewPayables,
+  ] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    void getActiveCapabilities()
+      .then((response) => {
+        if (cancelled) {
+          return;
+        }
+
+        setCanViewPayables(
+          response.data
+            .capability_codes
+            .includes(
+              "finance.payable.view",
+            ),
+        );
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setCanViewPayables(false);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   const finance =
     getModule("finance");
 
@@ -209,9 +253,11 @@ export function FinanceHub() {
             }
           />
 
-          <FinanceCard
-            moduleDef={payables}
-          />
+          {canViewPayables ? (
+            <FinanceCard
+              moduleDef={payables}
+            />
+          ) : null}
         </div>
       </section>
     </section>
