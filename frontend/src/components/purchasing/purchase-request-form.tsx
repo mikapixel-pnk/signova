@@ -689,21 +689,6 @@ export function PurchaseRequestForm({
               </div>
             </div>
 
-            <button
-              type="button"
-              className={
-                styles.secondaryButton
-              }
-              onClick={addItem}
-              disabled={
-                !canManage ||
-                saving ||
-                items.length >= 100
-              }
-            >
-              <Plus size={17} />
-              Tambah Item
-            </button>
           </header>
 
           <div
@@ -781,7 +766,7 @@ export function PurchaseRequestForm({
                         }
                       >
                         <span>
-                          Jenis
+                          Jenis Kebutuhan
                         </span>
 
                         <select
@@ -803,13 +788,13 @@ export function PurchaseRequestForm({
                           <option
                             value="PRODUCT"
                           >
-                            Barang
+                            Barang / Material
                           </option>
 
                           <option
                             value="SERVICE"
                           >
-                            Jasa
+                            Jasa Vendor
                           </option>
                         </select>
                       </label>
@@ -957,6 +942,22 @@ export function PurchaseRequestForm({
               },
             )}
           </div>
+
+          <button
+            type="button"
+            className={
+              styles.secondaryButton
+            }
+            onClick={addItem}
+            disabled={
+              !canManage ||
+              saving ||
+              items.length >= 100
+            }
+          >
+            <Plus size={17} />
+            Tambah Item
+          </button>
 
           <div
             className={

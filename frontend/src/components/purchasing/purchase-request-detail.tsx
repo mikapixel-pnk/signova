@@ -486,31 +486,264 @@ export function PurchaseRequestDetail({
         }
       />
 
-      {feedback ? (
-        <ActionFeedback
-          tone="success"
-          title="Berhasil"
-          message={feedback}
-        />
-      ) : null}
+      <section
+        className={
+          styles.nextActionCard
+        }
+      >
+        <div
+          className={
+            styles.nextActionCopy
+          }
+        >
+          <span>
+            LANGKAH BERIKUTNYA
+          </span>
 
-      {error ? (
-        <ActionFeedback
-          tone="error"
-          title="Tindakan belum dapat diproses"
-          message={
-            apiErrorMessage(
-              error,
-              "Silakan coba kembali.",
-            )
+          {data.status ===
+          "DRAFT" ? (
+            <>
+              <h2>
+                Ajukan Permintaan
+              </h2>
+
+              <p>
+                Setelah diajukan,
+                permintaan menunggu
+                persetujuan.
+              </p>
+            </>
+          ) : null}
+
+          {data.status ===
+          "SUBMITTED" ? (
+            <>
+              <h2>
+                Tinjau Permintaan
+              </h2>
+
+              <p>
+                Permintaan menunggu
+                pihak dengan hak
+                persetujuan.
+              </p>
+            </>
+          ) : null}
+
+          {data.status ===
+          "REJECTED" ? (
+            <>
+              <h2>
+                Perbaiki Permintaan
+              </h2>
+
+              <p>
+                Kembalikan ke Draf,
+                perbaiki kebutuhan,
+                lalu ajukan kembali.
+              </p>
+            </>
+          ) : null}
+
+          {data.status ===
+          "APPROVED" ? (
+            <>
+              <h2>
+                Lanjut ke Pesanan Pembelian
+              </h2>
+
+              <p>
+                Permintaan telah
+                disetujui dan siap
+                dilanjutkan ke PO.
+              </p>
+            </>
+          ) : null}
+
+          {data.status ===
+          "CANCELLED" ? (
+            <>
+              <h2>
+                Proses Selesai
+              </h2>
+
+              <p>
+                Permintaan telah
+                dibatalkan.
+              </p>
+            </>
+          ) : null}
+        </div>
+
+        {feedback ? (
+          <ActionFeedback
+            tone="success"
+            title="Berhasil"
+            message={feedback}
+          />
+        ) : null}
+
+        {error ? (
+          <ActionFeedback
+            tone="error"
+            title="Tindakan belum dapat diproses"
+            message={
+              apiErrorMessage(
+                error,
+                "Silakan coba kembali.",
+              )
+            }
+            requestId={
+              apiRequestId(
+                error,
+              )
+            }
+          />
+        ) : null}
+
+        <div
+          className={
+            styles.workflowActions
           }
-          requestId={
-            apiRequestId(
-              error,
-            )
-          }
-        />
-      ) : null}
+        >
+          {data.status ===
+            "DRAFT" &&
+          canRequest ? (
+            <Button
+              type="button"
+              leadingIcon={
+                <Send size={18} />
+              }
+              loading={
+                busy ===
+                "SUBMIT"
+              }
+              loadingLabel="Mengajukan..."
+              onClick={() =>
+                void runAction(
+                  "SUBMIT",
+                )
+              }
+            >
+              Ajukan Permintaan
+            </Button>
+          ) : null}
+
+          {data.status ===
+            "SUBMITTED" &&
+          canApprove ? (
+            <>
+              <Button
+                type="button"
+                leadingIcon={
+                  <CheckCircle2
+                    size={18}
+                  />
+                }
+                loading={
+                  busy ===
+                  "APPROVE"
+                }
+                loadingLabel="Menyetujui..."
+                onClick={() =>
+                  void runAction(
+                    "APPROVE",
+                  )
+                }
+              >
+                Setujui
+              </Button>
+
+              <Button
+                type="button"
+                variant="secondary"
+                leadingIcon={
+                  <XCircle
+                    size={18}
+                  />
+                }
+                disabled={
+                  Boolean(busy)
+                }
+                onClick={() => {
+                  setReason("");
+                  setReasonMode(
+                    "REJECT",
+                  );
+                }}
+              >
+                Tolak
+              </Button>
+            </>
+          ) : null}
+
+          {data.status ===
+            "REJECTED" &&
+          canRequest ? (
+            <Button
+              type="button"
+              leadingIcon={
+                <RotateCcw
+                  size={18}
+                />
+              }
+              loading={
+                busy ===
+                "REVISE"
+              }
+              loadingLabel="Membuka Draf..."
+              onClick={() =>
+                void runAction(
+                  "REVISE",
+                )
+              }
+            >
+              Perbaiki Permintaan
+            </Button>
+          ) : null}
+
+          {data.status ===
+            "APPROVED" &&
+          canCreatePo ? (
+            <Link
+              href="/app/operasional/pesanan-pembelian"
+              className={
+                styles.primaryLink
+              }
+            >
+              <ReceiptText
+                size={18}
+              />
+              Pesanan Pembelian
+            </Link>
+          ) : null}
+
+          {[
+            "DRAFT",
+            "SUBMITTED",
+            "REJECTED",
+          ].includes(
+            data.status,
+          ) &&
+          canRequest ? (
+            <Button
+              type="button"
+              variant="ghost"
+              disabled={
+                Boolean(busy)
+              }
+              onClick={() => {
+                setReason("");
+                setReasonMode(
+                  "CANCEL",
+                );
+              }}
+            >
+              Batalkan Permintaan
+            </Button>
+          ) : null}
+        </div>
+      </section>
 
       <div
         className={
@@ -796,239 +1029,6 @@ export function PurchaseRequestDetail({
               </article>
             ),
           )}
-        </div>
-      </section>
-
-      <section
-        className={
-          styles.nextActionCard
-        }
-      >
-        <div
-          className={
-            styles.nextActionCopy
-          }
-        >
-          <span>
-            LANGKAH BERIKUTNYA
-          </span>
-
-          {data.status ===
-          "DRAFT" ? (
-            <>
-              <h2>
-                Ajukan Permintaan
-              </h2>
-
-              <p>
-                Setelah diajukan,
-                permintaan menunggu
-                persetujuan.
-              </p>
-            </>
-          ) : null}
-
-          {data.status ===
-          "SUBMITTED" ? (
-            <>
-              <h2>
-                Tinjau Permintaan
-              </h2>
-
-              <p>
-                Permintaan menunggu
-                pihak dengan hak
-                persetujuan.
-              </p>
-            </>
-          ) : null}
-
-          {data.status ===
-          "REJECTED" ? (
-            <>
-              <h2>
-                Perbaiki Permintaan
-              </h2>
-
-              <p>
-                Kembalikan ke Draf,
-                perbaiki kebutuhan,
-                lalu ajukan kembali.
-              </p>
-            </>
-          ) : null}
-
-          {data.status ===
-          "APPROVED" ? (
-            <>
-              <h2>
-                Lanjut ke Pesanan Pembelian
-              </h2>
-
-              <p>
-                Permintaan telah
-                disetujui dan siap
-                dilanjutkan ke PO.
-              </p>
-            </>
-          ) : null}
-
-          {data.status ===
-          "CANCELLED" ? (
-            <>
-              <h2>
-                Proses Selesai
-              </h2>
-
-              <p>
-                Permintaan telah
-                dibatalkan.
-              </p>
-            </>
-          ) : null}
-        </div>
-
-        <div
-          className={
-            styles.workflowActions
-          }
-        >
-          {data.status ===
-            "DRAFT" &&
-          canRequest ? (
-            <Button
-              type="button"
-              leadingIcon={
-                <Send size={18} />
-              }
-              loading={
-                busy ===
-                "SUBMIT"
-              }
-              loadingLabel="Mengajukan..."
-              onClick={() =>
-                void runAction(
-                  "SUBMIT",
-                )
-              }
-            >
-              Ajukan Permintaan
-            </Button>
-          ) : null}
-
-          {data.status ===
-            "SUBMITTED" &&
-          canApprove ? (
-            <>
-              <Button
-                type="button"
-                leadingIcon={
-                  <CheckCircle2
-                    size={18}
-                  />
-                }
-                loading={
-                  busy ===
-                  "APPROVE"
-                }
-                loadingLabel="Menyetujui..."
-                onClick={() =>
-                  void runAction(
-                    "APPROVE",
-                  )
-                }
-              >
-                Setujui
-              </Button>
-
-              <Button
-                type="button"
-                variant="secondary"
-                leadingIcon={
-                  <XCircle
-                    size={18}
-                  />
-                }
-                disabled={
-                  Boolean(busy)
-                }
-                onClick={() => {
-                  setReason("");
-                  setReasonMode(
-                    "REJECT",
-                  );
-                }}
-              >
-                Tolak
-              </Button>
-            </>
-          ) : null}
-
-          {data.status ===
-            "REJECTED" &&
-          canRequest ? (
-            <Button
-              type="button"
-              leadingIcon={
-                <RotateCcw
-                  size={18}
-                />
-              }
-              loading={
-                busy ===
-                "REVISE"
-              }
-              loadingLabel="Membuka Draf..."
-              onClick={() =>
-                void runAction(
-                  "REVISE",
-                )
-              }
-            >
-              Perbaiki Permintaan
-            </Button>
-          ) : null}
-
-          {data.status ===
-            "APPROVED" &&
-          canCreatePo ? (
-            <Link
-              href="/app/operasional/pesanan-pembelian"
-              className={
-                styles.primaryLink
-              }
-            >
-              <ReceiptText
-                size={18}
-              />
-              Pesanan Pembelian
-            </Link>
-          ) : null}
-
-          {[
-            "DRAFT",
-            "SUBMITTED",
-            "REJECTED",
-          ].includes(
-            data.status,
-          ) &&
-          canRequest ? (
-            <Button
-              type="button"
-              variant="ghost"
-              disabled={
-                Boolean(busy)
-              }
-              onClick={() => {
-                setReason("");
-                setReasonMode(
-                  "CANCEL",
-                );
-              }}
-            >
-              Batalkan Permintaan
-            </Button>
-          ) : null}
         </div>
       </section>
 

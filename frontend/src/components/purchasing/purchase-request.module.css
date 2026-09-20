@@ -561,19 +561,28 @@
 }
 
 @media (max-width: 640px) {
-  .itemsHeader,
-  .formActions {
+  .itemsHeader {
     align-items: stretch;
     flex-direction: column;
   }
 
-  .secondaryButton,
-  .formActions > * {
+  .secondaryButton {
     width: 100%;
   }
 
   .formActions {
     bottom: 76px;
+    display: grid;
+    grid-template-columns:
+      minmax(0, 0.8fr)
+      minmax(0, 1.2fr);
+    gap: 8px;
+    padding: 8px;
+  }
+
+  .formActions > * {
+    width: 100%;
+    min-width: 0;
   }
 }
 
