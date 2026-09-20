@@ -8,14 +8,14 @@ use PHPUnit\Framework\TestCase;
 
 class InvoiceTemplateRegistryTest extends TestCase
 {
-    public function test_registry_contains_three_starter_templates(): void
+    public function test_registry_contains_four_starter_templates(): void
     {
         $templates =
             (new InvoiceTemplateRegistry())
                 ->starter();
 
         $this->assertCount(
-            3,
+            4,
             $templates
         );
 
@@ -24,6 +24,7 @@ class InvoiceTemplateRegistryTest extends TestCase
                 'classic_blue',
                 'modern_emerald',
                 'minimal_slate',
+                'ocean_blue',
             ],
             array_column(
                 $templates,
@@ -36,6 +37,7 @@ class InvoiceTemplateRegistryTest extends TestCase
                 'Classic Blue',
                 'Modern Emerald',
                 'Minimal Slate',
+                'Ocean Blue',
             ],
             array_column(
                 $templates,
@@ -61,12 +63,13 @@ class InvoiceTemplateRegistryTest extends TestCase
                 'classic',
                 'modern',
                 'minimal',
+                'ocean',
             ],
             $layouts
         );
 
         $this->assertCount(
-            3,
+            4,
             array_unique(
                 $layouts
             )
@@ -115,6 +118,9 @@ class InvoiceTemplateRegistryTest extends TestCase
 
             'minimal_slate' =>
                 'slate',
+
+            'ocean_blue' =>
+                'ocean',
         ];
 
         foreach (

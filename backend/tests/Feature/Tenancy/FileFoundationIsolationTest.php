@@ -144,8 +144,14 @@ class FileFoundationIsolationTest extends TestCase
         DB::table(
             'tenant_document_settings'
         )->insert([
+            'id' =>
+                (string) Str::ulid(),
+
             'tenant_id' =>
                 $first['tenant_id'],
+
+            'business_id' =>
+                $first['business_id'],
 
             'created_at' =>
                 now(),
@@ -164,6 +170,10 @@ class FileFoundationIsolationTest extends TestCase
             ->where(
                 'tenant_id',
                 $first['tenant_id']
+            )
+            ->where(
+                'business_id',
+                $first['business_id']
             )
             ->update([
                 'signature_image_file_id' =>
@@ -191,6 +201,9 @@ class FileFoundationIsolationTest extends TestCase
 
             'tenant_id' =>
                 $workspace['tenant_id'],
+
+            'business_id' =>
+                $workspace['business_id'],
 
             'user' =>
                 User::query()->findOrFail(

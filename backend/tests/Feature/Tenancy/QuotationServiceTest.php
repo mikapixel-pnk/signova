@@ -6,6 +6,7 @@ use App\Actions\Tenancy\CreateTenantWorkspaceAction;
 use App\Models\Quotation;
 use App\Models\QuotationVersion;
 use App\Services\Quotation\QuotationService;
+use App\Tenancy\BusinessContext;
 use App\Tenancy\TenantContext;
 use Database\Seeders\SignovaAccessControlSeeder;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
@@ -947,6 +948,12 @@ class QuotationServiceTest extends TestCase
     ): void {
         app(TenantContext::class)->set(
             $workspace['tenant_id'],
+            $workspace['user_id']
+        );
+
+        app(BusinessContext::class)->set(
+            $workspace['tenant_id'],
+            $workspace['business_id'],
             $workspace['user_id']
         );
     }

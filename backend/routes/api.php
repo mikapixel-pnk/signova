@@ -19,6 +19,10 @@ use App\Http\Controllers\Api\V1\Settings\PaymentSettingController;
 use App\Http\Controllers\Api\V1\Quotation\QuotationController;
 use App\Http\Controllers\Api\V1\Customer\CustomerController;
 use App\Http\Controllers\Api\V1\Supplier\SupplierController;
+use App\Http\Controllers\Api\V1\Purchasing\PurchaseOrderController;
+use App\Http\Controllers\Api\V1\Purchasing\PurchaseRequestController;
+use App\Http\Controllers\Api\V1\Inventory\MaterialController;
+use App\Http\Controllers\Api\V1\Inventory\WarehouseController;
 use App\Http\Controllers\Api\V1\Catalog\CatalogCategoryController;
 use App\Http\Controllers\Api\V1\Catalog\CatalogItemController;
 use App\Http\Controllers\Api\V1\Catalog\UnitController;
@@ -186,6 +190,174 @@ Route::prefix('v1')->group(function () {
         | Pemasok
         |--------------------------------------------------------------------------
         */
+
+        Route::get(
+            '/purchasing/requests',
+            [PurchaseRequestController::class, 'index']
+        )->middleware([
+            'business.context',
+            'capability:purchasing.request',
+        ]);
+
+        Route::post(
+            '/purchasing/requests',
+            [PurchaseRequestController::class, 'store']
+        )->middleware([
+            'business.context',
+            'capability:purchasing.request',
+        ]);
+
+        Route::get(
+            '/purchasing/requests/{purchaseRequestId}',
+            [PurchaseRequestController::class, 'show']
+        )->middleware([
+            'business.context',
+            'capability:purchasing.request',
+        ]);
+
+        Route::patch(
+            '/purchasing/requests/{purchaseRequestId}',
+            [PurchaseRequestController::class, 'update']
+        )->middleware([
+            'business.context',
+            'capability:purchasing.request',
+        ]);
+
+        Route::post(
+            '/purchasing/requests/{purchaseRequestId}/actions/submit',
+            [PurchaseRequestController::class, 'submit']
+        )->middleware([
+            'business.context',
+            'capability:purchasing.request',
+        ]);
+
+        Route::post(
+            '/purchasing/requests/{purchaseRequestId}/actions/approve',
+            [PurchaseRequestController::class, 'approve']
+        )->middleware([
+            'business.context',
+            'capability:purchasing.approve_request',
+        ]);
+
+        Route::post(
+            '/purchasing/requests/{purchaseRequestId}/actions/reject',
+            [PurchaseRequestController::class, 'reject']
+        )->middleware([
+            'business.context',
+            'capability:purchasing.approve_request',
+        ]);
+
+        Route::post(
+            '/purchasing/requests/{purchaseRequestId}/actions/revise',
+            [PurchaseRequestController::class, 'revise']
+        )->middleware([
+            'business.context',
+            'capability:purchasing.request',
+        ]);
+
+        Route::post(
+            '/purchasing/requests/{purchaseRequestId}/actions/cancel',
+            [PurchaseRequestController::class, 'cancel']
+        )->middleware([
+            'business.context',
+            'capability:purchasing.request',
+        ]);
+
+        Route::get(
+            '/purchasing/orders',
+            [PurchaseOrderController::class, 'index']
+        )->middleware([
+            'business.context',
+            'capability:purchasing.create_po',
+        ]);
+
+        Route::post(
+            '/purchasing/orders',
+            [PurchaseOrderController::class, 'store']
+        )->middleware([
+            'business.context',
+            'capability:purchasing.create_po',
+        ]);
+
+        Route::get(
+            '/purchasing/orders/{purchaseOrderId}',
+            [PurchaseOrderController::class, 'show']
+        )->middleware([
+            'business.context',
+            'capability:purchasing.create_po',
+        ]);
+
+        Route::patch(
+            '/purchasing/orders/{purchaseOrderId}',
+            [PurchaseOrderController::class, 'update']
+        )->middleware([
+            'business.context',
+            'capability:purchasing.create_po',
+        ]);
+
+        Route::post(
+            '/purchasing/orders/{purchaseOrderId}/actions/issue',
+            [PurchaseOrderController::class, 'issue']
+        )->middleware([
+            'business.context',
+            'capability:purchasing.approve_po',
+        ]);
+
+        Route::post(
+            '/purchasing/orders/{purchaseOrderId}/actions/cancel',
+            [PurchaseOrderController::class, 'cancel']
+        )->middleware([
+            'business.context',
+            'capability:purchasing.cancel_po',
+        ]);
+
+        Route::get(
+            '/inventory/materials',
+            [MaterialController::class, 'index']
+        )->middleware([
+            'business.context',
+            'capability:inventory.view',
+        ]);
+
+        Route::post(
+            '/inventory/materials',
+            [MaterialController::class, 'store']
+        )->middleware([
+            'business.context',
+            'capability:inventory.receive',
+        ]);
+
+        Route::patch(
+            '/inventory/materials/{materialId}',
+            [MaterialController::class, 'update']
+        )->middleware([
+            'business.context',
+            'capability:inventory.receive',
+        ]);
+
+        Route::get(
+            '/inventory/warehouses',
+            [WarehouseController::class, 'index']
+        )->middleware([
+            'business.context',
+            'capability:inventory.view',
+        ]);
+
+        Route::post(
+            '/inventory/warehouses',
+            [WarehouseController::class, 'store']
+        )->middleware([
+            'business.context',
+            'capability:inventory.receive',
+        ]);
+
+        Route::patch(
+            '/inventory/warehouses/{warehouseId}',
+            [WarehouseController::class, 'update']
+        )->middleware([
+            'business.context',
+            'capability:inventory.receive',
+        ]);
 
         Route::get(
             '/suppliers',

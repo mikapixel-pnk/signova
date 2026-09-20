@@ -498,7 +498,7 @@ export function ExpenseWorkflowActions({
           caught,
         ),
       );
-
+    } finally {
       setBusy(false);
     }
   }

@@ -205,6 +205,42 @@ return Application::configure(basePath: dirname(__DIR__))
 
         $exceptions->render(
             function (
+                \App\Exceptions\Purchasing\PurchaseRequestStateConflictException $exception,
+                Request $request
+            ) {
+                if (! $request->is('api/*')) {
+                    return null;
+                }
+
+                return ApiResponse::error(
+                    $request,
+                    'ENTITY_STATE_CONFLICT',
+                    $exception->getMessage(),
+                    409
+                );
+            }
+        );
+
+        $exceptions->render(
+            function (
+                \App\Exceptions\Purchasing\PurchaseOrderStateConflictException $exception,
+                Request $request
+            ) {
+                if (! $request->is('api/*')) {
+                    return null;
+                }
+
+                return ApiResponse::error(
+                    $request,
+                    'ENTITY_STATE_CONFLICT',
+                    $exception->getMessage(),
+                    409
+                );
+            }
+        );
+
+        $exceptions->render(
+            function (
                 \App\Exceptions\Invoice\InvalidInvoiceTransitionException $exception,
                 Request $request
             ) {

@@ -31,6 +31,8 @@ class SignovaAccessControlSeeder extends Seeder
             'finance' => 'Keuangan',
             'project' => 'Proyek',
             'supplier' => 'Pemasok',
+            'purchasing' => 'Pembelian',
+            'inventory' => 'Stok & Gudang',
             'team' => 'Tim & Hak Akses',
             'settings' => 'Pengaturan',
         ];
@@ -120,6 +122,15 @@ class SignovaAccessControlSeeder extends Seeder
             ['supplier', 'supplier.update', 'Mengubah Pemasok', false],
             ['supplier', 'supplier.view_price', 'Melihat Harga Pemasok', true],
 
+            ['purchasing', 'purchasing.request', 'Mengelola Permintaan Pembelian', false],
+            ['purchasing', 'purchasing.approve_request', 'Menyetujui Permintaan Pembelian', true],
+            ['purchasing', 'purchasing.create_po', 'Membuat Pesanan Pembelian', false],
+            ['purchasing', 'purchasing.approve_po', 'Menyetujui Pesanan Pembelian', true],
+            ['purchasing', 'purchasing.cancel_po', 'Membatalkan Pesanan Pembelian', true],
+
+            ['inventory', 'inventory.view', 'Melihat Stok & Gudang', false],
+            ['inventory', 'inventory.receive', 'Mencatat Penerimaan Barang', false],
+
             ['team', 'team.user.view', 'Melihat Pengguna', false],
             ['team', 'team.user.manage', 'Mengelola Pengguna', true],
             ['team', 'team.role.view', 'Melihat Peran & Hak Akses', false],
@@ -198,7 +209,69 @@ class SignovaAccessControlSeeder extends Seeder
     private function seedMasterRoleCapabilities(): void
     {
         $matrix = [
-            'OWNER' => ['*'],
+            'OWNER' => [
+                'dashboard.view',
+
+                'customer.view',
+                'customer.create',
+                'customer.update',
+
+                'catalog.view',
+                'catalog.manage',
+
+                'quotation.view',
+                'quotation.create',
+                'quotation.update',
+                'quotation.issue',
+
+                'invoice.view',
+                'invoice.create',
+                'invoice.update',
+                'invoice.issue',
+                'invoice.void',
+
+                'payment.view',
+                'payment.record',
+                'payment.verify',
+                'payment.reverse',
+
+                'finance.receivable.view',
+                'finance.summary.view',
+                'finance.cash_bank.view',
+                'finance.cash_bank.manage',
+                'finance.income.view',
+                'finance.income.manage',
+                'finance.expense.view',
+                'finance.expense.manage',
+                'finance.expense.approve',
+                'finance.margin.view',
+
+                'project.view',
+                'project.create',
+                'project.update',
+
+                'supplier.view',
+                'supplier.create',
+                'supplier.update',
+                'supplier.view_price',
+
+                'purchasing.request',
+                'purchasing.approve_request',
+                'purchasing.create_po',
+                'purchasing.approve_po',
+                'purchasing.cancel_po',
+
+                'inventory.view',
+                'inventory.receive',
+
+                'team.user.view',
+                'team.user.manage',
+                'team.role.view',
+                'team.role.manage',
+
+                'settings.view',
+                'settings.manage',
+            ],
 
             'ADMIN' => [
                 'dashboard.view',

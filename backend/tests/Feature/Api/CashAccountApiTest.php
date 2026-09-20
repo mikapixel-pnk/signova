@@ -833,6 +833,8 @@ class CashAccountApiTest extends TestCase
             'id' => (string) Str::ulid(),
             'tenant_id' =>
                 $workspace['tenant_id'],
+            'business_id' =>
+                $workspace['business_id'],
             'customer_id' =>
                 $customerId,
             'cash_account_id' =>
@@ -894,6 +896,8 @@ class CashAccountApiTest extends TestCase
             'id' => (string) Str::ulid(),
             'tenant_id' =>
                 $workspace['tenant_id'],
+            'business_id' =>
+                $workspace['business_id'],
             'cash_account_id' =>
                 $account,
             'amount' =>
@@ -957,6 +961,9 @@ class CashAccountApiTest extends TestCase
 
             'tenant_id' =>
                 $workspace['tenant_id'],
+
+            'business_id' =>
+                $workspace['business_id'],
 
             'cash_account_id' =>
                 $account,
