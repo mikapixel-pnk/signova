@@ -23,6 +23,37 @@ export function purchaseRequestStatusLabel(
   }
 }
 
+export function purchaseRequestStatusDescription(
+  status: PurchaseRequestStatus,
+): string {
+  switch (status) {
+    case "DRAFT":
+      return "Permintaan masih dapat diubah sebelum diajukan.";
+
+    case "SUBMITTED":
+      return "Permintaan sedang menunggu keputusan pihak yang berwenang.";
+
+    case "APPROVED":
+      return "Permintaan telah disetujui dan dapat dilanjutkan ke Pesanan Pembelian.";
+
+    case "REJECTED":
+      return "Permintaan perlu diperbaiki sebelum diajukan kembali.";
+
+    case "CANCELLED":
+      return "Permintaan telah dibatalkan dan tidak dapat dilanjutkan.";
+  }
+}
+
+export function purchaseItemTypeLabel(
+  type:
+    | "PRODUCT"
+    | "SERVICE",
+): string {
+  return type === "PRODUCT"
+    ? "Barang"
+    : "Jasa";
+}
+
 export function formatPurchaseMoney(
   value:
     | string

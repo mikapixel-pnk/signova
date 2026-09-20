@@ -118,6 +118,79 @@ export async function updatePurchaseRequest(
   );
 }
 
+export async function submitPurchaseRequest(
+  id: string,
+): Promise<PurchaseRequestResponse> {
+  return authenticatedApiRequest<
+    PurchaseRequestResponse
+  >(
+    `/purchasing/requests/${id}/actions/submit`,
+    {
+      method: "POST",
+    },
+  );
+}
+
+export async function approvePurchaseRequest(
+  id: string,
+): Promise<PurchaseRequestResponse> {
+  return authenticatedApiRequest<
+    PurchaseRequestResponse
+  >(
+    `/purchasing/requests/${id}/actions/approve`,
+    {
+      method: "POST",
+    },
+  );
+}
+
+export async function rejectPurchaseRequest(
+  id: string,
+  reason: string,
+): Promise<PurchaseRequestResponse> {
+  return authenticatedApiRequest<
+    PurchaseRequestResponse
+  >(
+    `/purchasing/requests/${id}/actions/reject`,
+    {
+      method: "POST",
+      body: {
+        reason,
+      },
+    },
+  );
+}
+
+export async function revisePurchaseRequest(
+  id: string,
+): Promise<PurchaseRequestResponse> {
+  return authenticatedApiRequest<
+    PurchaseRequestResponse
+  >(
+    `/purchasing/requests/${id}/actions/revise`,
+    {
+      method: "POST",
+    },
+  );
+}
+
+export async function cancelPurchaseRequest(
+  id: string,
+  reason: string,
+): Promise<PurchaseRequestResponse> {
+  return authenticatedApiRequest<
+    PurchaseRequestResponse
+  >(
+    `/purchasing/requests/${id}/actions/cancel`,
+    {
+      method: "POST",
+      body: {
+        reason,
+      },
+    },
+  );
+}
+
 export async function listPurchaseOrders():
   Promise<PurchaseOrderListResponse> {
   return authenticatedApiRequest<

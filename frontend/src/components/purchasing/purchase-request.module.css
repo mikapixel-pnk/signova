@@ -576,3 +576,338 @@
     bottom: 76px;
   }
 }
+
+
+/* Purchase Request Detail */
+
+.detailTopBar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.detailGrid {
+  display: grid;
+  gap: 14px;
+}
+
+.detailCard {
+  display: grid;
+  gap: 18px;
+  padding: 18px;
+  border: 1px solid color-mix(
+    in srgb,
+    currentColor 13%,
+    transparent
+  );
+  border-radius: 18px;
+  background: color-mix(
+    in srgb,
+    currentColor 3%,
+    transparent
+  );
+}
+
+.detailCardHeader {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.detailCardHeader > div {
+  display: grid;
+  gap: 4px;
+}
+
+.detailCard h2,
+.detailCard p {
+  margin: 0;
+}
+
+.detailCard h2 {
+  font-size: 16px;
+}
+
+.detailCard p {
+  font-size: 13px;
+  opacity: 0.66;
+}
+
+.detailCard dl {
+  display: grid;
+  margin: 0;
+}
+
+.detailCard dl > div {
+  display: grid;
+  grid-template-columns:
+    minmax(120px, 0.7fr)
+    minmax(0, 1.3fr);
+  gap: 14px;
+  padding: 11px 0;
+  border-bottom: 1px solid color-mix(
+    in srgb,
+    currentColor 9%,
+    transparent
+  );
+}
+
+.detailCard dl > div:last-child {
+  border-bottom: 0;
+}
+
+.detailCard dt {
+  font-size: 13px;
+  opacity: 0.62;
+}
+
+.detailCard dd {
+  display: flex;
+  align-items: flex-start;
+  gap: 7px;
+  margin: 0;
+  overflow-wrap: anywhere;
+  font-size: 14px;
+  font-weight: 650;
+}
+
+.detailItemList {
+  display: grid;
+  gap: 12px;
+}
+
+.detailItemCard {
+  display: grid;
+  gap: 14px;
+  padding: 15px;
+  border: 1px solid color-mix(
+    in srgb,
+    currentColor 11%,
+    transparent
+  );
+  border-radius: 15px;
+  background: color-mix(
+    in srgb,
+    currentColor 2%,
+    transparent
+  );
+}
+
+.detailItemTop {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.detailItemTop > div {
+  display: grid;
+  gap: 4px;
+}
+
+.itemIndex {
+  font-size: 11px;
+  font-weight: 800;
+  opacity: 0.56;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.itemType {
+  display: inline-flex;
+  padding: 4px 9px;
+  border-radius: 999px;
+  background: color-mix(
+    in srgb,
+    #d97706 15%,
+    transparent
+  );
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.detailItemDescription {
+  margin: 0;
+  font-size: 13px;
+  opacity: 0.72;
+}
+
+.itemMetrics {
+  display: grid;
+  grid-template-columns:
+    repeat(
+      3,
+      minmax(0, 1fr)
+    );
+  gap: 10px;
+}
+
+.itemMetrics span {
+  display: grid;
+  gap: 4px;
+  padding: 10px;
+  border-radius: 12px;
+  background: color-mix(
+    in srgb,
+    currentColor 4%,
+    transparent
+  );
+  font-size: 12px;
+  opacity: 0.78;
+}
+
+.itemMetrics strong {
+  font-size: 13px;
+  opacity: 1;
+}
+
+.nextActionCard {
+  display: grid;
+  gap: 18px;
+  padding: 18px;
+  border: 1px solid color-mix(
+    in srgb,
+    #d97706 28%,
+    transparent
+  );
+  border-radius: 18px;
+  background: color-mix(
+    in srgb,
+    #d97706 7%,
+    transparent
+  );
+}
+
+.nextActionCopy {
+  display: grid;
+  gap: 7px;
+}
+
+.nextActionCopy > span {
+  font-size: 11px;
+  font-weight: 850;
+  letter-spacing: 0.08em;
+  color: #d97706;
+}
+
+.nextActionCopy h2,
+.nextActionCopy p {
+  margin: 0;
+}
+
+.nextActionCopy h2 {
+  font-size: 16px;
+}
+
+.nextActionCopy p {
+  font-size: 13px;
+  opacity: 0.7;
+}
+
+.workflowActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.dialogOverlay {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: rgb(15 23 42 / 54%);
+  backdrop-filter: blur(4px);
+}
+
+.reasonDialog {
+  display: grid;
+  gap: 18px;
+  width: min(
+    100%,
+    520px
+  );
+  padding: 20px;
+  border: 1px solid color-mix(
+    in srgb,
+    currentColor 13%,
+    transparent
+  );
+  border-radius: 20px;
+  background: var(
+    --background,
+    #fff
+  );
+  color: inherit;
+  box-shadow:
+    0 24px 70px
+    rgb(0 0 0 / 22%);
+}
+
+.reasonDialog header {
+  display: grid;
+  gap: 5px;
+}
+
+.reasonDialog h2,
+.reasonDialog p {
+  margin: 0;
+}
+
+.reasonDialog p {
+  font-size: 13px;
+  opacity: 0.66;
+}
+
+.dialogActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+@media (min-width: 760px) {
+  .detailGrid {
+    grid-template-columns:
+      repeat(
+        2,
+        minmax(0, 1fr)
+      );
+  }
+
+  .detailCard,
+  .nextActionCard {
+    padding: 22px;
+  }
+}
+
+@media (max-width: 640px) {
+  .detailTopBar,
+  .dialogActions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .detailTopBar .secondaryLink,
+  .dialogActions > * {
+    width: 100%;
+  }
+
+  .detailCard dl > div {
+    grid-template-columns: 1fr;
+    gap: 5px;
+  }
+
+  .itemMetrics {
+    grid-template-columns: 1fr;
+  }
+
+  .workflowActions {
+    display: grid;
+  }
+
+  .workflowActions > * {
+    width: 100%;
+  }
+}
