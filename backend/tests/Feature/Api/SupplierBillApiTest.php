@@ -192,6 +192,76 @@ class SupplierBillApiTest extends TestCase
         );
     }
 
+    public function test_supplier_bill_rounds_fractional_cent_with_half_up_precision(): void
+    {
+        $workspace =
+            $this->workspace(
+                'payable-precision@example.test',
+                'Payable Precision'
+            );
+
+        $this->actingAsWorkspace(
+            $workspace
+        );
+
+        $supplierId =
+            $this->createSupplier(
+                'Pemasok Precision'
+            );
+
+        $warehouseId =
+            $this->createWarehouse(
+                'Gudang Precision'
+            );
+
+        $po =
+            $this->createIssuedPurchaseOrder(
+                $supplierId,
+                'Jasa Precision',
+                '1',
+                '0.01'
+            );
+
+        $receiptId =
+            $this->createPostedReceipt(
+                $po['id'],
+                $po['item_id'],
+                $warehouseId,
+                '0.5000'
+            );
+
+        $this->postJson(
+            '/api/v1/finance/payables/bills',
+            [
+                'goods_receipt_id' =>
+                    $receiptId,
+
+                'supplier_invoice_number' =>
+                    'SUP-PRECISION-001',
+
+                'bill_date' =>
+                    '2026-09-20',
+            ]
+        )
+            ->assertCreated()
+            ->assertJsonPath(
+                'data.subtotal',
+                '0.01'
+            )
+            ->assertJsonPath(
+                'data.discount_total',
+                '0.00'
+            )
+            ->assertJsonPath(
+                'data.tax_total',
+                '0.00'
+            )
+            ->assertJsonPath(
+                'data.total',
+                '0.01'
+            );
+    }
+
     public function test_duplicate_receipt_bill_is_rejected_and_active_bill_blocks_receipt_reversal(): void
     {
         $workspace =
@@ -620,8 +690,8 @@ class SupplierBillApiTest extends TestCase
     private function createIssuedPurchaseOrder(
         string $supplierId,
         string $name,
-        float|int $quantity,
-        float|int $unitPrice
+        float|int|string $quantity,
+        float|int|string $unitPrice
     ): array {
         $order =
             $this->postJson(
@@ -685,7 +755,7 @@ class SupplierBillApiTest extends TestCase
         string $purchaseOrderId,
         string $purchaseOrderItemId,
         string $warehouseId,
-        float|int $quantity
+        float|int|string $quantity
     ): string {
         $receipt =
             $this->postJson(

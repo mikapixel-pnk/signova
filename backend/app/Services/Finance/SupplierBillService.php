@@ -12,6 +12,8 @@ use App\Models\SupplierBillStatusHistory;
 use App\Services\Document\DocumentNumberService;
 use App\Tenancy\BusinessContext;
 use App\Tenancy\TenantContext;
+use Brick\Math\BigDecimal;
+use Brick\Math\RoundingMode;
 use Carbon\CarbonImmutable;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\QueryException;
@@ -705,15 +707,14 @@ class SupplierBillService
     private function money(
         string $value
     ): string {
-        return number_format(
-            round(
-                (float) $value,
-                2
-            ),
-            2,
-            '.',
-            ''
-        );
+        return BigDecimal::of(
+            $value
+        )
+            ->toScale(
+                2,
+                RoundingMode::HalfUp
+            )
+            ->__toString();
     }
 
     private function assertReceiptAvailable(
