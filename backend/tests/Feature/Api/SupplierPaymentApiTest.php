@@ -140,6 +140,23 @@ class SupplierPaymentApiTest extends TestCase
             ]
         );
 
+        $this->getJson(
+            "/api/v1/finance/payables/bills/{$billId}"
+        )
+            ->assertOk()
+            ->assertJsonPath(
+                'data.paid_amount',
+                '40000.00'
+            )
+            ->assertJsonPath(
+                'data.outstanding_amount',
+                '60000.00'
+            )
+            ->assertJsonPath(
+                'data.workflow.next_action',
+                'PAY'
+            );
+
         $this->assertDatabaseHas(
             'cash_transactions',
             [
@@ -247,6 +264,23 @@ class SupplierPaymentApiTest extends TestCase
                     'PAID',
             ]
         );
+
+        $this->getJson(
+            "/api/v1/finance/payables/bills/{$billId}"
+        )
+            ->assertOk()
+            ->assertJsonPath(
+                'data.paid_amount',
+                '100000.00'
+            )
+            ->assertJsonPath(
+                'data.outstanding_amount',
+                '0.00'
+            )
+            ->assertJsonPath(
+                'data.workflow.next_action',
+                null
+            );
 
         $this->assertSame(
             100000.0,
@@ -423,6 +457,23 @@ class SupplierPaymentApiTest extends TestCase
                     'POSTED',
             ]
         );
+
+        $this->getJson(
+            "/api/v1/finance/payables/bills/{$billId}"
+        )
+            ->assertOk()
+            ->assertJsonPath(
+                'data.paid_amount',
+                '0.00'
+            )
+            ->assertJsonPath(
+                'data.outstanding_amount',
+                '125000.00'
+            )
+            ->assertJsonPath(
+                'data.workflow.next_action',
+                'PAY'
+            );
 
         /*
          * Retry reversal juga harus idempotent.

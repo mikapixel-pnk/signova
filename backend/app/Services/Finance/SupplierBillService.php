@@ -42,7 +42,9 @@ class SupplierBillService
             $this->businessContext
                 ->businessId();
 
-        return SupplierBill::query()
+        return $this->withPaymentAmounts(
+            SupplierBill::query()
+        )
             ->where(
                 'tenant_id',
                 $tenantId
@@ -119,7 +121,9 @@ class SupplierBillService
     public function findOrFail(
         string $supplierBillId
     ): SupplierBill {
-        return $this->baseQuery()
+        return $this->withPaymentAmounts(
+            $this->baseQuery()
+        )
             ->where(
                 'id',
                 $supplierBillId
@@ -777,6 +781,55 @@ class SupplierBillService
                     'Nomor invoice pemasok sudah digunakan pada Tagihan Pemasok aktif.',
             ]);
         }
+    }
+
+    private function withPaymentAmounts(
+        $query
+    ) {
+        return $query
+            ->select('supplier_bills.*')
+            ->selectSub(
+                function ($subquery): void {
+                    $subquery
+                        ->from(
+                            'supplier_payment_allocations as spa'
+                        )
+                        ->join(
+                            'supplier_payments as sp',
+                            'sp.id',
+                            '=',
+                            'spa.supplier_payment_id'
+                        )
+                        ->whereColumn(
+                            'spa.supplier_bill_id',
+                            'supplier_bills.id'
+                        )
+                        ->whereColumn(
+                            'spa.tenant_id',
+                            'supplier_bills.tenant_id'
+                        )
+                        ->whereColumn(
+                            'spa.business_id',
+                            'supplier_bills.business_id'
+                        )
+                        ->whereColumn(
+                            'sp.tenant_id',
+                            'supplier_bills.tenant_id'
+                        )
+                        ->whereColumn(
+                            'sp.business_id',
+                            'supplier_bills.business_id'
+                        )
+                        ->where(
+                            'sp.status',
+                            'POSTED'
+                        )
+                        ->selectRaw(
+                            'COALESCE(SUM(spa.amount), 0)'
+                        );
+                },
+                'paid_amount'
+            );
     }
 
     private function hasActivePaymentAllocation(

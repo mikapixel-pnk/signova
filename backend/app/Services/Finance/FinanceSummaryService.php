@@ -291,6 +291,24 @@ class FinanceSummaryService
                     ) AS expense_net
                     "
                 )
+                ->selectRaw(
+                    "
+                    COALESCE(
+                        SUM(
+                            CASE
+                                WHEN source_type = 'SUPPLIER_PAYMENT'
+                                    AND direction = 'OUT'
+                                    THEN amount
+                                WHEN source_type = 'SUPPLIER_PAYMENT_REVERSAL'
+                                    AND direction = 'IN'
+                                    THEN -amount
+                                ELSE 0
+                            END
+                        ),
+                        0
+                    ) AS supplier_payment_net
+                    "
+                )
                 ->first();
 
         return [
@@ -323,6 +341,11 @@ class FinanceSummaryService
                 'expense_net' =>
                     $this->money(
                         $row?->expense_net
+                    ),
+
+                'supplier_payment_net' =>
+                    $this->money(
+                        $row?->supplier_payment_net
                     ),
             ],
         ];

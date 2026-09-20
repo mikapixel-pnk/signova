@@ -107,6 +107,22 @@ class FinanceSummaryApiTest extends TestCase
             'EXPENSE_VOID'
         );
 
+        $this->insertLedger(
+            $workspace,
+            $bankAccount,
+            'OUT',
+            '120000.00',
+            'SUPPLIER_PAYMENT'
+        );
+
+        $this->insertLedger(
+            $workspace,
+            $bankAccount,
+            'IN',
+            '20000.00',
+            'SUPPLIER_PAYMENT_REVERSAL'
+        );
+
         $customerId =
             $this->insertCustomer(
                 $workspace
@@ -152,7 +168,7 @@ class FinanceSummaryApiTest extends TestCase
             ->assertOk()
             ->assertJsonPath(
                 'data.cash_bank.total_balance',
-                '475000.00'
+                '375000.00'
             )
             ->assertJsonPath(
                 'data.cash_bank.cash_balance',
@@ -160,7 +176,7 @@ class FinanceSummaryApiTest extends TestCase
             )
             ->assertJsonPath(
                 'data.cash_bank.bank_balance',
-                '250000.00'
+                '150000.00'
             )
             ->assertJsonPath(
                 'data.cash_bank.account_count',
@@ -168,15 +184,15 @@ class FinanceSummaryApiTest extends TestCase
             )
             ->assertJsonPath(
                 'data.cashflow.total_in',
-                '825000.00'
+                '845000.00'
             )
             ->assertJsonPath(
                 'data.cashflow.total_out',
-                '350000.00'
+                '470000.00'
             )
             ->assertJsonPath(
                 'data.cashflow.net',
-                '475000.00'
+                '375000.00'
             )
             ->assertJsonPath(
                 'data.cashflow.breakdown.customer_payment_net',
@@ -189,6 +205,10 @@ class FinanceSummaryApiTest extends TestCase
             ->assertJsonPath(
                 'data.cashflow.breakdown.expense_net',
                 '175000.00'
+            )
+            ->assertJsonPath(
+                'data.cashflow.breakdown.supplier_payment_net',
+                '100000.00'
             )
             ->assertJsonPath(
                 'data.receivable.outstanding_total',
