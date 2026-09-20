@@ -32,6 +32,7 @@ class SignovaAccessControlSeeder extends Seeder
             'project' => 'Proyek',
             'supplier' => 'Pemasok',
             'purchasing' => 'Pembelian',
+            'inventory' => 'Stok & Gudang',
             'team' => 'Tim & Hak Akses',
             'settings' => 'Pengaturan',
         ];
@@ -126,6 +127,9 @@ class SignovaAccessControlSeeder extends Seeder
             ['purchasing', 'purchasing.create_po', 'Membuat Pesanan Pembelian', false],
             ['purchasing', 'purchasing.approve_po', 'Menyetujui Pesanan Pembelian', true],
             ['purchasing', 'purchasing.cancel_po', 'Membatalkan Pesanan Pembelian', true],
+
+            ['inventory', 'inventory.view', 'Melihat Stok & Gudang', false],
+            ['inventory', 'inventory.receive', 'Mencatat Penerimaan Barang', false],
 
             ['team', 'team.user.view', 'Melihat Pengguna', false],
             ['team', 'team.user.manage', 'Mengelola Pengguna', true],
@@ -256,6 +260,9 @@ class SignovaAccessControlSeeder extends Seeder
                 'purchasing.create_po',
                 'purchasing.approve_po',
                 'purchasing.cancel_po',
+
+                'inventory.view',
+                'inventory.receive',
 
                 'team.user.view',
                 'team.user.manage',
