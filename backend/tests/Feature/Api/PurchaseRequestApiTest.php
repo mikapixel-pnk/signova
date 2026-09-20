@@ -209,6 +209,63 @@ class PurchaseRequestApiTest extends TestCase
         );
     }
 
+    public function test_create_normalizes_money_before_amount_calculation(): void
+    {
+        $workspace =
+            $this->workspace(
+                'pr-precision@example.test',
+                'PR Precision'
+            );
+
+        $this->actingAsWorkspace(
+            $workspace
+        );
+
+        $response =
+            $this->postJson(
+                '/api/v1/purchasing/requests',
+                [
+                    'currency' =>
+                        'IDR',
+
+                    'items' => [
+                        [
+                            'name' =>
+                                'Precision Item',
+
+                            'item_type' =>
+                                'PRODUCT',
+
+                            'quantity' =>
+                                '3',
+
+                            'estimated_unit_price' =>
+                                '0.005',
+                        ],
+                    ],
+                ]
+            );
+
+        $response
+            ->assertCreated()
+            ->assertJsonPath(
+                'data.items.0.quantity',
+                '3.0000'
+            )
+            ->assertJsonPath(
+                'data.items.0.estimated_unit_price',
+                '0.01'
+            )
+            ->assertJsonPath(
+                'data.items.0.amount',
+                '0.03'
+            )
+            ->assertJsonPath(
+                'data.estimated_total',
+                '0.03'
+            );
+    }
+
     public function test_draft_can_be_updated_and_total_is_recalculated_by_backend(): void
     {
         $workspace =

@@ -10,6 +10,8 @@ use App\Models\PurchaseRequestStatusHistory;
 use App\Services\Document\DocumentNumberService;
 use App\Tenancy\BusinessContext;
 use App\Tenancy\TenantContext;
+use Brick\Math\BigDecimal;
+use Brick\Math\RoundingMode;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
@@ -543,7 +545,8 @@ class PurchaseRequestService
             )
             ->delete();
 
-        $total = 0.0;
+        $total =
+            BigDecimal::zero();
 
         foreach (
             array_values($items)
@@ -574,15 +577,15 @@ class PurchaseRequestService
                     ...$snapshot,
                 ]);
 
-            $total +=
-                (float) $snapshot['amount'];
+            $total =
+                $total->plus(
+                    (string)
+                        $snapshot['amount']
+                );
         }
 
-        return number_format(
-            $total,
-            2,
-            '.',
-            ''
+        return $this->money(
+            $total
         );
     }
 
@@ -662,29 +665,40 @@ class PurchaseRequestService
         }
 
         $quantity =
-            (string) (
-                $item['quantity']
-                ?? '1'
-            );
+            BigDecimal::of(
+                (string) (
+                    $item['quantity']
+                    ?? '1'
+                )
+            )
+                ->toScale(
+                    4,
+                    RoundingMode::HalfUp
+                )
+                ->__toString();
 
         $unitPrice =
-            (string) (
-                $item[
-                    'estimated_unit_price'
-                ]
-                ?? '0'
-            );
+            BigDecimal::of(
+                (string) (
+                    $item[
+                        'estimated_unit_price'
+                    ]
+                    ?? '0'
+                )
+            )
+                ->toScale(
+                    2,
+                    RoundingMode::HalfUp
+                )
+                ->__toString();
 
         $amount =
-            number_format(
-                round(
-                    (float) $quantity
-                    * (float) $unitPrice,
-                    2
-                ),
-                2,
-                '.',
-                ''
+            $this->money(
+                BigDecimal::of(
+                    $quantity
+                )->multipliedBy(
+                    $unitPrice
+                )
             );
 
         return [
@@ -749,6 +763,17 @@ class PurchaseRequestService
                 $item['sort_order']
                 ?? $index,
         ];
+    }
+
+    private function money(
+        BigDecimal $value
+    ): string {
+        return $value
+            ->toScale(
+                2,
+                RoundingMode::HalfUp
+            )
+            ->__toString();
     }
 
     private function appendHistory(
