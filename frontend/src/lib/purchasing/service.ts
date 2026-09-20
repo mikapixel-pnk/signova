@@ -7,14 +7,66 @@ import type {
   PurchaseOrderResponse,
   PurchaseRequestListResponse,
   PurchaseRequestResponse,
+  PurchaseRequestStatus,
 } from "@/types/purchasing";
 
-export async function listPurchaseRequests():
-  Promise<PurchaseRequestListResponse> {
+export type ListPurchaseRequestsParams = {
+  search?: string;
+  status?: PurchaseRequestStatus;
+  page?: number;
+  perPage?: number;
+};
+
+function purchaseRequestQueryString(
+  params: ListPurchaseRequestsParams,
+): string {
+  const query =
+    new URLSearchParams();
+
+  if (params.search?.trim()) {
+    query.set(
+      "search",
+      params.search.trim(),
+    );
+  }
+
+  if (params.status) {
+    query.set(
+      "status",
+      params.status,
+    );
+  }
+
+  if (params.page) {
+    query.set(
+      "page",
+      String(params.page),
+    );
+  }
+
+  if (params.perPage) {
+    query.set(
+      "per_page",
+      String(params.perPage),
+    );
+  }
+
+  const value =
+    query.toString();
+
+  return value
+    ? `?${value}`
+    : "";
+}
+
+export async function listPurchaseRequests(
+  params:
+    ListPurchaseRequestsParams = {},
+): Promise<PurchaseRequestListResponse> {
   return authenticatedApiRequest<
     PurchaseRequestListResponse
   >(
-    "/purchasing/requests",
+    `/purchasing/requests${purchaseRequestQueryString(params)}`,
     {
       method: "GET",
       cache: "no-store",
