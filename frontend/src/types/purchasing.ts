@@ -43,6 +43,31 @@ export type PurchaseRequest = {
   items?: PurchaseRequestItem[];
 };
 
+export type PurchaseRequestItemPayload = {
+  catalog_item_id?: string | null;
+  unit_id?: string | null;
+  item_type?:
+    | "PRODUCT"
+    | "SERVICE";
+  code?: string | null;
+  name?: string | null;
+  description?: string | null;
+  quantity:
+    | string
+    | number;
+  estimated_unit_price?:
+    | string
+    | number;
+  sort_order?: number;
+};
+
+export type PurchaseRequestPayload = {
+  needed_at?: string | null;
+  currency?: string;
+  notes?: string | null;
+  items: PurchaseRequestItemPayload[];
+};
+
 export type PurchaseOrderStatus =
   | "DRAFT"
   | "ISSUED"

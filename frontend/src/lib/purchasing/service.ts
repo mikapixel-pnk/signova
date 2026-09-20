@@ -6,6 +6,7 @@ import type {
   PurchaseOrderListResponse,
   PurchaseOrderResponse,
   PurchaseRequestListResponse,
+  PurchaseRequestPayload,
   PurchaseRequestResponse,
   PurchaseRequestStatus,
 } from "@/types/purchasing";
@@ -84,6 +85,35 @@ export async function getPurchaseRequest(
     {
       method: "GET",
       cache: "no-store",
+    },
+  );
+}
+
+export async function createPurchaseRequest(
+  payload: PurchaseRequestPayload,
+): Promise<PurchaseRequestResponse> {
+  return authenticatedApiRequest<
+    PurchaseRequestResponse
+  >(
+    "/purchasing/requests",
+    {
+      method: "POST",
+      body: payload,
+    },
+  );
+}
+
+export async function updatePurchaseRequest(
+  id: string,
+  payload: PurchaseRequestPayload,
+): Promise<PurchaseRequestResponse> {
+  return authenticatedApiRequest<
+    PurchaseRequestResponse
+  >(
+    `/purchasing/requests/${id}`,
+    {
+      method: "PATCH",
+      body: payload,
     },
   );
 }
