@@ -1,3 +1,7 @@
+import {
+  formatIdrDecimal,
+} from "@/lib/format/decimal";
+
 import type {
   PurchaseRequestStatus,
 } from "@/types/purchasing";
@@ -57,26 +61,12 @@ export function purchaseItemTypeLabel(
 export function formatPurchaseMoney(
   value:
     | string
-    | number
     | null
     | undefined,
 ): string {
-  const numeric =
-    Number(value ?? 0);
-
-  if (!Number.isFinite(numeric)) {
-    return "Rp0";
-  }
-
-  return new Intl.NumberFormat(
-    "id-ID",
-    {
-      style: "currency",
-      currency: "IDR",
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 2,
-    },
-  ).format(numeric);
+  return formatIdrDecimal(
+    value,
+  );
 }
 
 export function formatPurchaseDate(

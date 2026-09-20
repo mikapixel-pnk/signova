@@ -44,6 +44,13 @@ import {
 } from "@/lib/auth/active-capabilities-service";
 
 import {
+  isNonNegativeDecimal,
+  isPositiveDecimal,
+  multiplyDecimalStrings,
+  sumDecimalStrings,
+} from "@/lib/format/decimal";
+
+import {
   getModule,
 } from "@/lib/module/registry";
 
@@ -94,18 +101,6 @@ function makeInitialItem(
     quantity: "1",
     estimated_unit_price: "0",
   };
-}
-
-
-function numericValue(
-  value: string,
-): number {
-  const parsed =
-    Number(value);
-
-  return Number.isFinite(parsed)
-    ? parsed
-    : 0;
 }
 
 
@@ -288,22 +283,19 @@ export function PurchaseRequestForm({
   const estimatedTotal =
     useMemo(
       () =>
-        items.reduce(
-          (
-            total,
-            item,
-          ) =>
-            total +
-            (
-              numericValue(
+        sumDecimalStrings(
+          items.map(
+            (item) =>
+              multiplyDecimalStrings(
                 item.quantity,
-              ) *
-              numericValue(
+                4,
                 item
                   .estimated_unit_price,
-              )
-            ),
-          0,
+                2,
+                2,
+              ),
+          ),
+          2,
         ),
       [items],
     );
@@ -387,13 +379,14 @@ export function PurchaseRequestForm({
         (item) =>
           item.name.trim() ===
             "" ||
-          numericValue(
+          !isPositiveDecimal(
             item.quantity,
-          ) <= 0 ||
-          numericValue(
+            4,
+          ) ||
+          !isNonNegativeDecimal(
             item
               .estimated_unit_price,
-          ) < 0,
+          ),
       );
 
     if (invalidItem) {
@@ -724,12 +717,13 @@ export function PurchaseRequestForm({
                 index,
               ) => {
                 const amount =
-                  numericValue(
+                  multiplyDecimalStrings(
                     item.quantity,
-                  ) *
-                  numericValue(
+                    4,
                     item
                       .estimated_unit_price,
+                    2,
+                    2,
                   );
 
                 return (
