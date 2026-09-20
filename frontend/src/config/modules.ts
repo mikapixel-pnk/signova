@@ -238,7 +238,7 @@ export const modules:
     capability:
       "finance.summary.view",
     description:
-      "Pantau kas, pemasukan, pengeluaran, dan piutang usaha.",
+      "Pantau kas, pemasukan, pengeluaran, piutang, dan utang usaha.",
     insight: {
       title:
         "Ketahui kondisi usaha dalam satu pandangan",
@@ -634,6 +634,135 @@ export const modules:
     },
   },
 
+  "purchase-requests": {
+    key: "purchase-requests",
+    group: "operasional",
+    label: "Permintaan Pembelian",
+    shortLabel: "Permintaan",
+    href: "/app/operasional/permintaan-pembelian",
+    tone: "amber",
+    icon: BookOpenText,
+    plan: "pro",
+    capability:
+      "purchasing.request",
+    description:
+      "Ajukan kebutuhan pembelian dan pantau proses persetujuannya.",
+    insight: {
+      title:
+        "Mulai pembelian dari kebutuhan yang jelas",
+      description:
+        "Permintaan Pembelian membantu tim mencatat kebutuhan sebelum dibuat menjadi Pesanan Pembelian.",
+    },
+    navigation: {
+      desktop: true,
+      mobile: true,
+      order: 10,
+    },
+  },
+
+  "purchase-orders": {
+    key: "purchase-orders",
+    group: "operasional",
+    label: "Pesanan Pembelian",
+    shortLabel: "Pesanan",
+    href: "/app/operasional/pesanan-pembelian",
+    tone: "teal",
+    icon: ReceiptText,
+    plan: "pro",
+    capability:
+      "purchasing.create_po",
+    description:
+      "Kelola pesanan resmi kepada pemasok dan progres penerimaannya.",
+    insight: {
+      title:
+        "Pesanan menjadi acuan penerimaan",
+      description:
+        "Harga, jumlah, pemasok, dan detail barang atau jasa dikunci sebagai snapshot transaksi pembelian.",
+    },
+    navigation: {
+      desktop: true,
+      mobile: true,
+      order: 20,
+    },
+  },
+
+  "goods-receipts": {
+    key: "goods-receipts",
+    group: "operasional",
+    label: "Penerimaan Barang",
+    shortLabel: "Penerimaan",
+    href: "/app/operasional/penerimaan",
+    tone: "green",
+    icon: Package,
+    plan: "pro",
+    capability:
+      "inventory.view",
+    description:
+      "Catat barang atau jasa yang benar-benar sudah diterima dari pemasok.",
+    insight: {
+      title:
+        "Penerimaan menjadi bukti barang masuk",
+      description:
+        "Stok baru bergerak setelah penerimaan dicatat, sementara jasa tetap tercatat tanpa menambah stok.",
+    },
+    navigation: {
+      desktop: true,
+      mobile: true,
+      order: 30,
+    },
+  },
+
+  inventory: {
+    key: "inventory",
+    group: "operasional",
+    label: "Stok & Gudang",
+    shortLabel: "Stok & Gudang",
+    href: "/app/operasional/stok-gudang",
+    tone: "cyan",
+    icon: Boxes,
+    plan: "pro",
+    capability:
+      "inventory.view",
+    description:
+      "Pantau material, gudang, dan fondasi pergerakan stok usaha.",
+    insight: {
+      title:
+        "Stok mengikuti transaksi nyata",
+      description:
+        "Material dan gudang menjadi referensi operasional untuk penerimaan dan pergerakan persediaan.",
+    },
+    navigation: {
+      desktop: true,
+      mobile: true,
+      order: 40,
+    },
+  },
+
+  payables: {
+    key: "payables",
+    group: "keuangan",
+    label: "Utang Usaha",
+    href: "/app/keuangan/utang-usaha",
+    tone: "amber",
+    icon: HandCoins,
+    plan: "pro",
+    capability:
+      "finance.payable.view",
+    description:
+      "Pantau Tagihan Pemasok, saldo utang, dan Pembayaran Pemasok.",
+    insight: {
+      title:
+        "Tagihan dan kas tetap terpisah",
+      description:
+        "Tagihan Pemasok menambah Utang Usaha. Kas baru berkurang saat Pembayaran Pemasok benar-benar dicatat.",
+    },
+    navigation: {
+      desktop: true,
+      mobile: true,
+      order: 60,
+    },
+  },
+
   operations: {
     key: "operations",
     group: "fitur-lanjutan",
@@ -652,8 +781,8 @@ export const modules:
         "Paket Pro menambahkan purchasing dan inventory tanpa memisahkan data dari proses utama.",
     },
     navigation: {
-      desktop: true,
-      mobile: true,
+      desktop: false,
+      mobile: false,
       order: 40,
     },
   },

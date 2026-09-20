@@ -1,4 +1,5 @@
 import {
+  Boxes,
   Database,
   ReceiptText,
   Settings,
@@ -30,6 +31,16 @@ export const navigationGroups:
     tone: "blue",
     icon: ReceiptText,
     order: 20,
+    defaultOpen: true,
+  },
+  {
+    key: "operasional",
+    label: "Operasional",
+    description:
+      "Kelola pembelian, penerimaan, stok, dan gudang usaha.",
+    tone: "amber",
+    icon: Boxes,
+    order: 25,
     defaultOpen: true,
   },
   {

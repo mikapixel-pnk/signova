@@ -64,9 +64,21 @@ export function ModulePage({
           "master-data"
             ? "Master Data"
             : moduleDef.group ===
-                "fitur-lanjutan"
-              ? "Fitur Lanjutan"
-              : moduleDef.label
+                "penjualan"
+              ? "Penjualan"
+              : moduleDef.group ===
+                  "operasional"
+                ? "Operasional"
+                : moduleDef.group ===
+                    "keuangan"
+                  ? "Keuangan"
+                  : moduleDef.group ===
+                      "pengaturan"
+                    ? "Pengaturan"
+                    : moduleDef.group ===
+                        "fitur-lanjutan"
+                      ? "Fitur Lanjutan"
+                      : moduleDef.label
         }
         title={
           moduleDef.label

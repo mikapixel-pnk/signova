@@ -15,6 +15,7 @@ export type FinanceSummary = {
       customer_payment_net: string;
       manual_income_net: string;
       expense_net: string;
+      supplier_payment_net: string;
     };
   };
 

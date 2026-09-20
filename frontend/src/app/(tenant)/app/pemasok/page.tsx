@@ -208,7 +208,7 @@ export default function SuppliersPage() {
         className={styles.page}
       >
         <ModuleHero
-          eyebrow="Fitur Lanjutan"
+          eyebrow="Master Data"
           title={
             supplierModule.label
           }

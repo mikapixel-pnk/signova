@@ -90,6 +90,9 @@ export function FinanceHub() {
   const receivables =
     getModule("receivables");
 
+  const payables =
+    getModule("payables");
+
   const FinanceIcon =
     finance.icon;
 
@@ -179,13 +182,14 @@ export function FinanceHub() {
             </span>
 
             <h2>
-              Posisi uang & piutang
+              Posisi uang, piutang & utang
             </h2>
 
             <p>
               Ketahui posisi Kas &
-              Bank serta Tagihan yang
-              masih harus diterima.
+              Bank, tagihan pelanggan,
+              serta kewajiban kepada
+              pemasok.
             </p>
           </div>
         </header>
@@ -203,6 +207,10 @@ export function FinanceHub() {
             moduleDef={
               receivables
             }
+          />
+
+          <FinanceCard
+            moduleDef={payables}
           />
         </div>
       </section>

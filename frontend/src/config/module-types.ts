@@ -19,6 +19,7 @@ export type ModulePlan =
 export type ModuleGroupKey =
   | "master-data"
   | "penjualan"
+  | "operasional"
   | "keuangan"
   | "pengaturan"
   | "fitur-lanjutan";
@@ -26,6 +27,11 @@ export type ModuleGroupKey =
 export type ModuleKey =
   | "customers"
   | "suppliers"
+  | "purchase-requests"
+  | "purchase-orders"
+  | "goods-receipts"
+  | "inventory"
+  | "payables"
   | "catalog"
   | "categories"
   | "units"
