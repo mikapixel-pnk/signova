@@ -388,19 +388,36 @@ export function PurchaseOrderList() {
                       )}
                     </div>
 
-                    {row
-                      .source_purchase_request_id ? (
+                    <div
+                      className={
+                        styles.cardActions
+                      }
+                    >
                       <Link
                         href={
-                          `/app/operasional/permintaan-pembelian/${row.source_purchase_request_id}`
+                          `/app/operasional/pesanan-pembelian/${row.id}`
                         }
                         className={
-                          styles.secondaryLink
+                          styles.primaryLink
                         }
                       >
-                        Lihat Permintaan Asal
+                        Buka Pesanan
                       </Link>
-                    ) : null}
+
+                      {row
+                        .source_purchase_request_id ? (
+                        <Link
+                          href={
+                            `/app/operasional/permintaan-pembelian/${row.source_purchase_request_id}`
+                          }
+                          className={
+                            styles.secondaryLink
+                          }
+                        >
+                          Lihat Permintaan Asal
+                        </Link>
+                      ) : null}
+                    </div>
                   </article>
                 ),
               )}
