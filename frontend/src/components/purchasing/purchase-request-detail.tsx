@@ -706,7 +706,9 @@ export function PurchaseRequestDetail({
             "APPROVED" &&
           canCreatePo ? (
             <Link
-              href="/app/operasional/pesanan-pembelian"
+              href={
+              `/app/operasional/pesanan-pembelian/tambah?source_request=${data.id}`
+            }
               className={
                 styles.primaryLink
               }
@@ -714,7 +716,7 @@ export function PurchaseRequestDetail({
               <ReceiptText
                 size={18}
               />
-              Pesanan Pembelian
+              Buat Pesanan Pembelian
             </Link>
           ) : null}
 
