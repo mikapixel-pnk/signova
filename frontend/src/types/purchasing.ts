@@ -172,7 +172,15 @@ export type PurchaseOrderPayload = {
   expected_at?: string | null;
   currency?: string;
   notes?: string | null;
-  items: PurchaseOrderItemPayload[];
+  items?: PurchaseOrderItemPayload[];
+};
+
+export type UpdatePurchaseOrderPayload = {
+  supplier_id?: string;
+  expected_at?: string | null;
+  currency?: string;
+  notes?: string | null;
+  items?: PurchaseOrderItemPayload[];
 };
 
 

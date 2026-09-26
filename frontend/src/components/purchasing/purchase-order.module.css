@@ -290,3 +290,298 @@
     padding: 16px;
   }
 }
+
+
+/* PO_FORM_F6_UI_3A4 */
+
+.backLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  width: fit-content;
+  min-height: 44px;
+  color: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.poForm {
+  display: grid;
+  gap: 18px;
+}
+
+.formLoading {
+  padding: 28px;
+  border: 1px solid color-mix(
+    in srgb,
+    currentColor 12%,
+    transparent
+  );
+  border-radius: 18px;
+  text-align: center;
+  opacity: 0.68;
+}
+
+.formCard,
+.sourceCard,
+.guidanceCard {
+  border: 1px solid color-mix(
+    in srgb,
+    currentColor 12%,
+    transparent
+  );
+  border-radius: 18px;
+  background: color-mix(
+    in srgb,
+    currentColor 2.5%,
+    transparent
+  );
+}
+
+.formCard {
+  display: grid;
+  gap: 18px;
+  padding: 18px;
+}
+
+.sourceCard {
+  display: flex;
+  gap: 13px;
+  padding: 16px;
+  background: color-mix(
+    in srgb,
+    #2868f0 8%,
+    transparent
+  );
+}
+
+.sourceCard > div {
+  display: grid;
+  gap: 4px;
+}
+
+.sourceCard span {
+  font-size: 10px;
+  font-weight: 850;
+  letter-spacing: 0.08em;
+  opacity: 0.62;
+}
+
+.sourceCard strong {
+  font-size: 16px;
+}
+
+.sourceCard p,
+.guidanceCard p,
+.formCardHeader p,
+.formFooter p {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.6;
+  opacity: 0.68;
+}
+
+.guidanceCard {
+  display: grid;
+  gap: 6px;
+  padding: 18px;
+}
+
+.formCardHeader {
+  display: flex;
+  align-items: flex-start;
+  gap: 11px;
+}
+
+.formCardHeader h2 {
+  margin: 0 0 4px;
+  font-size: 16px;
+}
+
+.formGrid,
+.formItemGrid {
+  display: grid;
+  grid-template-columns:
+    repeat(
+      2,
+      minmax(0, 1fr)
+    );
+  gap: 14px;
+}
+
+.field {
+  display: grid;
+  gap: 7px;
+}
+
+.field > span {
+  font-size: 12px;
+  font-weight: 750;
+}
+
+.field small {
+  font-size: 11px;
+  opacity: 0.6;
+}
+
+.field input,
+.field select,
+.field textarea,
+.searchField {
+  width: 100%;
+  min-height: 44px;
+  border: 1px solid color-mix(
+    in srgb,
+    currentColor 15%,
+    transparent
+  );
+  border-radius: 13px;
+  background: color-mix(
+    in srgb,
+    currentColor 2%,
+    transparent
+  );
+  color: inherit;
+  font: inherit;
+}
+
+.field input,
+.field select,
+.field textarea {
+  padding: 10px 12px;
+}
+
+.field textarea {
+  resize: vertical;
+}
+
+.searchField {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 12px;
+}
+
+.searchField input {
+  min-height: 42px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  outline: 0;
+}
+
+.itemsHeader {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.formItemList {
+  display: grid;
+  gap: 12px;
+}
+
+.formItemCard {
+  display: grid;
+  gap: 14px;
+  padding: 15px;
+  border: 1px solid color-mix(
+    in srgb,
+    currentColor 11%,
+    transparent
+  );
+  border-radius: 16px;
+}
+
+.formItemTop {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.formItemTop > div {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.sourceBadge {
+  display: inline-flex;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: color-mix(
+    in srgb,
+    #2868f0 13%,
+    transparent
+  );
+  font-size: 10px;
+  font-weight: 800;
+}
+
+.removeButton,
+.addItemButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  border: 1px solid color-mix(
+    in srgb,
+    currentColor 14%,
+    transparent
+  );
+  border-radius: 13px;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+}
+
+.removeButton {
+  width: 44px;
+}
+
+.addItemButton {
+  gap: 8px;
+  width: fit-content;
+  padding: 0 15px;
+  font-weight: 750;
+}
+
+.removeButton:disabled,
+.addItemButton:disabled {
+  cursor: default;
+  opacity: 0.42;
+}
+
+.formFooter {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 16px 0 4px;
+}
+
+.formFooter p {
+  max-width: 600px;
+}
+
+@media (max-width: 680px) {
+  .formGrid,
+  .formItemGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .formCard {
+    padding: 16px;
+  }
+
+  .formFooter {
+    display: grid;
+  }
+
+  .formFooter button,
+  .addItemButton {
+    width: 100%;
+  }
+}

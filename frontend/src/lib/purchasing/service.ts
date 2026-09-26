@@ -6,6 +6,7 @@ import type {
   PurchaseOrderListResponse,
   PurchaseOrderPayload,
   PurchaseOrderResponse,
+  UpdatePurchaseOrderPayload,
   PurchaseRequestListResponse,
   PurchaseRequestPayload,
   PurchaseRequestResponse,
@@ -208,7 +209,7 @@ export async function createPurchaseOrder(
 
 export async function updatePurchaseOrder(
   id: string,
-  payload: PurchaseOrderPayload,
+  payload: UpdatePurchaseOrderPayload,
 ): Promise<PurchaseOrderResponse> {
   return authenticatedApiRequest<
     PurchaseOrderResponse
