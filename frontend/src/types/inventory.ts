@@ -2,9 +2,20 @@ import type {
   ApiMeta,
 } from "@/lib/api/types";
 
+import type {
+  ProcurementType,
+} from "@/types/purchasing";
+
 export type InventoryStatus =
   | "ACTIVE"
   | "INACTIVE";
+
+export type MaterialInventoryType =
+  | "RAW_MATERIAL"
+  | "COMPONENT"
+  | "CONSUMABLE"
+  | "RESALE"
+  | "FINISHED_GOOD";
 
 export type GoodsReceiptStatus =
   | "DRAFT"
@@ -16,6 +27,7 @@ export type GoodsReceiptItem = {
   purchase_order_item_id: string;
   material_id: string | null;
   material_name: string | null;
+  procurement_type: ProcurementType | null;
   item_type: "PRODUCT" | "SERVICE" | null;
   code: string | null;
   name: string | null;
@@ -57,8 +69,9 @@ export type Material = {
   id: string;
   code: string | null;
   name: string;
-  unit_id: string;
+  unit_id: string | null;
   category: string | null;
+  inventory_type: MaterialInventoryType;
   status: InventoryStatus;
   status_label: string;
 };

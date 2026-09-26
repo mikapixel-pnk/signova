@@ -4,6 +4,7 @@ import {
 
 import type {
   PurchaseOrderListResponse,
+  PurchaseOrderPayload,
   PurchaseOrderResponse,
   PurchaseRequestListResponse,
   PurchaseRequestPayload,
@@ -182,6 +183,65 @@ export async function cancelPurchaseRequest(
     PurchaseRequestResponse
   >(
     `/purchasing/requests/${id}/actions/cancel`,
+    {
+      method: "POST",
+      body: {
+        reason,
+      },
+    },
+  );
+}
+
+export async function createPurchaseOrder(
+  payload: PurchaseOrderPayload,
+): Promise<PurchaseOrderResponse> {
+  return authenticatedApiRequest<
+    PurchaseOrderResponse
+  >(
+    "/purchasing/orders",
+    {
+      method: "POST",
+      body: payload,
+    },
+  );
+}
+
+export async function updatePurchaseOrder(
+  id: string,
+  payload: PurchaseOrderPayload,
+): Promise<PurchaseOrderResponse> {
+  return authenticatedApiRequest<
+    PurchaseOrderResponse
+  >(
+    `/purchasing/orders/${id}`,
+    {
+      method: "PATCH",
+      body: payload,
+    },
+  );
+}
+
+export async function issuePurchaseOrder(
+  id: string,
+): Promise<PurchaseOrderResponse> {
+  return authenticatedApiRequest<
+    PurchaseOrderResponse
+  >(
+    `/purchasing/orders/${id}/actions/issue`,
+    {
+      method: "POST",
+    },
+  );
+}
+
+export async function cancelPurchaseOrder(
+  id: string,
+  reason: string,
+): Promise<PurchaseOrderResponse> {
+  return authenticatedApiRequest<
+    PurchaseOrderResponse
+  >(
+    `/purchasing/orders/${id}/actions/cancel`,
     {
       method: "POST",
       body: {

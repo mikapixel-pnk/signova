@@ -2,6 +2,11 @@ import type {
   ApiMeta,
 } from "@/lib/api/types";
 
+export type ProcurementType =
+  | "INVENTORY_ITEM"
+  | "NON_STOCK_GOOD"
+  | "SERVICE";
+
 export type PurchaseRequestStatus =
   | "DRAFT"
   | "SUBMITTED"
@@ -12,7 +17,9 @@ export type PurchaseRequestStatus =
 export type PurchaseRequestItem = {
   id: string;
   catalog_item_id: string | null;
+  material_id: string | null;
   unit_id: string | null;
+  procurement_type: ProcurementType;
   item_type: "PRODUCT" | "SERVICE";
   code: string | null;
   name: string;
@@ -45,7 +52,9 @@ export type PurchaseRequest = {
 
 export type PurchaseRequestItemPayload = {
   catalog_item_id?: string | null;
+  material_id?: string | null;
   unit_id?: string | null;
+  procurement_type?: ProcurementType | null;
   item_type?:
     | "PRODUCT"
     | "SERVICE";
@@ -79,7 +88,9 @@ export type PurchaseOrderItem = {
   id: string;
   source_purchase_request_item_id: string | null;
   catalog_item_id: string | null;
+  material_id: string | null;
   unit_id: string | null;
+  procurement_type: ProcurementType;
   item_type: "PRODUCT" | "SERVICE";
   code: string | null;
   name: string;
@@ -127,6 +138,43 @@ export type PurchaseOrder = {
   cancellation_reason: string | null;
   items?: PurchaseOrderItem[];
 };
+
+export type PurchaseOrderItemPayload = {
+  source_purchase_request_item_id?: string | null;
+  catalog_item_id?: string | null;
+  material_id?: string | null;
+  unit_id?: string | null;
+  procurement_type?: ProcurementType | null;
+  item_type?:
+    | "PRODUCT"
+    | "SERVICE";
+  code?: string | null;
+  name?: string | null;
+  description?: string | null;
+  quantity:
+    | string
+    | number;
+  unit_price?:
+    | string
+    | number;
+  discount_amount?:
+    | string
+    | number;
+  tax_amount?:
+    | string
+    | number;
+  sort_order?: number;
+};
+
+export type PurchaseOrderPayload = {
+  supplier_id: string;
+  source_purchase_request_id?: string | null;
+  expected_at?: string | null;
+  currency?: string;
+  notes?: string | null;
+  items: PurchaseOrderItemPayload[];
+};
+
 
 type PaginationMeta =
   ApiMeta & {

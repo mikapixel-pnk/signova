@@ -3,6 +3,8 @@ import {
 } from "@/lib/format/decimal";
 
 import type {
+  ProcurementType,
+  PurchaseOrderStatus,
   PurchaseRequestStatus,
 } from "@/types/purchasing";
 
@@ -47,6 +49,65 @@ export function purchaseRequestStatusDescription(
       return "Permintaan telah dibatalkan dan tidak dapat dilanjutkan.";
   }
 }
+
+export function purchaseOrderStatusLabel(
+  status: PurchaseOrderStatus,
+): string {
+  switch (status) {
+    case "DRAFT":
+      return "Draf";
+
+    case "ISSUED":
+      return "Diterbitkan";
+
+    case "PARTIALLY_RECEIVED":
+      return "Diterima Sebagian";
+
+    case "RECEIVED":
+      return "Diterima Lengkap";
+
+    case "CANCELLED":
+      return "Dibatalkan";
+  }
+}
+
+export function purchaseOrderStatusDescription(
+  status: PurchaseOrderStatus,
+): string {
+  switch (status) {
+    case "DRAFT":
+      return "Pesanan masih dapat diperiksa dan diubah sebelum diterbitkan.";
+
+    case "ISSUED":
+      return "Pesanan telah diterbitkan dan siap dilanjutkan ke Penerimaan.";
+
+    case "PARTIALLY_RECEIVED":
+      return "Sebagian barang atau jasa telah diterima. Catat penerimaan berikutnya.";
+
+    case "RECEIVED":
+      return "Seluruh jumlah pada Pesanan Pembelian telah diterima.";
+
+    case "CANCELLED":
+      return "Pesanan telah dibatalkan dan tidak dapat dilanjutkan.";
+  }
+}
+
+
+export function procurementTypeLabel(
+  type: ProcurementType,
+): string {
+  switch (type) {
+    case "INVENTORY_ITEM":
+      return "Item Persediaan";
+
+    case "NON_STOCK_GOOD":
+      return "Barang Non-Stok";
+
+    case "SERVICE":
+      return "Jasa Vendor";
+  }
+}
+
 
 export function purchaseItemTypeLabel(
   type:
