@@ -800,15 +800,35 @@ class PurchaseOrderService
             );
 
         if ($procurementType === '') {
-            $procurementType =
-                $materialId
-                    ? 'INVENTORY_ITEM'
-                    : (
-                        $legacyItemType
-                            === 'SERVICE'
-                            ? 'SERVICE'
-                            : 'NON_STOCK_GOOD'
+            if ($material) {
+                $stockTracking =
+                    strtoupper(
+                        (string) (
+                            $material
+                                ->stock_tracking
+                            ?: 'TRACKED'
+                        )
                     );
+
+                $procurementType =
+                    $stockTracking
+                        === 'NOT_TRACKED'
+                        ? 'NON_STOCK_GOOD'
+                        : 'INVENTORY_ITEM';
+            } elseif ($materialId) {
+                /*
+                 * Source PR membawa procurement snapshot sendiri.
+                 * Fallback ini hanya untuk compatibility data lama.
+                 */
+                $procurementType =
+                    'INVENTORY_ITEM';
+            } else {
+                $procurementType =
+                    $legacyItemType
+                        === 'SERVICE'
+                        ? 'SERVICE'
+                        : 'NON_STOCK_GOOD';
+            }
         }
 
         if (
@@ -824,13 +844,52 @@ class PurchaseOrderService
 
         if (
             $procurementType
-                !== 'INVENTORY_ITEM'
+                === 'SERVICE'
             && $materialId
         ) {
             throw ValidationException::withMessages([
                 "items.{$index}.material_id" =>
-                    'Material hanya dapat digunakan untuk jenis kebutuhan Item Persediaan.',
+                    'Jasa tidak boleh menggunakan Bahan & Persediaan.',
             ]);
+        }
+
+        /*
+         * Direct PO divalidasi terhadap master saat ini.
+         * PO dari approved PR mempertahankan procurement snapshot PR.
+         */
+        if (
+            ! $sourceItem
+            && $material
+            && $procurementType
+                !== 'SERVICE'
+        ) {
+            $stockTracking =
+                strtoupper(
+                    (string) (
+                        $material
+                            ->stock_tracking
+                        ?: 'TRACKED'
+                    )
+                );
+
+            $expectedProcurementType =
+                $stockTracking
+                    === 'NOT_TRACKED'
+                    ? 'NON_STOCK_GOOD'
+                    : 'INVENTORY_ITEM';
+
+            if (
+                $procurementType
+                !== $expectedProcurementType
+            ) {
+                throw ValidationException::withMessages([
+                    "items.{$index}.material_id" =>
+                        $stockTracking
+                            === 'NOT_TRACKED'
+                            ? 'Barang yang stoknya tidak dilacak harus menggunakan jenis Barang Non-Stok.'
+                            : 'Barang yang stoknya dilacak harus menggunakan jenis Item Persediaan.',
+                ]);
+            }
         }
 
         if (

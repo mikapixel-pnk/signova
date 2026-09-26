@@ -363,6 +363,30 @@ Route::prefix('v1')->group(function () {
         ]);
 
         Route::get(
+            '/inventory/categories',
+            [\App\Http\Controllers\Api\V1\Inventory\InventoryCategoryController::class, 'index']
+        )->middleware([
+            'business.context',
+            'capability:inventory.view',
+        ]);
+
+        Route::post(
+            '/inventory/categories',
+            [\App\Http\Controllers\Api\V1\Inventory\InventoryCategoryController::class, 'store']
+        )->middleware([
+            'business.context',
+            'capability:inventory.master.manage',
+        ]);
+
+        Route::patch(
+            '/inventory/categories/{inventoryCategoryId}',
+            [\App\Http\Controllers\Api\V1\Inventory\InventoryCategoryController::class, 'update']
+        )->middleware([
+            'business.context',
+            'capability:inventory.master.manage',
+        ]);
+
+        Route::get(
             '/inventory/materials',
             [MaterialController::class, 'index']
         )->middleware([
@@ -375,7 +399,7 @@ Route::prefix('v1')->group(function () {
             [MaterialController::class, 'store']
         )->middleware([
             'business.context',
-            'capability:inventory.receive',
+            'capability:inventory.master.manage',
         ]);
 
         Route::patch(
@@ -383,7 +407,7 @@ Route::prefix('v1')->group(function () {
             [MaterialController::class, 'update']
         )->middleware([
             'business.context',
-            'capability:inventory.receive',
+            'capability:inventory.master.manage',
         ]);
 
         Route::get(
@@ -399,7 +423,7 @@ Route::prefix('v1')->group(function () {
             [WarehouseController::class, 'store']
         )->middleware([
             'business.context',
-            'capability:inventory.receive',
+            'capability:inventory.master.manage',
         ]);
 
         Route::patch(
@@ -407,7 +431,7 @@ Route::prefix('v1')->group(function () {
             [WarehouseController::class, 'update']
         )->middleware([
             'business.context',
-            'capability:inventory.receive',
+            'capability:inventory.master.manage',
         ]);
 
         Route::get(

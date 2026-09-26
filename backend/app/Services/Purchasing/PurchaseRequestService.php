@@ -711,15 +711,28 @@ class PurchaseRequestService
             );
 
         if ($procurementType === '') {
-            $procurementType =
-                $material
-                    ? 'INVENTORY_ITEM'
-                    : (
-                        $legacyItemType
-                            === 'SERVICE'
-                            ? 'SERVICE'
-                            : 'NON_STOCK_GOOD'
+            if ($material) {
+                $stockTracking =
+                    strtoupper(
+                        (string) (
+                            $material
+                                ->stock_tracking
+                            ?: 'TRACKED'
+                        )
                     );
+
+                $procurementType =
+                    $stockTracking
+                        === 'NOT_TRACKED'
+                        ? 'NON_STOCK_GOOD'
+                        : 'INVENTORY_ITEM';
+            } else {
+                $procurementType =
+                    $legacyItemType
+                        === 'SERVICE'
+                        ? 'SERVICE'
+                        : 'NON_STOCK_GOOD';
+            }
         }
 
         if (
@@ -735,13 +748,47 @@ class PurchaseRequestService
 
         if (
             $procurementType
-                !== 'INVENTORY_ITEM'
+                === 'SERVICE'
             && $material
         ) {
             throw \Illuminate\Validation\ValidationException::withMessages([
                 "items.{$index}.material_id" =>
-                    'Material hanya dapat digunakan untuk jenis kebutuhan Item Persediaan.',
+                    'Jasa tidak boleh menggunakan Bahan & Persediaan.',
             ]);
+        }
+
+        if (
+            $material
+            && $procurementType
+                !== 'SERVICE'
+        ) {
+            $stockTracking =
+                strtoupper(
+                    (string) (
+                        $material
+                            ->stock_tracking
+                        ?: 'TRACKED'
+                    )
+                );
+
+            $expectedProcurementType =
+                $stockTracking
+                    === 'NOT_TRACKED'
+                    ? 'NON_STOCK_GOOD'
+                    : 'INVENTORY_ITEM';
+
+            if (
+                $procurementType
+                !== $expectedProcurementType
+            ) {
+                throw \Illuminate\Validation\ValidationException::withMessages([
+                    "items.{$index}.material_id" =>
+                        $stockTracking
+                            === 'NOT_TRACKED'
+                            ? 'Barang yang stoknya tidak dilacak harus menggunakan jenis Barang Non-Stok.'
+                            : 'Barang yang stoknya dilacak harus menggunakan jenis Item Persediaan.',
+                ]);
+            }
         }
 
         if (

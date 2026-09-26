@@ -203,10 +203,23 @@ Current master FINANCE baseline tidak memiliki `finance.expense.approve`; OWNER 
 - create/update/post/reverse → `inventory.receive`
 
 ### Inventory Master
-- materials/warehouses read → `inventory.view`
-- materials/warehouses create/update → saat ini `inventory.receive`
+- categories/materials/warehouses read → `inventory.view`
+- categories/materials/warehouses create/update → `inventory.master.manage`
 
-**Observasi:** pemakaian `inventory.receive` untuk write inventory master adalah implementasi saat ini. Jangan mengganti capability ini diam-diam. Bila ingin capability inventory-master khusus, itu harus menjadi keputusan authorization eksplisit.
+**Keputusan 2026-09-26:** write Inventory Master dipisahkan secara eksplisit
+dari Receiving.
+
+`inventory.receive` tidak lagi memberikan hak create/update kategori,
+material, atau gudang.
+
+Baseline Master Role:
+- OWNER → `inventory.view`, `inventory.master.manage`, `inventory.receive`
+- ADMIN → `inventory.view`, `inventory.master.manage`
+- FINANCE → tidak mendapat `inventory.master.manage` secara default
+- SALES → tidak mendapat `inventory.master.manage` secara default
+
+Capability tetap menjadi source of truth authorization. Role name tidak boleh
+digunakan sebagai business authorization check.
 
 ## 6. Platform Capability
 
@@ -300,3 +313,25 @@ Tests:
 ```
 
 Update file ini pada milestone yang sama.
+
+### Inventory Master Authorization Verification — 2026-09-26
+
+Capability registry yang diverifikasi:
+
+- `inventory.view`
+- `inventory.master.manage`
+- `inventory.receive`
+
+Master Role baseline:
+
+- OWNER -> `inventory.master.manage = ALLOW`
+- ADMIN -> `inventory.master.manage = ALLOW`
+- FINANCE -> tidak mendapat baseline grant
+- SALES -> tidak mendapat baseline grant
+
+Pada tenant staging yang diverifikasi saat milestone ini hanya system role
+OWNER yang telah terinstansiasi. OWNER tersebut memperoleh
+`inventory.master.manage = ALLOW`.
+
+Existing explicit tenant role-capability override tidak boleh ditimpa
+secara diam-diam oleh baseline synchronization.

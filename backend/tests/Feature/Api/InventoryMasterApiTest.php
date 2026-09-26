@@ -262,7 +262,7 @@ class InventoryMasterApiTest extends TestCase
 
         $this->revokeOwnerCapability(
             $receiveWorkspace,
-            'inventory.receive'
+            'inventory.master.manage'
         );
 
         $this->postJson(

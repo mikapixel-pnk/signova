@@ -84,7 +84,7 @@ Jangan campur feature patch ke milestone dokumentasi ini.
 
 1. Root README masih menggambarkan repository terutama sebagai Basic/Starter foundation dan sudah tertinggal dari implementasi aktual.
 2. `penerimaan/page.tsx` masih generic `ModulePage`; backend Goods Receipt sudah ada.
-3. Inventory page masih generic `ModulePage`; inventory API/service foundation tersedia.
+3. Inventory frontend masih generic/placeholder; backend Inventory Master Foundation sudah implemented dan staging UAT verified. Frontend typed contract + UI kategori/material/gudang masih pending.
 4. Payables page masih generic `ModulePage`; Supplier Bill/Payment backend tersedia.
 5. Frontend automated test belum terbukti.
 6. Redis queue dikonfigurasi, tetapi active SIGNOVA queue worker belum terbukti.
@@ -179,3 +179,128 @@ Audit snapshot:
 ```
 
 Jangan menganggap code yang belum di-merge pada worktree lain sudah tersedia di current branch.
+
+## Master Data Foundation — Inventory — 2026-09-26
+
+### Status
+
+**BACKEND IMPLEMENTED + TESTED + STAGING UAT VERIFIED**
+
+Frontend Inventory Master masih pending.
+
+### Implemented
+
+- `inventory_categories`
+- `materials.category_id`
+- `materials.stock_tracking`
+- `materials.minimum_stock`
+- `materials.reorder_point`
+- `materials.maximum_stock`
+- `materials.description`
+- relational category compatibility/backfill
+- Inventory Category API
+- additive Material API contract
+- stock-policy validation
+- duplicate category guard
+- tenant/business isolation
+- capability `inventory.master.manage`
+- Inventory Master write dipisahkan dari Receiving
+- TRACKED -> INVENTORY_ITEM
+- NOT_TRACKED -> NON_STOCK_GOOD
+
+### Migration
+
+Migration:
+
+`2026_09_26_092000_expand_inventory_master_foundation`
+
+Staging:
+
+**Ran — batch 62**
+
+### Automated test evidence
+
+Targeted run 2026-09-26:
+
+- PurchaseRequestApiTest:
+  16 passed / 128 assertions
+- PurchaseOrderApiTest:
+  14 passed / 83 assertions
+- GoodsReceiptApiTest:
+  5 passed / 95 assertions
+- InventoryMasterApiTest:
+  3 passed / 26 assertions
+- InventoryMasterFoundationApiTest:
+  5 passed / 49 assertions
+
+Total:
+
+**43 tests / 381 assertions passed**
+
+Testing database:
+
+`signova_test`
+
+### Staging UAT evidence
+
+Verified melalui HTTP staging API:
+
+- create Inventory Category -> 201
+- duplicate Inventory Category -> 422
+- create TRACKED material -> 201
+- create NOT_TRACKED material -> 201
+- NOT_TRACKED dengan stock threshold -> 422
+- create Warehouse -> 201
+- Purchase Request NOT_TRACKED -> NON_STOCK_GOOD
+- Purchase Request TRACKED -> INVENTORY_ITEM
+- direct Purchase Order NOT_TRACKED -> NON_STOCK_GOOD
+- direct Purchase Order TRACKED -> INVENTORY_ITEM
+- category/material/warehouse readback -> 200
+
+Forbidden side effects:
+
+- stock movements before: 0
+- stock movements after: 0
+- cash transactions before: 7
+- cash transactions after: 7
+
+Result:
+
+`FORBIDDEN_SIDE_EFFECTS=NONE`
+
+Temporary UAT Sanctum token sudah dicabut setelah UAT dan
+`remaining_uat_tokens = 0`.
+
+### Authorization verification
+
+Master Role:
+
+- OWNER -> `inventory.master.manage = ALLOW`
+- ADMIN -> `inventory.master.manage = ALLOW`
+- FINANCE -> no baseline grant
+- SALES -> no baseline grant
+
+Current verified staging tenant hanya mempunyai system role OWNER aktual.
+
+### Known remaining scope
+
+Belum selesai:
+
+- frontend typed Material / Inventory Category contract;
+- frontend Inventory Master service;
+- UI Barang & Persediaan;
+- UI Kategori Persediaan;
+- UI Gudang;
+- supplier pricing/linkage;
+- stock reservation;
+- project allocation.
+
+### Next Safe Step
+
+1. final source + documentation diff review;
+2. commit Inventory Master Foundation backend milestone;
+3. verify clean worktree;
+4. lanjut frontend Master Barang & Persediaan.
+
+Receiving tetap downstream. Perubahan stock fisik harus terus melalui
+movement ledger dan mengikuti procurement semantics.

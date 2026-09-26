@@ -359,3 +359,54 @@ Aturan normatif:
 - frontend automated test belum terbukti.
 - platform runtime role query supplemental gagal karena query audit memakai `platform_roles.is_active`, sedangkan seeder menggunakan `status`.
 - queue worker/scheduler/automated backup perlu konfirmasi.
+
+## Inventory Master Foundation — 2026-09-26
+
+Status: **IMPLEMENTED — backend + staging verified**.
+
+### Domain boundary
+
+Master Barang & Persediaan adalah domain inventory master dan terpisah dari
+Barang & Jasa Penjualan / sales catalog.
+
+- Barang / Material = identitas barang.
+- Kategori Persediaan = klasifikasi relational master.
+- Gudang = lokasi fisik.
+- Stock Movement Ledger = source of truth perubahan stok fisik.
+- Saldo stok tidak boleh diedit langsung dari material master.
+
+### Material dimensions
+
+`inventory_type` adalah klasifikasi barang:
+
+- `RAW_MATERIAL`
+- `COMPONENT`
+- `CONSUMABLE`
+- `RESALE`
+- `FINISHED_GOOD`
+
+`stock_tracking` adalah kebijakan stok:
+
+- `TRACKED`
+- `NOT_TRACKED`
+
+Keduanya adalah dimensi terpisah.
+
+### Procurement bridge
+
+- `TRACKED` material -> `INVENTORY_ITEM`
+- `NOT_TRACKED` material -> `NON_STOCK_GOOD`
+- `SERVICE` tidak menggunakan material master.
+
+Purchase Request dan Purchase Order tidak membuat stock movement.
+
+Goods Receipt POST tetap menjadi boundary stock movement untuk
+`INVENTORY_ITEM`.
+
+### Category compatibility
+
+`materials.category_id` adalah canonical reference ke
+`inventory_categories`.
+
+Legacy `materials.category` masih dipertahankan sementara sebagai
+compatibility bridge dan bukan source of truth baru.

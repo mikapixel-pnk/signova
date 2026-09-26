@@ -423,3 +423,66 @@ Contoh yang sudah align:
 - Receipt/PO `RECEIVED` → **Catat Tagihan Pemasok** (backend AP foundation tersedia, UI belum selesai)
 
 Jangan membuat CTA aktif menuju screen yang belum functional tanpa penanganan state implementasi yang jelas.
+
+## Inventory Master Workflow — 2026-09-26
+
+Status: **IMPLEMENTED — backend**.
+
+### Inventory Master
+
+Kategori Persediaan -> Material -> Purchasing / Inventory.
+
+Material menyimpan:
+
+- inventory type;
+- stock tracking;
+- unit;
+- minimum stock;
+- reorder point;
+- maximum stock;
+- description.
+
+Gudang adalah lokasi fisik terpisah.
+
+Master mutation tidak boleh:
+
+- membuat stock movement;
+- mengubah saldo stok;
+- mengubah Purchase Order state;
+- membuat Goods Receipt;
+- membuat financial transaction.
+
+### Procurement semantics
+
+Flow canonical:
+
+TRACKED material
+-> INVENTORY_ITEM
+-> Goods Receipt POST
+-> Stock IN
+
+NOT_TRACKED material
+-> NON_STOCK_GOOD
+-> Goods Receipt
+-> no stock movement
+
+SERVICE
+-> SERVICE
+-> Goods Receipt
+-> no stock movement
+
+Explicit procurement type yang bertentangan dengan `stock_tracking`
+ditolak backend.
+
+### Authorization
+
+- `inventory.view`
+  -> read category/material/warehouse
+
+- `inventory.master.manage`
+  -> create/update category/material/warehouse
+
+- `inventory.receive`
+  -> Receiving transaction
+
+Frontend Inventory Master masih pending.

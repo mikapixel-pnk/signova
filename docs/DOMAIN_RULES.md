@@ -600,3 +600,103 @@ Evidence:
 Project audit + governance baseline.
 
 Status: NORMATIVE.
+
+---
+
+RULE-ID: INV-MASTER-001
+MODULE: Inventory Master
+
+Rule:
+Semua barang fisik dapat masuk Master Barang & Persediaan, baik stoknya
+dilacak maupun tidak.
+
+Canonical:
+- `TRACKED`
+- `NOT_TRACKED`
+
+Status: IMPLEMENTED.
+
+---
+
+RULE-ID: INV-MASTER-002
+MODULE: Inventory Master
+
+Rule:
+`inventory_type` dan `stock_tracking` adalah dua dimensi berbeda.
+
+Inventory type:
+`RAW_MATERIAL`, `COMPONENT`, `CONSUMABLE`, `RESALE`,
+`FINISHED_GOOD`.
+
+Status: IMPLEMENTED.
+
+---
+
+RULE-ID: INV-MASTER-003
+MODULE: Inventory Category
+
+Rule:
+Kategori Persediaan adalah relational master tenant + business scoped.
+
+Canonical reference:
+`materials.category_id`.
+
+Legacy `materials.category` hanya compatibility bridge.
+
+Duplicate category name dalam business context yang sama ditolak secara
+case/whitespace-insensitive.
+
+Status: IMPLEMENTED.
+
+---
+
+RULE-ID: INV-MASTER-004
+MODULE: Inventory Stock Policy
+
+Rule:
+Stock threshold hanya berlaku untuk `TRACKED`.
+
+Invariant:
+- threshold non-negative;
+- `minimum_stock <= reorder_point`;
+- `reorder_point <= maximum_stock`;
+- `minimum_stock <= maximum_stock`;
+- `NOT_TRACKED` tidak boleh mempunyai threshold.
+
+Status: IMPLEMENTED.
+
+---
+
+RULE-ID: INV-MASTER-005
+MODULE: Purchasing / Inventory
+
+Rule:
+Procurement semantics mengikuti material stock policy.
+
+- `TRACKED` -> `INVENTORY_ITEM`
+- `NOT_TRACKED` -> `NON_STOCK_GOOD`
+- `SERVICE` -> tanpa `material_id`
+
+Purchase Request dan Purchase Order tidak menghasilkan stock movement.
+
+Goods Receipt POST hanya menghasilkan movement untuk
+`INVENTORY_ITEM`.
+
+Status: IMPLEMENTED.
+Staging UAT verified: 2026-09-26.
+
+---
+
+RULE-ID: INV-MASTER-006
+MODULE: Inventory Authorization
+
+Rule:
+Hak mengubah master inventory harus terpisah dari Receiving.
+
+- read master -> `inventory.view`
+- write category/material/warehouse -> `inventory.master.manage`
+- Receiving -> `inventory.receive`
+
+`inventory.receive` tidak memberikan hak implisit mengubah Inventory Master.
+
+Status: IMPLEMENTED.

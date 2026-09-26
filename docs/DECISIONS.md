@@ -358,3 +358,58 @@ Memaksa user mencari downstream menu bila system sudah mengetahui source context
 
 Evidence:
 Master Application & User Flow; Frontend UI/UX Constitution.
+
+## DEC-INV-2026-09-26 — Inventory Master Foundation
+
+Status: **LOCKED / IMPLEMENTED**
+
+### Context
+
+SIGNOVA membutuhkan satu master barang fisik yang dapat digunakan untuk
+barang dengan stok dilacak maupun barang fisik tanpa saldo stok.
+
+Authorization sebelumnya juga menggunakan `inventory.receive` untuk
+write Inventory Master sehingga hak transaksi Receiving bercampur dengan
+hak mengubah master.
+
+### Decision
+
+1. Primary inventory master adalah Barang & Persediaan.
+2. Barang & Jasa Penjualan / sales catalog tetap domain terpisah.
+3. `inventory_type` dan `stock_tracking` adalah dua dimensi berbeda.
+4. `stock_tracking` hanya `TRACKED` atau `NOT_TRACKED`.
+5. Kategori inventory menggunakan relational master
+   `inventory_categories`.
+6. `materials.category_id` adalah canonical category reference.
+7. Legacy `materials.category` dipertahankan sementara sebagai
+   compatibility bridge.
+8. Stock threshold hanya berlaku untuk `TRACKED`.
+9. Stock balance tetap berasal dari movement ledger dan tidak boleh
+   diedit langsung dari material master.
+10. `TRACKED` material menggunakan procurement semantic
+    `INVENTORY_ITEM`.
+11. `NOT_TRACKED` material menggunakan procurement semantic
+    `NON_STOCK_GOOD`.
+12. `SERVICE` tidak menggunakan material master.
+13. Write Inventory Master menggunakan `inventory.master.manage`.
+14. Receiving transaction tetap menggunakan `inventory.receive`.
+15. OWNER dan ADMIN mendapat baseline `inventory.master.manage`.
+16. Capability adalah source of truth authorization, bukan role-name check.
+17. Transaction history menyimpan reference + snapshot dan tidak ditulis
+    ulang ketika master kemudian berubah.
+
+### Verification
+
+Pada 2026-09-26:
+
+- targeted backend test hijau;
+- migration
+  `2026_09_26_092000_expand_inventory_master_foundation`
+  applied pada staging batch 62;
+- capability dan Master Role mapping diverifikasi;
+- HTTP staging UAT untuk kategori, material, gudang, Purchase Request,
+  dan Purchase Order berhasil;
+- TRACKED dipetakan menjadi INVENTORY_ITEM;
+- NOT_TRACKED dipetakan menjadi NON_STOCK_GOOD;
+- stock movement tidak bertambah saat UAT;
+- cash transaction tidak bertambah saat UAT.

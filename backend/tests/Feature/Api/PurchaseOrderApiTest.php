@@ -1129,6 +1129,150 @@ class PurchaseOrderApiTest extends TestCase
     }
 
 
+    public function test_direct_non_stock_material_uses_non_stock_procurement_semantics(): void
+    {
+        $workspace =
+            $this->workspace(
+                'po-non-stock-material@example.test',
+                'PO Non Stock Material'
+            );
+
+        $supplierId =
+            $this->insertSupplier(
+                $workspace,
+                'Pemasok Barang Non-Stok'
+            );
+
+        $materialId =
+            (string)
+                \Illuminate\Support\Str::ulid();
+
+        DB::table(
+            'materials'
+        )->insert([
+            'id' =>
+                $materialId,
+
+            'tenant_id' =>
+                $workspace['tenant_id'],
+
+            'business_id' =>
+                $workspace['business_id'],
+
+            'code' =>
+                'MAT-PO-NONSTOCK',
+
+            'name' =>
+                'Barang Operasional Non-Stok',
+
+            'unit_id' =>
+                null,
+
+            'category' =>
+                null,
+
+            'category_id' =>
+                null,
+
+            'inventory_type' =>
+                'CONSUMABLE',
+
+            'stock_tracking' =>
+                'NOT_TRACKED',
+
+            'minimum_stock' =>
+                null,
+
+            'reorder_point' =>
+                null,
+
+            'maximum_stock' =>
+                null,
+
+            'description' =>
+                null,
+
+            'status' =>
+                'ACTIVE',
+
+            'created_at' =>
+                now(),
+
+            'updated_at' =>
+                now(),
+        ]);
+
+        $this->actingAsWorkspace(
+            $workspace
+        );
+
+        $this->postJson(
+            '/api/v1/purchasing/orders',
+            [
+                'supplier_id' =>
+                    $supplierId,
+
+                'currency' =>
+                    'IDR',
+
+                'items' => [
+                    [
+                        'material_id' =>
+                            $materialId,
+
+                        'quantity' =>
+                            '1.0000',
+
+                        'unit_price' =>
+                            '25000.00',
+                    ],
+                ],
+            ]
+        )
+            ->assertCreated()
+            ->assertJsonPath(
+                'data.items.0.material_id',
+                $materialId
+            )
+            ->assertJsonPath(
+                'data.items.0.procurement_type',
+                'NON_STOCK_GOOD'
+            );
+
+        $this->postJson(
+            '/api/v1/purchasing/orders',
+            [
+                'supplier_id' =>
+                    $supplierId,
+
+                'currency' =>
+                    'IDR',
+
+                'items' => [
+                    [
+                        'material_id' =>
+                            $materialId,
+
+                        'procurement_type' =>
+                            'INVENTORY_ITEM',
+
+                        'quantity' =>
+                            '1.0000',
+
+                        'unit_price' =>
+                            '25000.00',
+                    ],
+                ],
+            ]
+        )
+            ->assertUnprocessable()
+            ->assertJsonPath(
+                'error.code',
+                'VALIDATION_FAILED'
+            );
+    }
+
+
     private function createApprovedPurchaseRequest(
         array $workspace,
         int $quantity,

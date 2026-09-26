@@ -1226,6 +1226,226 @@ class PurchaseRequestApiTest extends TestCase
             ->delete();
     }
 
+    public function test_material_stock_tracking_drives_procurement_type(): void
+    {
+        $workspace =
+            $this->workspace(
+                'pr-stock-policy@example.test',
+                'PR Stock Policy'
+            );
+
+        $notTrackedId =
+            (string)
+                \Illuminate\Support\Str::ulid();
+
+        DB::table(
+            'materials'
+        )->insert([
+            'id' =>
+                $notTrackedId,
+
+            'tenant_id' =>
+                $workspace['tenant_id'],
+
+            'business_id' =>
+                $workspace['business_id'],
+
+            'code' =>
+                'MAT-PR-NONSTOCK',
+
+            'name' =>
+                'Bahan Tidak Dilacak',
+
+            'unit_id' =>
+                null,
+
+            'category' =>
+                null,
+
+            'category_id' =>
+                null,
+
+            'inventory_type' =>
+                'CONSUMABLE',
+
+            'stock_tracking' =>
+                'NOT_TRACKED',
+
+            'minimum_stock' =>
+                null,
+
+            'reorder_point' =>
+                null,
+
+            'maximum_stock' =>
+                null,
+
+            'description' =>
+                null,
+
+            'status' =>
+                'ACTIVE',
+
+            'created_at' =>
+                now(),
+
+            'updated_at' =>
+                now(),
+        ]);
+
+        $trackedId =
+            (string)
+                \Illuminate\Support\Str::ulid();
+
+        DB::table(
+            'materials'
+        )->insert([
+            'id' =>
+                $trackedId,
+
+            'tenant_id' =>
+                $workspace['tenant_id'],
+
+            'business_id' =>
+                $workspace['business_id'],
+
+            'code' =>
+                'MAT-PR-TRACKED',
+
+            'name' =>
+                'Bahan Dilacak',
+
+            'unit_id' =>
+                null,
+
+            'category' =>
+                null,
+
+            'category_id' =>
+                null,
+
+            'inventory_type' =>
+                'RAW_MATERIAL',
+
+            'stock_tracking' =>
+                'TRACKED',
+
+            'minimum_stock' =>
+                null,
+
+            'reorder_point' =>
+                null,
+
+            'maximum_stock' =>
+                null,
+
+            'description' =>
+                null,
+
+            'status' =>
+                'ACTIVE',
+
+            'created_at' =>
+                now(),
+
+            'updated_at' =>
+                now(),
+        ]);
+
+        $this->actingAsWorkspace(
+            $workspace
+        );
+
+        $this->postJson(
+            '/api/v1/purchasing/requests',
+            [
+                'currency' =>
+                    'IDR',
+
+                'items' => [
+                    [
+                        'material_id' =>
+                            $notTrackedId,
+
+                        'quantity' =>
+                            '2.0000',
+
+                        'estimated_unit_price' =>
+                            '1000.00',
+                    ],
+                ],
+            ]
+        )
+            ->assertCreated()
+            ->assertJsonPath(
+                'data.items.0.material_id',
+                $notTrackedId
+            )
+            ->assertJsonPath(
+                'data.items.0.procurement_type',
+                'NON_STOCK_GOOD'
+            );
+
+        $this->postJson(
+            '/api/v1/purchasing/requests',
+            [
+                'currency' =>
+                    'IDR',
+
+                'items' => [
+                    [
+                        'material_id' =>
+                            $notTrackedId,
+
+                        'procurement_type' =>
+                            'INVENTORY_ITEM',
+
+                        'quantity' =>
+                            '1.0000',
+
+                        'estimated_unit_price' =>
+                            '1000.00',
+                    ],
+                ],
+            ]
+        )
+            ->assertUnprocessable()
+            ->assertJsonPath(
+                'error.code',
+                'VALIDATION_FAILED'
+            );
+
+        $this->postJson(
+            '/api/v1/purchasing/requests',
+            [
+                'currency' =>
+                    'IDR',
+
+                'items' => [
+                    [
+                        'material_id' =>
+                            $trackedId,
+
+                        'procurement_type' =>
+                            'NON_STOCK_GOOD',
+
+                        'quantity' =>
+                            '1.0000',
+
+                        'estimated_unit_price' =>
+                            '1000.00',
+                    ],
+                ],
+            ]
+        )
+            ->assertUnprocessable()
+            ->assertJsonPath(
+                'error.code',
+                'VALIDATION_FAILED'
+            );
+    }
+
+
     private function workspace(
         string $email,
         string $tenantName

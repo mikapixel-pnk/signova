@@ -19,6 +19,8 @@ class StoreMaterialRequest extends FormRequest
                 'name',
                 'category',
                 'inventory_type',
+                'stock_tracking',
+                'description',
             ] as $field
         ) {
             if ($this->exists($field)) {
@@ -41,6 +43,13 @@ class StoreMaterialRequest extends FormRequest
                 );
         }
 
+        if (isset($data['stock_tracking'])) {
+            $data['stock_tracking'] =
+                strtoupper(
+                    $data['stock_tracking']
+                );
+        }
+
         $this->merge($data);
     }
 
@@ -55,6 +64,15 @@ class StoreMaterialRequest extends FormRequest
             app(
                 BusinessContext::class
             )->businessId();
+
+        $stockThresholdRules = [
+            'sometimes',
+            'nullable',
+            'numeric',
+            'decimal:0,4',
+            'min:0',
+            'max:99999999999999.9999',
+        ];
 
         return [
             'code' => [
@@ -109,6 +127,10 @@ class StoreMaterialRequest extends FormRequest
                 ),
             ],
 
+            /*
+             * category adalah compatibility alias API lama.
+             * Source of truth baru adalah category_id.
+             */
             'category' => [
                 'sometimes',
                 'nullable',
@@ -116,10 +138,57 @@ class StoreMaterialRequest extends FormRequest
                 'max:120',
             ],
 
+            'category_id' => [
+                'sometimes',
+                'nullable',
+                'string',
+                Rule::exists(
+                    'inventory_categories',
+                    'id'
+                )->where(
+                    fn ($query) =>
+                        $query
+                            ->where(
+                                'tenant_id',
+                                $tenantId
+                            )
+                            ->where(
+                                'business_id',
+                                $businessId
+                            )
+                            ->where(
+                                'status',
+                                'ACTIVE'
+                            )
+                ),
+            ],
+
             'inventory_type' => [
                 'sometimes',
                 'required',
                 'in:RAW_MATERIAL,COMPONENT,CONSUMABLE,RESALE,FINISHED_GOOD',
+            ],
+
+            'stock_tracking' => [
+                'sometimes',
+                'required',
+                'in:TRACKED,NOT_TRACKED',
+            ],
+
+            'minimum_stock' =>
+                $stockThresholdRules,
+
+            'reorder_point' =>
+                $stockThresholdRules,
+
+            'maximum_stock' =>
+                $stockThresholdRules,
+
+            'description' => [
+                'sometimes',
+                'nullable',
+                'string',
+                'max:5000',
             ],
 
             'status' => [

@@ -131,6 +131,7 @@ class SignovaAccessControlSeeder extends Seeder
             ['purchasing', 'purchasing.cancel_po', 'Membatalkan Pesanan Pembelian', true],
 
             ['inventory', 'inventory.view', 'Melihat Stok & Gudang', false],
+            ['inventory', 'inventory.master.manage', 'Mengelola Master Stok & Gudang', false],
             ['inventory', 'inventory.receive', 'Mencatat Penerimaan Barang', false],
 
             ['team', 'team.user.view', 'Melihat Pengguna', false],
@@ -266,6 +267,7 @@ class SignovaAccessControlSeeder extends Seeder
                 'purchasing.cancel_po',
 
                 'inventory.view',
+                'inventory.master.manage',
                 'inventory.receive',
 
                 'team.user.view',
@@ -288,6 +290,8 @@ class SignovaAccessControlSeeder extends Seeder
                 'project.view',
                 'project.create',
                 'project.update',
+                'inventory.view',
+                'inventory.master.manage',
                 'team.user.view',
                 'team.user.manage',
                 'team.role.view',
