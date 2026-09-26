@@ -835,6 +835,114 @@ class PurchaseOrderApiTest extends TestCase
         );
     }
 
+    public function test_direct_inventory_po_uses_material_master(): void
+    {
+        $workspace =
+            $this->workspace(
+                'po-inventory-item@example.test',
+                'PO Inventory Item'
+            );
+
+        $supplierId =
+            $this->insertSupplier(
+                $workspace,
+                'Pemasok Inventory'
+            );
+
+        $materialId =
+            (string) \Illuminate\Support\Str::ulid();
+
+        DB::table(
+            'materials'
+        )->insert([
+            'id' =>
+                $materialId,
+
+            'tenant_id' =>
+                $workspace['tenant_id'],
+
+            'business_id' =>
+                $workspace['business_id'],
+
+            'code' =>
+                'MAT-PO-001',
+
+            'name' =>
+                'Akrilik PO',
+
+            'unit_id' =>
+                null,
+
+            'category' =>
+                'Akrilik',
+
+            'inventory_type' =>
+                'RAW_MATERIAL',
+
+            'status' =>
+                'ACTIVE',
+
+            'created_at' =>
+                now(),
+
+            'updated_at' =>
+                now(),
+        ]);
+
+        $this->actingAsWorkspace(
+            $workspace
+        );
+
+        $this->postJson(
+            '/api/v1/purchasing/orders',
+            [
+                'supplier_id' =>
+                    $supplierId,
+
+                'currency' =>
+                    'IDR',
+
+                'items' => [
+                    [
+                        'material_id' =>
+                            $materialId,
+
+                        'procurement_type' =>
+                            'INVENTORY_ITEM',
+
+                        'quantity' =>
+                            '2',
+
+                        'unit_price' =>
+                            '12500',
+                    ],
+                ],
+            ]
+        )
+            ->assertCreated()
+            ->assertJsonPath(
+                'data.items.0.material_id',
+                $materialId
+            )
+            ->assertJsonPath(
+                'data.items.0.procurement_type',
+                'INVENTORY_ITEM'
+            )
+            ->assertJsonPath(
+                'data.items.0.item_type',
+                'PRODUCT'
+            )
+            ->assertJsonPath(
+                'data.items.0.code',
+                'MAT-PO-001'
+            )
+            ->assertJsonPath(
+                'data.items.0.name',
+                'Akrilik PO'
+            );
+    }
+
+
     private function createApprovedPurchaseRequest(
         array $workspace,
         int $quantity,

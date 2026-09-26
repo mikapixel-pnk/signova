@@ -88,6 +88,31 @@ class StorePurchaseRequestRequest extends FormRequest
                 ),
             ],
 
+            'items.*.material_id' => [
+                'sometimes',
+                'nullable',
+                'string',
+                Rule::exists(
+                    'materials',
+                    'id'
+                )->where(
+                    fn ($query) =>
+                        $query
+                            ->where(
+                                'tenant_id',
+                                $tenantId
+                            )
+                            ->where(
+                                'business_id',
+                                $businessId
+                            )
+                            ->where(
+                                'status',
+                                'ACTIVE'
+                            )
+                ),
+            ],
+
             'items.*.unit_id' => [
                 'sometimes',
                 'nullable',
@@ -109,6 +134,12 @@ class StorePurchaseRequestRequest extends FormRequest
                 ),
             ],
 
+            'items.*.procurement_type' => [
+                'sometimes',
+                'nullable',
+                'in:INVENTORY_ITEM,NON_STOCK_GOOD,SERVICE',
+            ],
+
             'items.*.item_type' => [
                 'sometimes',
                 'nullable',
@@ -123,7 +154,7 @@ class StorePurchaseRequestRequest extends FormRequest
             ],
 
             'items.*.name' => [
-                'required_without:items.*.catalog_item_id',
+                'required_without_all:items.*.catalog_item_id,items.*.material_id',
                 'nullable',
                 'string',
                 'max:190',

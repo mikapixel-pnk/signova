@@ -689,9 +689,42 @@ class PurchaseOrderService
                     ->firstOrFail();
         }
 
+        $materialId =
+            $sourceItem?->material_id
+            ?? $item['material_id']
+            ?? null;
+
+        $material = null;
+
+        if (
+            $materialId
+            && ! $sourceItem
+        ) {
+            $material =
+                \App\Models\Material::query()
+                    ->where(
+                        'tenant_id',
+                        $tenantId
+                    )
+                    ->where(
+                        'business_id',
+                        $businessId
+                    )
+                    ->where(
+                        'id',
+                        $materialId
+                    )
+                    ->where(
+                        'status',
+                        'ACTIVE'
+                    )
+                    ->firstOrFail();
+        }
+
         $unitId =
             $item['unit_id']
             ?? $sourceItem?->unit_id
+            ?? $material?->unit_id
             ?? $catalogItem?->unit_id;
 
         $unit = null;
@@ -724,6 +757,72 @@ class PurchaseOrderService
                     [$unitId]
                 );
             }
+        }
+
+        $legacyItemType =
+            strtoupper(
+                (string) (
+                    $sourceItem?->item_type
+                    ?? $catalogItem?->type
+                    ?? $item['item_type']
+                    ?? 'PRODUCT'
+                )
+            );
+
+        $procurementType =
+            strtoupper(
+                (string) (
+                    $sourceItem?->procurement_type
+                    ?? $item['procurement_type']
+                    ?? ''
+                )
+            );
+
+        if ($procurementType === '') {
+            $procurementType =
+                $materialId
+                    ? 'INVENTORY_ITEM'
+                    : (
+                        $legacyItemType
+                            === 'SERVICE'
+                            ? 'SERVICE'
+                            : 'NON_STOCK_GOOD'
+                    );
+        }
+
+        if (
+            $procurementType
+                === 'INVENTORY_ITEM'
+            && ! $materialId
+        ) {
+            throw ValidationException::withMessages([
+                "items.{$index}.material_id" =>
+                    'Item persediaan wajib memilih Bahan & Persediaan.',
+            ]);
+        }
+
+        if (
+            $procurementType
+                !== 'INVENTORY_ITEM'
+            && $materialId
+        ) {
+            throw ValidationException::withMessages([
+                "items.{$index}.material_id" =>
+                    'Material hanya dapat digunakan untuk jenis kebutuhan Item Persediaan.',
+            ]);
+        }
+
+        if (
+            $material
+            && $material->unit_id
+            && $unitId
+            && $material->unit_id
+                !== $unitId
+        ) {
+            throw ValidationException::withMessages([
+                "items.{$index}.unit_id" =>
+                    'Satuan item harus sesuai dengan satuan Bahan & Persediaan.',
+            ]);
         }
 
         $quantity =
@@ -791,19 +890,25 @@ class PurchaseOrderService
                 $sourceItem?->catalog_item_id
                 ?? $catalogItem?->id,
 
+            'material_id' =>
+                $sourceItem?->material_id
+                ?? $material?->id,
+
             'unit_id' =>
                 $unitId,
 
+            'procurement_type' =>
+                $procurementType,
+
             'item_type' =>
-                $sourceItem?->item_type
-                ?? $catalogItem?->type
-                ?? (
-                    $item['item_type']
-                    ?? 'PRODUCT'
-                ),
+                $procurementType
+                    === 'SERVICE'
+                    ? 'SERVICE'
+                    : 'PRODUCT',
 
             'code' =>
                 $sourceItem?->code
+                ?? $material?->code
                 ?? $catalogItem?->code
                 ?? (
                     $item['code']
@@ -812,6 +917,7 @@ class PurchaseOrderService
 
             'name' =>
                 $sourceItem?->name
+                ?? $material?->name
                 ?? $catalogItem?->name
                 ?? trim(
                     $item['name']

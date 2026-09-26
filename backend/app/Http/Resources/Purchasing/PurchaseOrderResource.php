@@ -119,8 +119,15 @@ class PurchaseOrderResource extends JsonResource
                                     'catalog_item_id' =>
                                         $item->catalog_item_id,
 
+                                    'material_id' =>
+                                        $item->material_id,
+
                                     'unit_id' =>
                                         $item->unit_id,
+
+                                    'procurement_type' =>
+                                        $item
+                                            ->procurement_type,
 
                                     'item_type' =>
                                         $item->item_type,

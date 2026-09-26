@@ -1019,6 +1019,131 @@ class PurchaseRequestApiTest extends TestCase
         );
     }
 
+    public function test_inventory_procurement_item_uses_material_master(): void
+    {
+        $workspace =
+            $this->workspace(
+                'pr-inventory-item@example.test',
+                'PR Inventory Item'
+            );
+
+        $materialId =
+            (string) \Illuminate\Support\Str::ulid();
+
+        DB::table(
+            'materials'
+        )->insert([
+            'id' =>
+                $materialId,
+
+            'tenant_id' =>
+                $workspace['tenant_id'],
+
+            'business_id' =>
+                $workspace['business_id'],
+
+            'code' =>
+                'MAT-PROC-001',
+
+            'name' =>
+                'Akrilik Procurement',
+
+            'unit_id' =>
+                null,
+
+            'category' =>
+                'Akrilik',
+
+            'inventory_type' =>
+                'RAW_MATERIAL',
+
+            'status' =>
+                'ACTIVE',
+
+            'created_at' =>
+                now(),
+
+            'updated_at' =>
+                now(),
+        ]);
+
+        $this->actingAsWorkspace(
+            $workspace
+        );
+
+        $this->postJson(
+            '/api/v1/purchasing/requests',
+            [
+                'currency' =>
+                    'IDR',
+
+                'items' => [
+                    [
+                        'material_id' =>
+                            $materialId,
+
+                        'procurement_type' =>
+                            'INVENTORY_ITEM',
+
+                        'quantity' =>
+                            '2',
+
+                        'estimated_unit_price' =>
+                            '10000',
+                    ],
+                ],
+            ]
+        )
+            ->assertCreated()
+            ->assertJsonPath(
+                'data.items.0.material_id',
+                $materialId
+            )
+            ->assertJsonPath(
+                'data.items.0.procurement_type',
+                'INVENTORY_ITEM'
+            )
+            ->assertJsonPath(
+                'data.items.0.item_type',
+                'PRODUCT'
+            )
+            ->assertJsonPath(
+                'data.items.0.code',
+                'MAT-PROC-001'
+            )
+            ->assertJsonPath(
+                'data.items.0.name',
+                'Akrilik Procurement'
+            );
+
+        $this->postJson(
+            '/api/v1/purchasing/requests',
+            [
+                'items' => [
+                    [
+                        'material_id' =>
+                            $materialId,
+
+                        'procurement_type' =>
+                            'SERVICE',
+
+                        'name' =>
+                            'Tidak Valid',
+
+                        'quantity' =>
+                            1,
+                    ],
+                ],
+            ]
+        )
+            ->assertUnprocessable()
+            ->assertJsonPath(
+                'error.code',
+                'VALIDATION_FAILED'
+            );
+    }
+
+
     private function defaultPayload(): array
     {
         return [

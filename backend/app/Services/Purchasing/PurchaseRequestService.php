@@ -631,8 +631,37 @@ class PurchaseRequestService
                     ->firstOrFail();
         }
 
+        $material = null;
+
+        if (
+            ! empty(
+                $item['material_id']
+            )
+        ) {
+            $material =
+                \App\Models\Material::query()
+                    ->where(
+                        'tenant_id',
+                        $tenantId
+                    )
+                    ->where(
+                        'business_id',
+                        $businessId
+                    )
+                    ->where(
+                        'id',
+                        $item['material_id']
+                    )
+                    ->where(
+                        'status',
+                        'ACTIVE'
+                    )
+                    ->firstOrFail();
+        }
+
         $unitId =
             $item['unit_id']
+            ?? $material?->unit_id
             ?? $catalogItem?->unit_id;
 
         $unit = null;
@@ -662,6 +691,70 @@ class PurchaseRequestService
                     [$unitId]
                 );
             }
+        }
+
+        $legacyItemType =
+            strtoupper(
+                (string) (
+                    $catalogItem?->type
+                    ?? $item['item_type']
+                    ?? 'PRODUCT'
+                )
+            );
+
+        $procurementType =
+            strtoupper(
+                (string) (
+                    $item['procurement_type']
+                    ?? ''
+                )
+            );
+
+        if ($procurementType === '') {
+            $procurementType =
+                $material
+                    ? 'INVENTORY_ITEM'
+                    : (
+                        $legacyItemType
+                            === 'SERVICE'
+                            ? 'SERVICE'
+                            : 'NON_STOCK_GOOD'
+                    );
+        }
+
+        if (
+            $procurementType
+                === 'INVENTORY_ITEM'
+            && ! $material
+        ) {
+            throw \Illuminate\Validation\ValidationException::withMessages([
+                "items.{$index}.material_id" =>
+                    'Item persediaan wajib memilih Bahan & Persediaan.',
+            ]);
+        }
+
+        if (
+            $procurementType
+                !== 'INVENTORY_ITEM'
+            && $material
+        ) {
+            throw \Illuminate\Validation\ValidationException::withMessages([
+                "items.{$index}.material_id" =>
+                    'Material hanya dapat digunakan untuk jenis kebutuhan Item Persediaan.',
+            ]);
+        }
+
+        if (
+            $material
+            && $material->unit_id
+            && $unitId
+            && $material->unit_id
+                !== $unitId
+        ) {
+            throw \Illuminate\Validation\ValidationException::withMessages([
+                "items.{$index}.unit_id" =>
+                    'Satuan item harus sesuai dengan satuan Bahan & Persediaan.',
+            ]);
         }
 
         $quantity =
@@ -705,25 +798,32 @@ class PurchaseRequestService
             'catalog_item_id' =>
                 $catalogItem?->id,
 
+            'material_id' =>
+                $material?->id,
+
             'unit_id' =>
                 $unitId,
 
+            'procurement_type' =>
+                $procurementType,
+
             'item_type' =>
-                $catalogItem?->type
-                ?? (
-                    $item['item_type']
-                    ?? 'PRODUCT'
-                ),
+                $procurementType
+                    === 'SERVICE'
+                    ? 'SERVICE'
+                    : 'PRODUCT',
 
             'code' =>
-                $catalogItem?->code
+                $material?->code
+                ?? $catalogItem?->code
                 ?? (
                     $item['code']
                     ?? null
                 ),
 
             'name' =>
-                $catalogItem?->name
+                $material?->name
+                ?? $catalogItem?->name
                 ?? trim(
                     $item['name']
                 ),
