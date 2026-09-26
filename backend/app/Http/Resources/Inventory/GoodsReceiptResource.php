@@ -67,6 +67,11 @@ class GoodsReceiptResource extends JsonResource
                                     'material_name' =>
                                         $item->material?->name,
 
+                                    'procurement_type' =>
+                                        $item
+                                            ->purchaseOrderItem
+                                            ?->procurement_type,
+
                                     'item_type' =>
                                         $item
                                             ->purchaseOrderItem

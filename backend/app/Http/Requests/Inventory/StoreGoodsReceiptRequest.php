@@ -93,28 +93,7 @@ class StoreGoodsReceiptRequest extends FormRequest
             ],
 
             'items.*.material_id' => [
-                'sometimes',
-                'nullable',
-                'string',
-                Rule::exists(
-                    'materials',
-                    'id'
-                )->where(
-                    fn ($query) =>
-                        $query
-                            ->where(
-                                'tenant_id',
-                                $tenantId
-                            )
-                            ->where(
-                                'business_id',
-                                $businessId
-                            )
-                            ->where(
-                                'status',
-                                'ACTIVE'
-                            )
-                ),
+                'prohibited',
             ],
 
             'items.*.quantity_received' => [

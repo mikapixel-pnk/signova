@@ -14,6 +14,8 @@ use App\Models\Warehouse;
 use App\Services\Document\DocumentNumberService;
 use App\Tenancy\BusinessContext;
 use App\Tenancy\TenantContext;
+use Brick\Math\BigDecimal;
+use Brick\Math\RoundingMode;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -21,8 +23,6 @@ use Illuminate\Validation\ValidationException;
 
 class GoodsReceiptService
 {
-    private const EPSILON = 0.00005;
-
     public function __construct(
         private readonly TenantContext $tenantContext,
         private readonly BusinessContext $businessContext,
@@ -381,15 +381,26 @@ class GoodsReceiptService
 
                     $newTotal =
                         $alreadyPosted
-                        + (float)
-                            $item
-                                ->quantity_received;
+                            ->plus(
+                                $this->quantity(
+                                    $item
+                                        ->quantity_received
+                                )
+                            )
+                            ->toScale(
+                                4,
+                                RoundingMode::HalfUp
+                            );
+
+                    $orderedQuantity =
+                        $this->quantity(
+                            $poItem->quantity
+                        );
 
                     if (
-                        $newTotal
-                        >
-                        (float) $poItem->quantity
-                        + self::EPSILON
+                        $newTotal->compareTo(
+                            $orderedQuantity
+                        ) > 0
                     ) {
                         throw ValidationException::withMessages([
                             "items.{$index}.quantity_received" =>
@@ -397,38 +408,64 @@ class GoodsReceiptService
                         ]);
                     }
 
-                    $itemType =
+                    $procurementType =
                         strtoupper(
-                            (string) (
-                                $poItem->item_type
-                                ?: 'PRODUCT'
-                            )
+                            (string)
+                                $poItem
+                                    ->procurement_type
                         );
 
                     if (
-                        $itemType
-                        === 'SERVICE'
+                        ! in_array(
+                            $procurementType,
+                            [
+                                'INVENTORY_ITEM',
+                                'NON_STOCK_GOOD',
+                                'SERVICE',
+                            ],
+                            true
+                        )
+                    ) {
+                        throw ValidationException::withMessages([
+                            "items.{$index}.purchase_order_item_id" =>
+                                'Jenis kebutuhan pada item Pesanan Pembelian tidak valid.',
+                        ]);
+                    }
+
+                    if (
+                        $procurementType
+                        !== 'INVENTORY_ITEM'
                     ) {
                         if ($item->material_id) {
                             throw ValidationException::withMessages([
-                                "items.{$index}.material_id" =>
-                                    'Item jasa tidak menghasilkan pergerakan stok.',
+                                "items.{$index}.purchase_order_item_id" =>
+                                    'Barang Non-Stok dan Jasa Vendor tidak boleh menghasilkan pergerakan stok.',
                             ]);
                         }
 
                         continue;
                     }
 
-                    if (! $item->material_id) {
+                    if (! $poItem->material_id) {
                         throw ValidationException::withMessages([
-                            "items.{$index}.material_id" =>
-                                'Material wajib dipilih untuk item barang sebelum penerimaan dicatat.',
+                            "items.{$index}.purchase_order_item_id" =>
+                                'Item Persediaan pada Pesanan Pembelian belum terhubung ke Bahan & Persediaan.',
+                        ]);
+                    }
+
+                    if (
+                        $item->material_id
+                        !== $poItem->material_id
+                    ) {
+                        throw ValidationException::withMessages([
+                            "items.{$index}.purchase_order_item_id" =>
+                                'Material Penerimaan harus mengikuti material pada Pesanan Pembelian.',
                         ]);
                     }
 
                     $material =
                         $this->activeMaterial(
-                            $item->material_id
+                            $poItem->material_id
                         );
 
                     if (
@@ -438,7 +475,7 @@ class GoodsReceiptService
                             !== $poItem->unit_id
                     ) {
                         throw ValidationException::withMessages([
-                            "items.{$index}.material_id" =>
+                            "items.{$index}.purchase_order_item_id" =>
                                 'Satuan material tidak sesuai dengan satuan item Pesanan Pembelian.',
                         ]);
                     }
@@ -464,8 +501,11 @@ class GoodsReceiptService
                                 'RECEIPT',
 
                             'quantity_signed' =>
-                                $item
-                                    ->quantity_received,
+                                (string)
+                                    $this->quantity(
+                                        $item
+                                            ->quantity_received
+                                    ),
 
                             'source_type' =>
                                 'GOODS_RECEIPT_ITEM',
@@ -491,6 +531,7 @@ class GoodsReceiptService
                             'created_at' =>
                                 now(),
                         ]);
+
                 }
 
                 $from =
@@ -645,10 +686,19 @@ class GoodsReceiptService
                                 'RECEIPT_REVERSAL',
 
                             'quantity_signed' =>
-                                -1
-                                * (float)
-                                    $movement
-                                        ->quantity_signed,
+                                (string)
+                                    $this
+                                        ->quantity(
+                                            $movement
+                                                ->quantity_signed
+                                        )
+                                        ->multipliedBy(
+                                            '-1'
+                                        )
+                                        ->toScale(
+                                            4,
+                                            RoundingMode::HalfUp
+                                        ),
 
                             'source_type' =>
                                 $movement->source_type,
@@ -754,22 +804,31 @@ class GoodsReceiptService
                     ->firstOrFail();
 
             $quantity =
-                (float)
+                $this->quantity(
                     $data[
                         'quantity_received'
-                    ];
-
-            $remaining =
-                (float) $poItem->quantity
-                - $this->postedQuantity(
-                    $poItem->id
+                    ]
                 );
 
+            $remaining =
+                $this
+                    ->quantity(
+                        $poItem->quantity
+                    )
+                    ->minus(
+                        $this->postedQuantity(
+                            $poItem->id
+                        )
+                    )
+                    ->toScale(
+                        4,
+                        RoundingMode::HalfUp
+                    );
+
             if (
-                $quantity
-                >
-                $remaining
-                + self::EPSILON
+                $quantity->compareTo(
+                    $remaining
+                ) > 0
             ) {
                 throw ValidationException::withMessages([
                     "items.{$index}.quantity_received" =>
@@ -777,29 +836,46 @@ class GoodsReceiptService
                 ]);
             }
 
-            $materialId =
-                $data['material_id']
-                ?? null;
-
-            $itemType =
+            $procurementType =
                 strtoupper(
-                    (string) (
-                        $poItem->item_type
-                        ?: 'PRODUCT'
-                    )
+                    (string)
+                        $poItem
+                            ->procurement_type
                 );
 
             if (
-                $itemType === 'SERVICE'
-                && $materialId
+                ! in_array(
+                    $procurementType,
+                    [
+                        'INVENTORY_ITEM',
+                        'NON_STOCK_GOOD',
+                        'SERVICE',
+                    ],
+                    true
+                )
             ) {
                 throw ValidationException::withMessages([
-                    "items.{$index}.material_id" =>
-                        'Item jasa tidak menggunakan material stok.',
+                    "items.{$index}.purchase_order_item_id" =>
+                        'Jenis kebutuhan pada item Pesanan Pembelian tidak valid.',
                 ]);
             }
 
-            if ($materialId) {
+            $materialId = null;
+
+            if (
+                $procurementType
+                === 'INVENTORY_ITEM'
+            ) {
+                $materialId =
+                    $poItem->material_id;
+
+                if (! $materialId) {
+                    throw ValidationException::withMessages([
+                        "items.{$index}.purchase_order_item_id" =>
+                            'Item Persediaan pada Pesanan Pembelian belum terhubung ke Bahan & Persediaan.',
+                    ]);
+                }
+
                 $material =
                     $this->activeMaterial(
                         $materialId
@@ -812,7 +888,7 @@ class GoodsReceiptService
                         !== $poItem->unit_id
                 ) {
                     throw ValidationException::withMessages([
-                        "items.{$index}.material_id" =>
+                        "items.{$index}.purchase_order_item_id" =>
                             'Satuan material tidak sesuai dengan satuan item Pesanan Pembelian.',
                     ]);
                 }
@@ -839,9 +915,7 @@ class GoodsReceiptService
                         $materialId,
 
                     'quantity_received' =>
-                        $data[
-                            'quantity_received'
-                        ],
+                        (string) $quantity,
 
                     'sort_order' =>
                         $index,
@@ -873,14 +947,24 @@ class GoodsReceiptService
 
         foreach ($poItems as $poItem) {
             $remaining =
-                (float) $poItem->quantity
-                - $this->postedQuantity(
-                    $poItem->id
-                );
+                $this
+                    ->quantity(
+                        $poItem->quantity
+                    )
+                    ->minus(
+                        $this->postedQuantity(
+                            $poItem->id
+                        )
+                    )
+                    ->toScale(
+                        4,
+                        RoundingMode::HalfUp
+                    );
 
             if (
-                $remaining
-                <= self::EPSILON
+                $remaining->compareTo(
+                    BigDecimal::zero()
+                ) <= 0
             ) {
                 continue;
             }
@@ -889,16 +973,8 @@ class GoodsReceiptService
                 'purchase_order_item_id' =>
                     $poItem->id,
 
-                'material_id' =>
-                    null,
-
                 'quantity_received' =>
-                    number_format(
-                        $remaining,
-                        4,
-                        '.',
-                        ''
-                    ),
+                    (string) $remaining,
             ];
         }
 
@@ -907,8 +983,8 @@ class GoodsReceiptService
 
     private function postedQuantity(
         string $purchaseOrderItemId
-    ): float {
-        return (float)
+    ): BigDecimal {
+        $total =
             DB::table(
                 'goods_receipt_items as gri'
             )
@@ -941,6 +1017,10 @@ class GoodsReceiptService
                 ->sum(
                     'gri.quantity_received'
                 );
+
+        return $this->quantity(
+            $total ?: '0'
+        );
     }
 
     private function recalculatePurchaseOrder(
@@ -974,17 +1054,23 @@ class GoodsReceiptService
                     $poItem->id
                 );
 
+            $ordered =
+                $this->quantity(
+                    $poItem->quantity
+                );
+
             if (
-                $received
-                > self::EPSILON
+                $received->compareTo(
+                    BigDecimal::zero()
+                ) > 0
             ) {
                 $anyReceived = true;
             }
 
             if (
-                $received
-                + self::EPSILON
-                < (float) $poItem->quantity
+                $received->compareTo(
+                    $ordered
+                ) < 0
             ) {
                 $allReceived = false;
             }
@@ -1042,6 +1128,17 @@ class GoodsReceiptService
             'created_at' =>
                 now(),
         ]);
+    }
+
+    private function quantity(
+        mixed $value
+    ): BigDecimal {
+        return BigDecimal::of(
+            (string) $value
+        )->toScale(
+            4,
+            RoundingMode::HalfUp
+        );
     }
 
     private function appendReceiptHistory(

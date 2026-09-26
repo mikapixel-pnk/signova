@@ -24,7 +24,7 @@ class GoodsReceiptApiTest extends TestCase
         );
     }
 
-    public function test_product_receipt_updates_stock_and_purchase_order_status(): void
+    public function test_inventory_receipt_inherits_material_and_updates_stock_and_purchase_order_status(): void
     {
         $workspace =
             $this->workspace(
@@ -49,10 +49,49 @@ class GoodsReceiptApiTest extends TestCase
 
         $po =
             $this->createIssuedPurchaseOrder(
-                'PRODUCT',
+                'INVENTORY_ITEM',
                 'Akrilik 5mm',
-                10
+                '10.0000',
+                $materialId
             );
+
+        $this->postJson(
+            '/api/v1/inventory/receipts',
+            [
+                'purchase_order_id' =>
+                    $po['id'],
+
+                'warehouse_id' =>
+                    $warehouseId,
+
+                'items' => [
+                    [
+                        'purchase_order_item_id' =>
+                            $po['item_id'],
+
+                        'material_id' =>
+                            $materialId,
+
+                        'quantity_received' =>
+                            '1.0000',
+                    ],
+                ],
+            ]
+        )
+            ->assertUnprocessable()
+            ->assertJsonPath(
+                'error.code',
+                'VALIDATION_FAILED'
+            )
+            ->assertJsonStructure([
+                'error' => [
+                    'details' => [
+                        'fields' => [
+                            'items.0.material_id',
+                        ],
+                    ],
+                ],
+            ]);
 
         $firstReceipt =
             $this->postJson(
@@ -69,9 +108,6 @@ class GoodsReceiptApiTest extends TestCase
                             'purchase_order_item_id' =>
                                 $po['item_id'],
 
-                            'material_id' =>
-                                $materialId,
-
                             'quantity_received' =>
                                 4,
                         ],
@@ -83,6 +119,20 @@ class GoodsReceiptApiTest extends TestCase
                     'data.status',
                     'DRAFT'
                 );
+
+        $this->assertSame(
+            'INVENTORY_ITEM',
+            $firstReceipt->json(
+                'data.items.0.procurement_type'
+            )
+        );
+
+        $this->assertSame(
+            $materialId,
+            $firstReceipt->json(
+                'data.items.0.material_id'
+            )
+        );
 
         $firstReceiptId =
             (string) $firstReceipt->json(
@@ -147,9 +197,6 @@ class GoodsReceiptApiTest extends TestCase
                         [
                             'purchase_order_item_id' =>
                                 $po['item_id'],
-
-                            'material_id' =>
-                                $materialId,
 
                             'quantity_received' =>
                                 6,
@@ -380,6 +427,137 @@ class GoodsReceiptApiTest extends TestCase
         );
     }
 
+    public function test_non_stock_receipt_uses_exact_decimal_quantity_without_stock_movement(): void
+    {
+        $workspace =
+            $this->workspace(
+                'receipt-non-stock@example.test',
+                'Receipt Non Stock'
+            );
+
+        $this->actingAsWorkspace(
+            $workspace
+        );
+
+        $warehouseId =
+            $this->createWarehouse(
+                'Gudang Non Stock'
+            );
+
+        $po =
+            $this->createIssuedPurchaseOrder(
+                'NON_STOCK_GOOD',
+                'Barang Vendor Non-Stok',
+                '0.3000'
+            );
+
+        $firstReceipt =
+            $this->postJson(
+                '/api/v1/inventory/receipts',
+                [
+                    'purchase_order_id' =>
+                        $po['id'],
+
+                    'warehouse_id' =>
+                        $warehouseId,
+
+                    'items' => [
+                        [
+                            'purchase_order_item_id' =>
+                                $po['item_id'],
+
+                            'quantity_received' =>
+                                '0.1000',
+                        ],
+                    ],
+                ]
+            )
+                ->assertCreated()
+                ->assertJsonPath(
+                    'data.items.0.procurement_type',
+                    'NON_STOCK_GOOD'
+                )
+                ->assertJsonPath(
+                    'data.items.0.material_id',
+                    null
+                );
+
+        $firstReceiptId =
+            (string) $firstReceipt->json(
+                'data.id'
+            );
+
+        $this->postJson(
+            "/api/v1/inventory/receipts/{$firstReceiptId}/actions/post"
+        )->assertOk();
+
+        $this->getJson(
+            "/api/v1/purchasing/orders/{$po['id']}"
+        )
+            ->assertOk()
+            ->assertJsonPath(
+                'data.status',
+                'PARTIALLY_RECEIVED'
+            );
+
+        $secondReceipt =
+            $this->postJson(
+                '/api/v1/inventory/receipts',
+                [
+                    'purchase_order_id' =>
+                        $po['id'],
+
+                    'warehouse_id' =>
+                        $warehouseId,
+
+                    'items' => [
+                        [
+                            'purchase_order_item_id' =>
+                                $po['item_id'],
+
+                            'quantity_received' =>
+                                '0.2000',
+                        ],
+                    ],
+                ]
+            )->assertCreated();
+
+        $secondReceiptId =
+            (string) $secondReceipt->json(
+                'data.id'
+            );
+
+        $this->postJson(
+            "/api/v1/inventory/receipts/{$secondReceiptId}/actions/post"
+        )->assertOk();
+
+        $this->getJson(
+            "/api/v1/purchasing/orders/{$po['id']}"
+        )
+            ->assertOk()
+            ->assertJsonPath(
+                'data.status',
+                'RECEIVED'
+            );
+
+        $this->assertSame(
+            0,
+            DB::table(
+                'stock_movements'
+            )
+                ->where(
+                    'tenant_id',
+                    $workspace['tenant_id']
+                )
+                ->where(
+                    'business_id',
+                    $workspace['business_id']
+                )
+                ->count()
+        );
+    }
+
+
     public function test_over_receipt_is_rejected(): void
     {
         $workspace =
@@ -405,9 +583,10 @@ class GoodsReceiptApiTest extends TestCase
 
         $po =
             $this->createIssuedPurchaseOrder(
-                'PRODUCT',
+                'INVENTORY_ITEM',
                 'Material Over',
-                5
+                '5.0000',
+                $materialId
             );
 
         $first =
@@ -424,9 +603,6 @@ class GoodsReceiptApiTest extends TestCase
                         [
                             'purchase_order_item_id' =>
                                 $po['item_id'],
-
-                            'material_id' =>
-                                $materialId,
 
                             'quantity_received' =>
                                 4,
@@ -457,9 +633,6 @@ class GoodsReceiptApiTest extends TestCase
                     [
                         'purchase_order_item_id' =>
                             $po['item_id'],
-
-                        'material_id' =>
-                            $materialId,
 
                         'quantity_received' =>
                             2,
@@ -656,9 +829,10 @@ class GoodsReceiptApiTest extends TestCase
     }
 
     private function createIssuedPurchaseOrder(
-        string $itemType,
+        string $procurementType,
         string $name,
-        float|int $quantity
+        string|int $quantity,
+        ?string $materialId = null
     ): array {
         $supplier =
             $this->postJson(
@@ -674,6 +848,25 @@ class GoodsReceiptApiTest extends TestCase
                 'data.id'
             );
 
+        $item = [
+            'procurement_type' =>
+                $procurementType,
+
+            'name' =>
+                $name,
+
+            'quantity' =>
+                $quantity,
+
+            'unit_price' =>
+                1000,
+        ];
+
+        if ($materialId !== null) {
+            $item['material_id'] =
+                $materialId;
+        }
+
         $order =
             $this->postJson(
                 '/api/v1/purchasing/orders',
@@ -682,19 +875,7 @@ class GoodsReceiptApiTest extends TestCase
                         $supplierId,
 
                     'items' => [
-                        [
-                            'item_type' =>
-                                $itemType,
-
-                            'name' =>
-                                $name,
-
-                            'quantity' =>
-                                $quantity,
-
-                            'unit_price' =>
-                                1000,
-                        ],
+                        $item,
                     ],
                 ]
             )
@@ -702,6 +883,10 @@ class GoodsReceiptApiTest extends TestCase
                 ->assertJsonPath(
                     'data.status',
                     'DRAFT'
+                )
+                ->assertJsonPath(
+                    'data.items.0.procurement_type',
+                    $procurementType
                 );
 
         $orderId =
