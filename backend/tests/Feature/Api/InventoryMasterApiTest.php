@@ -48,12 +48,19 @@ class InventoryMasterApiTest extends TestCase
 
                     'category' =>
                         'Akrilik',
+
+                    'inventory_type' =>
+                        'raw_material',
                 ]
             )
                 ->assertCreated()
                 ->assertJsonPath(
                     'data.code',
                     'MAT-001'
+                )
+                ->assertJsonPath(
+                    'data.inventory_type',
+                    'RAW_MATERIAL'
                 )
                 ->assertJsonPath(
                     'data.status',
@@ -90,15 +97,30 @@ class InventoryMasterApiTest extends TestCase
         $this->patchJson(
             "/api/v1/inventory/materials/{$materialId}",
             [
+                'inventory_type' =>
+                    'finished_good',
+
                 'status' =>
                     'INACTIVE',
             ]
         )
             ->assertOk()
             ->assertJsonPath(
+                'data.inventory_type',
+                'FINISHED_GOOD'
+            )
+            ->assertJsonPath(
                 'data.status',
                 'INACTIVE'
             );
+
+        $this->patchJson(
+            "/api/v1/inventory/materials/{$materialId}",
+            [
+                'inventory_type' =>
+                    'INVALID_TYPE',
+            ]
+        )->assertUnprocessable();
 
         $this->patchJson(
             "/api/v1/inventory/warehouses/{$warehouseId}",

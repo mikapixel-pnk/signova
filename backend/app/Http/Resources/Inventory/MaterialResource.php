@@ -27,6 +27,9 @@ class MaterialResource extends JsonResource
             'category' =>
                 $this->category,
 
+            'inventory_type' =>
+                $this->inventory_type,
+
             'status' =>
                 $this->status,
 

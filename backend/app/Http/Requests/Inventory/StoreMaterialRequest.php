@@ -18,6 +18,7 @@ class StoreMaterialRequest extends FormRequest
                 'code',
                 'name',
                 'category',
+                'inventory_type',
             ] as $field
         ) {
             if ($this->exists($field)) {
@@ -31,6 +32,13 @@ class StoreMaterialRequest extends FormRequest
         if (isset($data['code'])) {
             $data['code'] =
                 strtoupper($data['code']);
+        }
+
+        if (isset($data['inventory_type'])) {
+            $data['inventory_type'] =
+                strtoupper(
+                    $data['inventory_type']
+                );
         }
 
         $this->merge($data);
@@ -106,6 +114,12 @@ class StoreMaterialRequest extends FormRequest
                 'nullable',
                 'string',
                 'max:120',
+            ],
+
+            'inventory_type' => [
+                'sometimes',
+                'required',
+                'in:RAW_MATERIAL,COMPONENT,CONSUMABLE,RESALE,FINISHED_GOOD',
             ],
 
             'status' => [

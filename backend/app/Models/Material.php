@@ -16,6 +16,7 @@ class Material extends Model
         'name',
         'unit_id',
         'category',
+        'inventory_type',
         'status',
     ];
 }

@@ -60,6 +60,10 @@ class InventoryMasterService
                     $data['category']
                     ?? null,
 
+                'inventory_type' =>
+                    $data['inventory_type']
+                    ?? 'RAW_MATERIAL',
+
                 'status' =>
                     'ACTIVE',
             ]);
