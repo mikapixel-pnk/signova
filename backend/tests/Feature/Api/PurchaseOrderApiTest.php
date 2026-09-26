@@ -943,6 +943,192 @@ class PurchaseOrderApiTest extends TestCase
     }
 
 
+    public function test_purchase_order_money_rounds_half_up_without_float_drift(): void
+    {
+        $workspace =
+            $this->workspace(
+                'po-decimal-money@example.test',
+                'PO Decimal Money'
+            );
+
+        $supplierId =
+            $this->insertSupplier(
+                $workspace,
+                'Pemasok Decimal'
+            );
+
+        $this->actingAsWorkspace(
+            $workspace
+        );
+
+        $this->postJson(
+            '/api/v1/purchasing/orders',
+            [
+                'supplier_id' =>
+                    $supplierId,
+
+                'currency' =>
+                    'IDR',
+
+                'items' => [
+                    [
+                        'name' =>
+                            'Uji Pembulatan PO',
+
+                        'item_type' =>
+                            'PRODUCT',
+
+                        'quantity' =>
+                            '0.5000',
+
+                        'unit_price' =>
+                            '0.01',
+
+                        'discount_amount' =>
+                            '0',
+
+                        'tax_amount' =>
+                            '0',
+                    ],
+                ],
+            ]
+        )
+            ->assertCreated()
+            ->assertJsonPath(
+                'data.items.0.quantity',
+                '0.5000'
+            )
+            ->assertJsonPath(
+                'data.items.0.unit_price',
+                '0.01'
+            )
+            ->assertJsonPath(
+                'data.items.0.amount',
+                '0.01'
+            )
+            ->assertJsonPath(
+                'data.subtotal',
+                '0.01'
+            )
+            ->assertJsonPath(
+                'data.total',
+                '0.01'
+            );
+    }
+
+
+    public function test_purchase_order_source_allocation_uses_exact_decimal_quantity(): void
+    {
+        $workspace =
+            $this->workspace(
+                'po-decimal-quantity@example.test',
+                'PO Decimal Quantity'
+            );
+
+        $this->actingAsWorkspace(
+            $workspace
+        );
+
+        $supplierId =
+            $this->insertSupplier(
+                $workspace,
+                'Pemasok Quantity Decimal'
+            );
+
+        $request =
+            $this->postJson(
+                '/api/v1/purchasing/requests',
+                [
+                    'currency' =>
+                        'IDR',
+
+                    'items' => [
+                        [
+                            'name' =>
+                                'Bahan Decimal',
+
+                            'item_type' =>
+                                'PRODUCT',
+
+                            'quantity' =>
+                                '0.0002',
+
+                            'estimated_unit_price' =>
+                                '1',
+                        ],
+                    ],
+                ]
+            )->assertCreated();
+
+        $requestId =
+            (string) $request->json(
+                'data.id'
+            );
+
+        $sourceItemId =
+            (string) $request->json(
+                'data.items.0.id'
+            );
+
+        $this->postJson(
+            "/api/v1/purchasing/requests/{$requestId}/actions/submit"
+        )->assertOk();
+
+        $this->postJson(
+            "/api/v1/purchasing/requests/{$requestId}/actions/approve"
+        )->assertOk();
+
+        $payload = [
+            'supplier_id' =>
+                $supplierId,
+
+            'source_purchase_request_id' =>
+                $requestId,
+
+            'currency' =>
+                'IDR',
+
+            'items' => [
+                [
+                    'source_purchase_request_item_id' =>
+                        $sourceItemId,
+
+                    'quantity' =>
+                        '0.0001',
+
+                    'unit_price' =>
+                        '1',
+                ],
+            ],
+        ];
+
+        $this->postJson(
+            '/api/v1/purchasing/orders',
+            $payload
+        )
+            ->assertCreated()
+            ->assertJsonPath(
+                'data.items.0.quantity',
+                '0.0001'
+            );
+
+        $this->postJson(
+            '/api/v1/purchasing/orders',
+            $payload
+        )
+            ->assertCreated()
+            ->assertJsonPath(
+                'data.items.0.quantity',
+                '0.0001'
+            );
+
+        $this->postJson(
+            '/api/v1/purchasing/orders',
+            $payload
+        )->assertUnprocessable();
+    }
+
+
     private function createApprovedPurchaseRequest(
         array $workspace,
         int $quantity,

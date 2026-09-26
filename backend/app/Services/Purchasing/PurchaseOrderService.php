@@ -13,6 +13,8 @@ use App\Models\Supplier;
 use App\Services\Document\DocumentNumberService;
 use App\Tenancy\BusinessContext;
 use App\Tenancy\TenantContext;
+use Brick\Math\BigDecimal;
+use Brick\Math\RoundingMode;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
@@ -515,10 +517,17 @@ class PurchaseOrderService
             )
             ->delete();
 
-        $subtotal = 0.0;
-        $discountTotal = 0.0;
-        $taxTotal = 0.0;
-        $total = 0.0;
+        $subtotal =
+            BigDecimal::zero();
+
+        $discountTotal =
+            BigDecimal::zero();
+
+        $taxTotal =
+            BigDecimal::zero();
+
+        $total =
+            BigDecimal::zero();
 
         foreach (
             array_values($items)
@@ -550,25 +559,37 @@ class PurchaseOrderService
                     ...$snapshot,
                 ]);
 
-            $subtotal +=
-                (float) $snapshot[
-                    '_gross'
-                ];
+            $subtotal =
+                $subtotal->plus(
+                    BigDecimal::of(
+                        $snapshot['_gross']
+                    )
+                );
 
-            $discountTotal +=
-                (float) $snapshot[
-                    'discount_amount'
-                ];
+            $discountTotal =
+                $discountTotal->plus(
+                    BigDecimal::of(
+                        $snapshot[
+                            'discount_amount'
+                        ]
+                    )
+                );
 
-            $taxTotal +=
-                (float) $snapshot[
-                    'tax_amount'
-                ];
+            $taxTotal =
+                $taxTotal->plus(
+                    BigDecimal::of(
+                        $snapshot[
+                            'tax_amount'
+                        ]
+                    )
+                );
 
-            $total +=
-                (float) $snapshot[
-                    'amount'
-                ];
+            $total =
+                $total->plus(
+                    BigDecimal::of(
+                        $snapshot['amount']
+                    )
+                );
         }
 
         return [
@@ -826,9 +847,14 @@ class PurchaseOrderService
         }
 
         $quantity =
-            (float) (
-                $item['quantity']
-                ?? '1'
+            BigDecimal::of(
+                (string) (
+                    $item['quantity']
+                    ?? '1'
+                )
+            )->toScale(
+                4,
+                RoundingMode::HalfUp
             );
 
         if ($sourceItem) {
@@ -841,33 +867,55 @@ class PurchaseOrderService
         }
 
         $unitPrice =
-            (float) (
-                $item['unit_price']
-                ?? $sourceItem
-                    ?->estimated_unit_price
-                ?? '0'
+            BigDecimal::of(
+                (string) (
+                    $item['unit_price']
+                    ?? $sourceItem
+                        ?->estimated_unit_price
+                    ?? '0'
+                )
+            )->toScale(
+                2,
+                RoundingMode::HalfUp
             );
 
         $discount =
-            (float) (
-                $item['discount_amount']
-                ?? '0'
+            BigDecimal::of(
+                (string) (
+                    $item['discount_amount']
+                    ?? '0'
+                )
+            )->toScale(
+                2,
+                RoundingMode::HalfUp
             );
 
         $tax =
-            (float) (
-                $item['tax_amount']
-                ?? '0'
+            BigDecimal::of(
+                (string) (
+                    $item['tax_amount']
+                    ?? '0'
+                )
+            )->toScale(
+                2,
+                RoundingMode::HalfUp
             );
 
         $gross =
-            round(
-                $quantity
-                * $unitPrice,
-                2
-            );
+            $quantity
+                ->multipliedBy(
+                    $unitPrice
+                )
+                ->toScale(
+                    2,
+                    RoundingMode::HalfUp
+                );
 
-        if ($discount > $gross) {
+        if (
+            $discount->compareTo(
+                $gross
+            ) > 0
+        ) {
             throw ValidationException::withMessages([
                 "items.{$index}.discount_amount" =>
                     'Diskon item tidak boleh melebihi nilai sebelum diskon.',
@@ -875,12 +923,17 @@ class PurchaseOrderService
         }
 
         $amount =
-            round(
-                $gross
-                - $discount
-                + $tax,
-                2
-            );
+            $gross
+                ->minus(
+                    $discount
+                )
+                ->plus(
+                    $tax
+                )
+                ->toScale(
+                    2,
+                    RoundingMode::HalfUp
+                );
 
         return [
             'source_purchase_request_item_id' =>
@@ -929,12 +982,7 @@ class PurchaseOrderService
                 ?? $catalogItem?->description,
 
             'quantity' =>
-                number_format(
-                    $quantity,
-                    4,
-                    '.',
-                    ''
-                ),
+                (string) $quantity,
 
             'unit_code' =>
                 $sourceItem?->unit_code
@@ -1005,10 +1053,27 @@ class PurchaseOrderService
                 );
 
             $remaining =
-                (float) $sourceItem->quantity
-                - $allocated;
+                BigDecimal::of(
+                    (string)
+                        $sourceItem->quantity
+                )
+                    ->toScale(
+                        4,
+                        RoundingMode::HalfUp
+                    )
+                    ->minus(
+                        $allocated
+                    )
+                    ->toScale(
+                        4,
+                        RoundingMode::HalfUp
+                    );
 
-            if ($remaining <= 0) {
+            if (
+                $remaining->compareTo(
+                    BigDecimal::zero()
+                ) <= 0
+            ) {
                 continue;
             }
 
@@ -1017,7 +1082,7 @@ class PurchaseOrderService
                     $sourceItem->id,
 
                 'quantity' =>
-                    $remaining,
+                    (string) $remaining,
 
                 'unit_price' =>
                     $sourceItem
@@ -1046,7 +1111,7 @@ class PurchaseOrderService
     private function assertSourceQuantityAvailable(
         PurchaseRequestItem $sourceItem,
         string $purchaseOrderId,
-        float $quantity,
+        BigDecimal $quantity,
         int $index
     ): void {
         $allocated =
@@ -1056,12 +1121,26 @@ class PurchaseOrderService
             );
 
         $available =
-            (float) $sourceItem->quantity
-            - $allocated;
+            BigDecimal::of(
+                (string)
+                    $sourceItem->quantity
+            )
+                ->toScale(
+                    4,
+                    RoundingMode::HalfUp
+                )
+                ->minus(
+                    $allocated
+                )
+                ->toScale(
+                    4,
+                    RoundingMode::HalfUp
+                );
 
         if (
-            $quantity
-            > $available + 0.0000001
+            $quantity->compareTo(
+                $available
+            ) > 0
         ) {
             throw ValidationException::withMessages([
                 "items.{$index}.quantity" =>
@@ -1073,8 +1152,8 @@ class PurchaseOrderService
     private function allocatedSourceQuantity(
         string $sourceItemId,
         string $excludePurchaseOrderId
-    ): float {
-        return (float) (
+    ): BigDecimal {
+        $allocated =
             DB::table(
                 'purchase_order_items as poi'
             )
@@ -1110,7 +1189,16 @@ class PurchaseOrderService
                 )
                 ->sum(
                     'poi.quantity'
-                )
+                );
+
+        return BigDecimal::of(
+            (string) (
+                $allocated
+                ?: '0'
+            )
+        )->toScale(
+            4,
+            RoundingMode::HalfUp
         );
     }
 
@@ -1270,16 +1358,12 @@ class PurchaseOrderService
     }
 
     private function money(
-        float $value
+        BigDecimal $value
     ): string {
-        return number_format(
-            round(
-                $value,
-                2
-            ),
-            2,
-            '.',
-            ''
-        );
+        return (string)
+            $value->toScale(
+                2,
+                RoundingMode::HalfUp
+            );
     }
 }
