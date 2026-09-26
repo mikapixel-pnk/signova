@@ -3,13 +3,13 @@ import {
 } from "@/components/layout/tenant-shell";
 
 import {
-  ModulePage,
-} from "@/components/module/module-page";
+  PurchaseOrderList,
+} from "@/components/purchasing/purchase-order-list";
 
 export default function PurchaseOrdersPage() {
   return (
     <TenantShell>
-      <ModulePage moduleKey="purchase-orders" />
+      <PurchaseOrderList />
     </TenantShell>
   );
 }

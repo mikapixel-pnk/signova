@@ -1,0 +1,292 @@
+.page {
+  display: grid;
+  gap: 20px;
+}
+
+.summaryCard {
+  display: grid;
+  gap: 10px;
+  padding: 18px;
+  border: 1px solid color-mix(
+    in srgb,
+    currentColor 12%,
+    transparent
+  );
+  border-radius: 18px;
+  background: color-mix(
+    in srgb,
+    #2868f0 8%,
+    transparent
+  );
+}
+
+.summaryCard > div {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.summaryCard span {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  opacity: 0.64;
+}
+
+.summaryCard strong {
+  font-size: 15px;
+  font-variant-numeric: tabular-nums;
+}
+
+.summaryCard p {
+  margin: 0;
+  max-width: 680px;
+  font-size: 13px;
+  line-height: 1.6;
+  opacity: 0.72;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(
+    auto-fit,
+    minmax(
+      min(100%, 300px),
+      1fr
+    )
+  );
+  gap: 14px;
+}
+
+.card {
+  display: grid;
+  align-content: start;
+  gap: 16px;
+  padding: 18px;
+  border: 1px solid color-mix(
+    in srgb,
+    currentColor 13%,
+    transparent
+  );
+  border-radius: 18px;
+  background: color-mix(
+    in srgb,
+    currentColor 3%,
+    transparent
+  );
+}
+
+.cardHeader {
+  display: grid;
+  grid-template-columns:
+    auto 1fr auto;
+  align-items: start;
+  gap: 12px;
+}
+
+.cardIcon {
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  border-radius: 13px;
+  background: color-mix(
+    in srgb,
+    #2868f0 13%,
+    transparent
+  );
+}
+
+.cardTitle {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.cardTitle strong,
+.cardTitle span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cardTitle strong {
+  font-size: 15px;
+}
+
+.cardTitle span {
+  font-size: 12px;
+  opacity: 0.64;
+}
+
+.statusBadge {
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  min-height: 26px;
+  padding: 4px 9px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.statusBadge[data-status="DRAFT"] {
+  background: color-mix(
+    in srgb,
+    #667085 16%,
+    transparent
+  );
+}
+
+.statusBadge[data-status="ISSUED"] {
+  background: color-mix(
+    in srgb,
+    #2868f0 16%,
+    transparent
+  );
+}
+
+.statusBadge[data-status="PARTIALLY_RECEIVED"] {
+  background: color-mix(
+    in srgb,
+    #f0a63a 18%,
+    transparent
+  );
+}
+
+.statusBadge[data-status="RECEIVED"] {
+  background: color-mix(
+    in srgb,
+    #34b56f 17%,
+    transparent
+  );
+}
+
+.statusBadge[data-status="CANCELLED"] {
+  background: color-mix(
+    in srgb,
+    #e45757 16%,
+    transparent
+  );
+}
+
+.cardDetails {
+  display: grid;
+  gap: 9px;
+  font-size: 13px;
+  line-height: 1.5;
+  opacity: 0.78;
+}
+
+.cardDetails span {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.cardDetails svg {
+  flex: 0 0 auto;
+  margin-top: 2px;
+}
+
+.primaryLink,
+.secondaryLink {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 0 15px;
+  border-radius: 13px;
+  color: inherit;
+  font-size: 14px;
+  font-weight: 750;
+  text-decoration: none;
+}
+
+.primaryLink {
+  background: linear-gradient(
+    135deg,
+    #2868f0,
+    #29b8e8
+  );
+  color: #fff;
+}
+
+.secondaryLink {
+  width: fit-content;
+  border: 1px solid color-mix(
+    in srgb,
+    currentColor 15%,
+    transparent
+  );
+  background: color-mix(
+    in srgb,
+    currentColor 3%,
+    transparent
+  );
+}
+
+.empty {
+  display: grid;
+  justify-items: center;
+  gap: 11px;
+  padding: 42px 20px;
+  border: 1px dashed color-mix(
+    in srgb,
+    currentColor 20%,
+    transparent
+  );
+  border-radius: 18px;
+  text-align: center;
+}
+
+.empty h2,
+.empty p {
+  margin: 0;
+}
+
+.empty h2 {
+  font-size: 18px;
+}
+
+.empty p {
+  max-width: 540px;
+  font-size: 14px;
+  line-height: 1.6;
+  opacity: 0.68;
+}
+
+.paginationNote {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.6;
+  opacity: 0.62;
+}
+
+@media (max-width: 560px) {
+  .summaryCard > div {
+    display: grid;
+    gap: 5px;
+  }
+
+  .cardHeader {
+    grid-template-columns:
+      auto 1fr;
+  }
+
+  .statusBadge {
+    grid-column: 2;
+  }
+
+  .primaryLink,
+  .secondaryLink {
+    width: 100%;
+  }
+
+  .card {
+    padding: 16px;
+  }
+}
