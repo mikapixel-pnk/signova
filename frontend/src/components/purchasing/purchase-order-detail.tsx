@@ -62,6 +62,10 @@ import type {
   PurchaseOrder,
 } from "@/types/purchasing";
 
+import {
+  formatDecimalDisplay,
+} from "@/lib/format/decimal";
+
 import styles from "./purchase-order.module.css";
 
 
@@ -1062,7 +1066,7 @@ export function PurchaseOrderDetail({
                     <span>Jumlah</span>
 
                     <strong>
-                      {item.quantity}{" "}
+                      {formatDecimalDisplay(item.quantity)}{" "}
                       {item.unit_symbol ??
                         ""}
                     </strong>

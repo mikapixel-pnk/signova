@@ -367,7 +367,8 @@ function rupiah(
     {
       style: "currency",
       currency: "IDR",
-      maximumFractionDigits: 0,
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 2,
     },
   ).format(
     Number(value) || 0,

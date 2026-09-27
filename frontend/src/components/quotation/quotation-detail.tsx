@@ -90,6 +90,10 @@ import type {
   QuotationStatus,
 } from "@/types/quotation";
 
+import {
+  formatDecimalDisplay,
+} from "@/lib/format/decimal";
+
 import styles from "./quotation-detail.module.css";
 
 type RevisionLine = {
@@ -1803,7 +1807,7 @@ export function QuotationDetail() {
                   <div>
                     <dt>Qty</dt>
                     <dd>
-                      {item.quantity}
+                      {formatDecimalDisplay(item.quantity)}
                     </dd>
                   </div>
 
@@ -3064,7 +3068,7 @@ export function QuotationDetail() {
                           {item.name}
                         </strong>
                         <small>
-                          {item.quantity} ×{" "}
+                          {formatDecimalDisplay(item.quantity)} ×{" "}
                           {formatCurrency(
                             item.unit_price,
                             version.currency,

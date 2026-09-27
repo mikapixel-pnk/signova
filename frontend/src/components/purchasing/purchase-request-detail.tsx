@@ -70,6 +70,10 @@ import type {
   PurchaseRequest,
 } from "@/types/purchasing";
 
+import {
+  formatDecimalDisplay,
+} from "@/lib/format/decimal";
+
 import styles from "./purchase-request.module.css";
 
 
@@ -1001,7 +1005,7 @@ export function PurchaseRequestDetail({
                     Jumlah
 
                     <strong>
-                      {item.quantity}{" "}
+                      {formatDecimalDisplay(item.quantity)}{" "}
                       {item.unit_symbol ??
                         ""}
                     </strong>

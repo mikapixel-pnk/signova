@@ -71,6 +71,10 @@ import type {
   PaymentMethod,
 } from "@/types/payment";
 
+import {
+  formatDecimalDisplay,
+} from "@/lib/format/decimal";
+
 import styles from "./invoice-detail.module.css";
 
 function money(
@@ -84,7 +88,8 @@ function money(
     {
       style: "currency",
       currency,
-      maximumFractionDigits: 0,
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 2,
     },
   ).format(
     Number(value) || 0,
@@ -1873,7 +1878,9 @@ export function InvoiceDetail() {
                     <strong>
                       {item.pricing_display
                         ?.display_quantity ??
-                        item.quantity}{" "}
+                        formatDecimalDisplay(
+                          item.quantity,
+                        )}{" "}
                       {item.pricing_display
                         ?.display_unit ??
                         item.unit_symbol ??

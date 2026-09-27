@@ -14,10 +14,8 @@ export function formatCurrency(
     {
       style: "currency",
       currency,
-      maximumFractionDigits:
-        currency === "IDR"
-          ? 0
-          : 2,
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 2,
     },
   ).format(
     Number.isFinite(numeric)

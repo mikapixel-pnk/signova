@@ -36,6 +36,10 @@ import type {
   PublicQuotationStatus,
 } from "@/types/public-quotation";
 
+import {
+  formatDecimalDisplay,
+} from "@/lib/format/decimal";
+
 import styles from "./public-quotation.module.css";
 
 const STATUS_LABELS:
@@ -80,6 +84,9 @@ function money(
 
       currency:
         currency || "IDR",
+
+      minimumFractionDigits:
+        0,
 
       maximumFractionDigits:
         2,
@@ -139,19 +146,10 @@ function quantityLabel(
     | string
     | null,
 ): string {
-  const value =
-    Number(quantity);
-
   const formatted =
-    Number.isFinite(value)
-      ? new Intl.NumberFormat(
-          "id-ID",
-          {
-            maximumFractionDigits:
-              4,
-          },
-        ).format(value)
-      : String(quantity);
+    formatDecimalDisplay(
+      quantity,
+    );
 
   const unit =
     unitSymbol ??

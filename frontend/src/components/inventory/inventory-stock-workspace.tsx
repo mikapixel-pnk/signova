@@ -51,6 +51,10 @@ import type {
   StockBalance,
 } from "@/types/inventory";
 
+import {
+  formatDecimalDisplay,
+} from "@/lib/format/decimal";
+
 import styles from "./inventory-stock-workspace.module.css";
 
 
@@ -68,46 +72,8 @@ function normalized(
 function formatQuantity(
   value: string,
 ): string {
-  const match =
-    /^(-?)(\d+)(?:\.(\d+))?$/.exec(
-      value.trim(),
-    );
-
-  if (!match) {
-    return value;
-  }
-
-  const sign =
-    match[1];
-
-  const whole =
-    match[2]
-      .replace(
-        /^0+(?=\d)/,
-        "",
-      )
-      .replace(
-        /\B(?=(\d{3})+(?!\d))/g,
-        ".",
-      );
-
-  const fraction =
-    (
-      match[3] ??
-      ""
-    ).replace(
-      /0+$/,
-      "",
-    );
-
-  return (
-    sign
-    + whole
-    + (
-      fraction
-        ? `,${fraction}`
-        : ""
-    )
+  return formatDecimalDisplay(
+    value,
   );
 }
 

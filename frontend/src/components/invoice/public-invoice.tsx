@@ -45,6 +45,10 @@ import type {
   PublicInvoiceStatus,
 } from "@/types/public-invoice";
 
+import {
+  formatDecimalDisplay,
+} from "@/lib/format/decimal";
+
 import styles from "./public-invoice.module.css";
 
 
@@ -91,6 +95,9 @@ function money(
 
       currency:
         currency || "IDR",
+
+      minimumFractionDigits:
+        0,
 
       maximumFractionDigits:
         2,
@@ -146,18 +153,9 @@ function quantityLabel(
     | string
     | number,
 ): string {
-  const number =
-    Number(quantity);
-
-  return Number.isFinite(number)
-    ? new Intl.NumberFormat(
-        "id-ID",
-        {
-          maximumFractionDigits:
-            4,
-        },
-      ).format(number)
-    : String(quantity);
+  return formatDecimalDisplay(
+    quantity,
+  );
 }
 
 

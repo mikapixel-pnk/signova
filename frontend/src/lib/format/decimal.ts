@@ -286,6 +286,79 @@ export function isNonNegativeDecimal(
 }
 
 
+export function formatDecimalDisplay(
+  value:
+    | string
+    | number
+    | null
+    | undefined,
+  maximumFractionDigits = 2,
+): string {
+  const scale =
+    Number.isInteger(
+      maximumFractionDigits,
+    ) &&
+    maximumFractionDigits >= 0
+      ? maximumFractionDigits
+      : 2;
+
+  const source =
+    String(
+      value ?? "0",
+    ).trim();
+
+  const units =
+    toScaledBigInt(
+      source,
+      scale,
+    );
+
+  if (units === null) {
+    return source;
+  }
+
+  const normalized =
+    fromScaledBigInt(
+      units,
+      scale,
+    );
+
+  const negative =
+    normalized.startsWith("-");
+
+  const unsigned =
+    negative
+      ? normalized.slice(1)
+      : normalized;
+
+  const [
+    whole,
+    fraction = "",
+  ] =
+    unsigned.split(".");
+
+  const grouped =
+    whole.replace(
+      /\B(?=(\d{3})+(?!\d))/g,
+      ".",
+    );
+
+  const visibleFraction =
+    fraction.replace(
+      /0+$/,
+      "",
+    );
+
+  return `${
+    negative ? "-" : ""
+  }${grouped}${
+    visibleFraction
+      ? `,${visibleFraction}`
+      : ""
+  }`;
+}
+
+
 export function formatIdrDecimal(
   value:
     | string

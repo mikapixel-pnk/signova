@@ -120,6 +120,9 @@ function money(
         currency ||
         "IDR",
 
+      minimumFractionDigits:
+        0,
+
       maximumFractionDigits:
         2,
     },
