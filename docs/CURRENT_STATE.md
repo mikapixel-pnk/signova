@@ -1,14 +1,17 @@
 # Kondisi Development SIGNOVA Saat Ini
 
-**Terakhir diperbarui:** 2026-09-26
+**Terakhir diperbarui:** 2026-09-27
 
 **Branch audit:** `feat/foundation-backend`
-**HEAD audit:** `4d1e74c`
+**Base HEAD sebelum milestone Inventory/Stock:** `582e69c`
 
 Runtime evidence:
-- frontend staging sudah direstart setelah HEAD `4d1e74c`,
-- service aktif,
-- local HTTP check menghasilkan 200.
+- frontend staging aktif pada BUILD_ID `VAuJb10muXa5poGcSoymO`,
+- `signova-frontend.service` aktif,
+- local HTTP check menghasilkan 200,
+- `/app/operasional/stok`, `/barang-persediaan`, `/kategori-persediaan`, dan `/gudang` menghasilkan HTTP 200,
+- legacy `/app/operasional/stok-gudang` redirect 307 ke `/app/operasional/barang-persediaan`,
+- rollback build sebelumnya `geUtahpYy73GzrEurvAmN` masih dipertahankan sampai milestone di-commit dan worktree dinyatakan clean.
 
 ## Modul Aktif
 
@@ -84,7 +87,7 @@ Jangan campur feature patch ke milestone dokumentasi ini.
 
 1. Root README masih menggambarkan repository terutama sebagai Basic/Starter foundation dan sudah tertinggal dari implementasi aktual.
 2. `penerimaan/page.tsx` masih generic `ModulePage`; backend Goods Receipt sudah ada.
-3. Inventory frontend masih generic/placeholder; backend Inventory Master Foundation sudah implemented dan staging UAT verified. Frontend typed contract + UI kategori/material/gudang masih pending.
+3. Inventory Master frontend dan Stock visibility sudah implemented, tested, deployed ke staging, dan manual UAT verified. Flow transaksi stok lanjutan seperti issue, transfer, adjustment, stock opname, reservation/allocation masih pending sesuai roadmap.
 4. Payables page masih generic `ModulePage`; Supplier Bill/Payment backend tersedia.
 5. Frontend automated test belum terbukti.
 6. Redis queue dikonfigurasi, tetapi active SIGNOVA queue worker belum terbukti.
@@ -100,7 +103,7 @@ Jangan campur feature patch ke milestone dokumentasi ini.
 - root knowledge base sebelumnya belum ada,
 - README perlu future documentation refresh,
 - capability registry document lebih lama/kecil daripada capability seeder aktual,
-- Receiving/Inventory/Payables UI tertinggal dari backend,
+- Receiving/Payables UI masih tertinggal dari backend; Inventory Master dan read-only Stock visibility sudah tersedia, sedangkan workflow issue/transfer/adjustment/reservation masih pending,
 - platform/SaaS work berada pada worktree/branch terpisah dan harus direkonsiliasi secara sengaja,
 - generated `backend/AGENTS.md` menyarankan install Laravel Boost; dependency tidak boleh ditambahkan otomatis.
 
@@ -184,9 +187,9 @@ Jangan menganggap code yang belum di-merge pada worktree lain sudah tersedia di 
 
 ### Status
 
-**BACKEND IMPLEMENTED + TESTED + STAGING UAT VERIFIED**
+**BACKEND + FRONTEND IMPLEMENTED + TESTED + STAGING UAT VERIFIED**
 
-Frontend Inventory Master masih pending.
+Inventory Master dan read-only Stock visibility sudah tersedia di staging.
 
 ### Implemented
 
@@ -199,6 +202,9 @@ Frontend Inventory Master masih pending.
 - `materials.description`
 - relational category compatibility/backfill
 - Inventory Category API
+- read-only Stock Balance API `GET /api/v1/inventory/stock-balances`
+- saldo `on_hand` dihitung dari `SUM(stock_movements.quantity_signed)`
+- hanya material `TRACKED` masuk Stock visibility; material TRACKED tanpa movement tetap tampil saldo `0`
 - additive Material API contract
 - stock-policy validation
 - duplicate category guard
@@ -207,6 +213,35 @@ Frontend Inventory Master masih pending.
 - Inventory Master write dipisahkan dari Receiving
 - TRACKED -> INVENTORY_ITEM
 - NOT_TRACKED -> NON_STOCK_GOOD
+- frontend menu Operasional dipisahkan menjadi `Stok`, `Barang Persediaan`, `Kategori Persediaan`, dan `Gudang`
+- Master Data `Kategori` diperjelas menjadi `Kategori Penjualan`
+- halaman `Stok` bersifat read-only dan memakai capability `inventory.view`
+- saldo pada halaman `Stok` saat ini merupakan total seluruh gudang
+- legacy route `/app/operasional/stok-gudang` dipertahankan sebagai redirect ke `Barang Persediaan`
+
+### Verification Inventory/Stock — 2026-09-27
+
+- targeted Inventory Foundation test: PASS;
+- full backend suite: **699 tests / 3521 assertions PASS**;
+- full frontend ESLint: PASS;
+- TypeScript `--noEmit`: PASS;
+- Next.js 16.3.5 production build: PASS;
+- build menghasilkan 45/45 static pages;
+- staging active BUILD_ID: `VAuJb10muXa5poGcSoymO`;
+- `/app/operasional/stok`: HTTP 200;
+- `/app/operasional/barang-persediaan`: HTTP 200;
+- `/app/operasional/kategori-persediaan`: HTTP 200;
+- `/app/operasional/gudang`: HTTP 200;
+- legacy `/app/operasional/stok-gudang`: redirect 307;
+- manual mobile UAT halaman Stok: PASS;
+- material TRACKED tampil dengan saldo `0 cm`;
+- minimum, pesan ulang, dan maksimum tampil;
+- material NOT_TRACKED tidak tampil sebagai saldo stok;
+- saldo stok tidak memiliki direct-edit control;
+- protected staging counts pasca-UAT tetap
+  `cash_transactions=7` dan `stock_movements=0`;
+- rollback build sebelumnya tetap tersedia di
+  `/home/signovaops/signova-rollbacks/frontend/next-geUtahpYy73GzrEurvAmN-20260927-071417`.
 
 ### Migration
 

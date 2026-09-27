@@ -24,6 +24,7 @@ use App\Http\Controllers\Api\V1\Supplier\SupplierController;
 use App\Http\Controllers\Api\V1\Purchasing\PurchaseOrderController;
 use App\Http\Controllers\Api\V1\Purchasing\PurchaseRequestController;
 use App\Http\Controllers\Api\V1\Inventory\MaterialController;
+use App\Http\Controllers\Api\V1\Inventory\StockBalanceController;
 use App\Http\Controllers\Api\V1\Inventory\WarehouseController;
 use App\Http\Controllers\Api\V1\Inventory\GoodsReceiptController;
 use App\Http\Controllers\Api\V1\Catalog\CatalogCategoryController;
@@ -389,6 +390,14 @@ Route::prefix('v1')->group(function () {
         Route::get(
             '/inventory/materials',
             [MaterialController::class, 'index']
+        )->middleware([
+            'business.context',
+            'capability:inventory.view',
+        ]);
+
+        Route::get(
+            '/inventory/stock-balances',
+            [StockBalanceController::class, 'index']
         )->middleware([
             'business.context',
             'capability:inventory.view',

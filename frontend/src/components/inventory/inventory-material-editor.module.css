@@ -1,0 +1,422 @@
+.overlay {
+  position: fixed;
+  z-index: 125;
+  inset: 0;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  background:
+    rgb(8 17 27 / 60%);
+  backdrop-filter:
+    blur(3px);
+}
+
+.sheet {
+  display: flex;
+  width: 100%;
+  max-height: 94dvh;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid
+    color-mix(
+      in srgb,
+      currentColor 12%,
+      transparent
+    );
+  border-radius:
+    24px 24px 0 0;
+  color: inherit;
+  background: Canvas;
+  box-shadow:
+    0 -20px 60px
+    rgb(0 0 0 / 18%);
+}
+
+.header {
+  display: flex;
+  align-items: flex-start;
+  justify-content:
+    space-between;
+  gap: 16px;
+  padding: 20px;
+  border-bottom: 1px solid
+    color-mix(
+      in srgb,
+      currentColor 10%,
+      transparent
+    );
+}
+
+.header h2,
+.header p {
+  margin: 0;
+}
+
+.header h2 {
+  font-size: 20px;
+  line-height: 1.2;
+}
+
+.header p {
+  margin-top: 5px;
+  max-width: 650px;
+  font-size: 13px;
+  line-height: 1.55;
+  opacity: 0.66;
+}
+
+.closeButton {
+  display: grid;
+  width: 44px;
+  height: 44px;
+  flex: 0 0 44px;
+  place-items: center;
+  border: 1px solid
+    color-mix(
+      in srgb,
+      currentColor 12%,
+      transparent
+    );
+  border-radius: 13px;
+  color: inherit;
+  background: transparent;
+  cursor: pointer;
+}
+
+.form {
+  display: flex;
+  min-height: 0;
+  flex: 1;
+  flex-direction: column;
+}
+
+.body {
+  display: grid;
+  gap: 20px;
+  overflow-y: auto;
+  padding: 20px;
+}
+
+.formSection {
+  display: grid;
+  gap: 16px;
+}
+
+.formSection + .formSection {
+  padding-top: 20px;
+  border-top: 1px solid
+    color-mix(
+      in srgb,
+      currentColor 10%,
+      transparent
+    );
+}
+
+.sectionHeading {
+  display: grid;
+  gap: 4px;
+}
+
+.sectionHeading h3,
+.sectionHeading p {
+  margin: 0;
+}
+
+.sectionHeading h3 {
+  font-size: 15px;
+}
+
+.sectionHeading p {
+  font-size: 12px;
+  line-height: 1.5;
+  opacity: 0.62;
+}
+
+.twoColumns,
+.thresholdGrid {
+  display: grid;
+  gap: 14px;
+}
+
+.field {
+  display: grid;
+  gap: 7px;
+}
+
+.field > span {
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.field b {
+  margin-left: 4px;
+  color: #e45757;
+}
+
+.field input,
+.field select,
+.field textarea {
+  width: 100%;
+  min-height: 46px;
+  border: 1px solid
+    color-mix(
+      in srgb,
+      currentColor 16%,
+      transparent
+    );
+  border-radius: 13px;
+  outline: 0;
+  color: inherit;
+  background:
+    color-mix(
+      in srgb,
+      currentColor 2%,
+      transparent
+    );
+  font: inherit;
+  font-size: 14px;
+}
+
+.field input,
+.field select {
+  padding:
+    0 13px;
+}
+
+.field textarea {
+  min-height: 104px;
+  resize: vertical;
+  padding: 12px 13px;
+  line-height: 1.5;
+}
+
+.field input:focus,
+.field select:focus,
+.field textarea:focus {
+  border-color:
+    rgb(40 104 240 / 70%);
+  box-shadow:
+    0 0 0 3px
+    rgb(40 104 240 / 10%);
+}
+
+.field input[aria-invalid="true"],
+.field select[aria-invalid="true"],
+.field textarea[aria-invalid="true"] {
+  border-color:
+    rgb(228 87 87 / 72%);
+}
+
+.fieldError {
+  color: #e45757;
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.help {
+  font-size: 11px;
+  line-height: 1.45;
+  opacity: 0.58;
+}
+
+.trackingChoices {
+  display: grid;
+  gap: 10px;
+}
+
+.trackingChoice,
+.trackingChoiceActive {
+  display: grid;
+  gap: 4px;
+  min-height: 82px;
+  padding: 14px;
+  border-radius: 15px;
+  text-align: left;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
+.trackingChoice {
+  border: 1px solid
+    color-mix(
+      in srgb,
+      currentColor 14%,
+      transparent
+    );
+  background: transparent;
+}
+
+.trackingChoiceActive {
+  border: 1px solid
+    rgb(40 104 240 / 45%);
+  background:
+    rgb(40 104 240 / 8%);
+  box-shadow:
+    0 0 0 2px
+    rgb(40 104 240 / 5%);
+}
+
+.trackingChoice strong,
+.trackingChoiceActive strong {
+  font-size: 13px;
+}
+
+.trackingChoice span,
+.trackingChoiceActive span {
+  font-size: 12px;
+  line-height: 1.5;
+  opacity: 0.66;
+}
+
+.thresholdSection {
+  display: grid;
+  gap: 13px;
+  padding: 15px;
+  border-radius: 16px;
+  background:
+    rgb(41 184 232 / 7%);
+}
+
+.thresholdHeading {
+  display: grid;
+  gap: 3px;
+}
+
+.thresholdHeading strong {
+  font-size: 13px;
+}
+
+.thresholdHeading span {
+  font-size: 11px;
+  line-height: 1.45;
+  opacity: 0.62;
+}
+
+.nonTrackedNote {
+  padding: 14px 15px;
+  border-radius: 14px;
+  background:
+    rgb(102 112 133 / 8%);
+  font-size: 12px;
+  line-height: 1.55;
+  opacity: 0.78;
+}
+
+.footer {
+  display: grid;
+  grid-template-columns:
+    minmax(0, 1fr)
+    minmax(0, 1.5fr);
+  gap: 10px;
+  padding: 16px 20px;
+  border-top: 1px solid
+    color-mix(
+      in srgb,
+      currentColor 10%,
+      transparent
+    );
+}
+
+.primaryButton,
+.secondaryButton {
+  display: inline-flex;
+  min-height: 46px;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 0 16px;
+  border-radius: 13px;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.primaryButton {
+  border: 0;
+  color: #fff;
+  background:
+    linear-gradient(
+      135deg,
+      #2868f0,
+      #29b8e8
+    );
+  box-shadow:
+    0 10px 24px
+    rgb(40 104 240 / 18%);
+}
+
+.secondaryButton {
+  border: 1px solid
+    color-mix(
+      in srgb,
+      currentColor 14%,
+      transparent
+    );
+  color: inherit;
+  background: transparent;
+}
+
+.closeButton:disabled,
+.primaryButton:disabled,
+.secondaryButton:disabled {
+  cursor: wait;
+  opacity: 0.55;
+}
+
+@media (min-width: 720px) {
+  .overlay {
+    align-items: center;
+    padding: 24px;
+  }
+
+  .sheet {
+    width: min(
+      100%,
+      760px
+    );
+    max-height: min(
+      90dvh,
+      860px
+    );
+    border-radius: 22px;
+    box-shadow:
+      0 24px 70px
+      rgb(0 0 0 / 24%);
+  }
+
+  .header,
+  .body {
+    padding:
+      22px 24px;
+  }
+
+  .twoColumns {
+    grid-template-columns:
+      repeat(2, minmax(0, 1fr));
+  }
+
+  .trackingChoices {
+    grid-template-columns:
+      repeat(2, minmax(0, 1fr));
+  }
+
+  .thresholdGrid {
+    grid-template-columns:
+      repeat(3, minmax(0, 1fr));
+  }
+
+  .footer {
+    display: flex;
+    justify-content:
+      flex-end;
+    padding:
+      16px 24px;
+  }
+
+  .primaryButton,
+  .secondaryButton {
+    min-width: 160px;
+  }
+}

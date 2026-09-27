@@ -96,7 +96,7 @@ export const modules:
   categories: {
     key: "categories",
     group: "master-data",
-    label: "Kategori",
+    label: "Kategori Penjualan",
     href:
       "/app/kategori",
     tone: "amber",
@@ -712,29 +712,107 @@ export const modules:
     },
   },
 
+  "inventory-stock": {
+    key: "inventory-stock",
+    group: "operasional",
+    label: "Stok",
+    shortLabel: "Stok",
+    href: "/app/operasional/stok",
+    tone: "green",
+    icon: Boxes,
+    plan: "pro",
+    capability:
+      "inventory.view",
+    description:
+      "Lihat saldo stok barang yang dipantau dari transaksi persediaan.",
+    insight: {
+      title:
+        "Saldo berasal dari pergerakan stok",
+      description:
+        "Halaman ini hanya membaca saldo. Perubahan stok tetap melalui penerimaan dan transaksi stok yang sah.",
+    },
+    navigation: {
+      desktop: true,
+      mobile: true,
+      order: 40,
+    },
+  },
+
   inventory: {
     key: "inventory",
     group: "operasional",
-    label: "Stok & Gudang",
-    shortLabel: "Stok & Gudang",
-    href: "/app/operasional/stok-gudang",
+    label: "Barang Persediaan",
+    shortLabel: "Persediaan",
+    href: "/app/operasional/barang-persediaan",
     tone: "cyan",
     icon: Boxes,
     plan: "pro",
     capability:
       "inventory.view",
     description:
-      "Pantau material, gudang, dan fondasi pergerakan stok usaha.",
+      "Kelola barang fisik dan kebijakan pemantauan persediaan.",
     insight: {
       title:
-        "Stok mengikuti transaksi nyata",
+        "Saldo stok mengikuti transaksi nyata",
       description:
-        "Material dan gudang menjadi referensi operasional untuk penerimaan dan pergerakan persediaan.",
+        "Master barang menyimpan identitas dan kebijakan. Saldo berasal dari pergerakan stok.",
     },
     navigation: {
       desktop: true,
       mobile: true,
-      order: 40,
+      order: 41,
+    },
+  },
+
+  "inventory-categories": {
+    key: "inventory-categories",
+    group: "operasional",
+    label: "Kategori Persediaan",
+    shortLabel: "Kategori",
+    href: "/app/operasional/kategori-persediaan",
+    tone: "violet",
+    icon: BookOpenText,
+    plan: "pro",
+    capability:
+      "inventory.view",
+    description:
+      "Kelola pengelompokan barang persediaan agar mudah dicari dan digunakan.",
+    insight: {
+      title:
+        "Kategori adalah klasifikasi master",
+      description:
+        "Kategori membantu pengelompokan barang tanpa mengubah saldo atau pergerakan stok.",
+    },
+    navigation: {
+      desktop: true,
+      mobile: true,
+      order: 42,
+    },
+  },
+
+  "inventory-warehouses": {
+    key: "inventory-warehouses",
+    group: "operasional",
+    label: "Gudang",
+    shortLabel: "Gudang",
+    href: "/app/operasional/gudang",
+    tone: "teal",
+    icon: Package,
+    plan: "pro",
+    capability:
+      "inventory.view",
+    description:
+      "Kelola lokasi fisik penyimpanan persediaan usaha.",
+    insight: {
+      title:
+        "Gudang adalah lokasi fisik",
+      description:
+        "Gudang menentukan lokasi persediaan. Proyek tetap menjadi tujuan atau alokasi penggunaan.",
+    },
+    navigation: {
+      desktop: true,
+      mobile: true,
+      order: 43,
     },
   },
 

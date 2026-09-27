@@ -1,0 +1,280 @@
+.overlay {
+  position: fixed;
+  z-index: 120;
+  inset: 0;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  background:
+    rgb(8 17 27 / 58%);
+  backdrop-filter:
+    blur(3px);
+}
+
+.sheet {
+  display: flex;
+  width: 100%;
+  max-height: 92dvh;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid
+    color-mix(
+      in srgb,
+      currentColor 12%,
+      transparent
+    );
+  border-radius:
+    24px 24px 0 0;
+  color: inherit;
+  background: Canvas;
+  box-shadow:
+    0 -20px 60px
+    rgb(0 0 0 / 18%);
+}
+
+.header {
+  display: flex;
+  align-items: flex-start;
+  justify-content:
+    space-between;
+  gap: 16px;
+  padding: 20px;
+  border-bottom: 1px solid
+    color-mix(
+      in srgb,
+      currentColor 10%,
+      transparent
+    );
+}
+
+.header h2,
+.header p {
+  margin: 0;
+}
+
+.header h2 {
+  font-size: 20px;
+  line-height: 1.2;
+}
+
+.header p {
+  margin-top: 5px;
+  max-width: 520px;
+  font-size: 13px;
+  line-height: 1.5;
+  opacity: 0.64;
+}
+
+.closeButton {
+  display: grid;
+  width: 44px;
+  height: 44px;
+  flex: 0 0 44px;
+  place-items: center;
+  border: 1px solid
+    color-mix(
+      in srgb,
+      currentColor 12%,
+      transparent
+    );
+  border-radius: 13px;
+  color: inherit;
+  background: transparent;
+  cursor: pointer;
+}
+
+.closeButton:disabled {
+  cursor: wait;
+  opacity: 0.5;
+}
+
+.form {
+  display: flex;
+  min-height: 0;
+  flex: 1;
+  flex-direction: column;
+}
+
+.body {
+  display: grid;
+  gap: 18px;
+  overflow-y: auto;
+  padding: 20px;
+}
+
+.field {
+  display: grid;
+  gap: 7px;
+}
+
+.field > span {
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.field b {
+  margin-left: 4px;
+  color: #e45757;
+}
+
+.field input,
+.field select,
+.field textarea {
+  width: 100%;
+  min-height: 46px;
+  border: 1px solid
+    color-mix(
+      in srgb,
+      currentColor 16%,
+      transparent
+    );
+  border-radius: 13px;
+  outline: 0;
+  color: inherit;
+  background:
+    color-mix(
+      in srgb,
+      currentColor 2%,
+      transparent
+    );
+  font: inherit;
+  font-size: 14px;
+}
+
+.field input,
+.field select {
+  padding:
+    0 13px;
+}
+
+.field textarea {
+  min-height: 104px;
+  resize: vertical;
+  padding: 12px 13px;
+  line-height: 1.5;
+}
+
+.field input:focus,
+.field select:focus,
+.field textarea:focus {
+  border-color:
+    rgb(40 104 240 / 70%);
+  box-shadow:
+    0 0 0 3px
+    rgb(40 104 240 / 10%);
+}
+
+.field input[aria-invalid="true"],
+.field select[aria-invalid="true"],
+.field textarea[aria-invalid="true"] {
+  border-color:
+    rgb(228 87 87 / 72%);
+}
+
+.fieldError {
+  color: #e45757;
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.footer {
+  display: grid;
+  grid-template-columns:
+    minmax(0, 1fr)
+    minmax(0, 1.5fr);
+  gap: 10px;
+  padding: 16px 20px;
+  border-top: 1px solid
+    color-mix(
+      in srgb,
+      currentColor 10%,
+      transparent
+    );
+}
+
+.primaryButton,
+.secondaryButton {
+  display: inline-flex;
+  min-height: 46px;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 0 16px;
+  border-radius: 13px;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.primaryButton {
+  border: 0;
+  color: #fff;
+  background:
+    linear-gradient(
+      135deg,
+      #2868f0,
+      #29b8e8
+    );
+  box-shadow:
+    0 10px 24px
+    rgb(40 104 240 / 18%);
+}
+
+.secondaryButton {
+  border: 1px solid
+    color-mix(
+      in srgb,
+      currentColor 14%,
+      transparent
+    );
+  color: inherit;
+  background: transparent;
+}
+
+.primaryButton:disabled,
+.secondaryButton:disabled {
+  cursor: wait;
+  opacity: 0.55;
+}
+
+@media (min-width: 720px) {
+  .overlay {
+    align-items: center;
+    padding: 24px;
+  }
+
+  .sheet {
+    width: min(
+      100%,
+      620px
+    );
+    max-height: min(
+      88dvh,
+      760px
+    );
+    border-radius: 22px;
+    box-shadow:
+      0 24px 70px
+      rgb(0 0 0 / 24%);
+  }
+
+  .header,
+  .body {
+    padding:
+      22px 24px;
+  }
+
+  .footer {
+    display: flex;
+    justify-content:
+      flex-end;
+    padding:
+      16px 24px;
+  }
+
+  .primaryButton,
+  .secondaryButton {
+    min-width: 150px;
+  }
+}

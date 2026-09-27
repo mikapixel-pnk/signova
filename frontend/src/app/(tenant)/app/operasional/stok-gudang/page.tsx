@@ -1,15 +1,10 @@
 import {
-  TenantShell,
-} from "@/components/layout/tenant-shell";
+  redirect,
+} from "next/navigation";
 
-import {
-  ModulePage,
-} from "@/components/module/module-page";
 
-export default function InventoryPage() {
-  return (
-    <TenantShell>
-      <ModulePage moduleKey="inventory" />
-    </TenantShell>
+export default function LegacyInventoryPage() {
+  redirect(
+    "/app/operasional/barang-persediaan",
   );
 }

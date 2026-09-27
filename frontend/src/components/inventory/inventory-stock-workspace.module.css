@@ -1,0 +1,387 @@
+.page {
+  display: grid;
+  gap: 16px;
+}
+
+.summaryGrid {
+  display: grid;
+  gap: 12px;
+}
+
+.summaryCard {
+  display: flex;
+  min-height: 86px;
+  align-items: center;
+  gap: 12px;
+  padding: 16px;
+  border: 1px solid
+    color-mix(
+      in srgb,
+      currentColor 12%,
+      transparent
+    );
+  border-radius: 18px;
+  background:
+    color-mix(
+      in srgb,
+      currentColor 3%,
+      transparent
+    );
+}
+
+.summaryIcon {
+  display: grid;
+  width: 42px;
+  height: 42px;
+  flex: 0 0 42px;
+  place-items: center;
+  border-radius: 14px;
+  background:
+    color-mix(
+      in srgb,
+      currentColor 8%,
+      transparent
+    );
+}
+
+.summaryCard strong {
+  display: block;
+  font-size: 22px;
+  line-height: 1.1;
+}
+
+.summaryCard span:last-child {
+  display: block;
+  margin-top: 4px;
+  font-size: 12px;
+  opacity: 0.66;
+}
+
+.infoNote {
+  display: grid;
+  gap: 4px;
+  padding: 14px 16px;
+  border-left: 3px solid
+    currentColor;
+  border-radius: 12px;
+  background:
+    color-mix(
+      in srgb,
+      currentColor 5%,
+      transparent
+    );
+}
+
+.infoNote strong {
+  font-size: 13px;
+}
+
+.infoNote span {
+  font-size: 12px;
+  line-height: 1.55;
+  opacity: 0.7;
+}
+
+.toolbar {
+  display: grid;
+  gap: 10px;
+}
+
+.search {
+  display: flex;
+  min-height: 48px;
+  align-items: center;
+  gap: 10px;
+  padding: 0 14px;
+  border: 1px solid
+    color-mix(
+      in srgb,
+      currentColor 14%,
+      transparent
+    );
+  border-radius: 14px;
+}
+
+.search:focus-within {
+  border-color:
+    color-mix(
+      in srgb,
+      currentColor 38%,
+      transparent
+    );
+}
+
+.search input {
+  width: 100%;
+  min-width: 0;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+}
+
+.refreshButton {
+  display: inline-flex;
+  min-height: 46px;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 0 16px;
+  border: 1px solid
+    color-mix(
+      in srgb,
+      currentColor 14%,
+      transparent
+    );
+  border-radius: 14px;
+  background:
+    color-mix(
+      in srgb,
+      currentColor 4%,
+      transparent
+    );
+  color: inherit;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.refreshButton:disabled {
+  cursor: wait;
+  opacity: 0.5;
+}
+
+.loadingCard,
+.emptyState {
+  display: grid;
+  min-height: 150px;
+  place-items: center;
+  gap: 8px;
+  padding: 24px;
+  border: 1px dashed
+    color-mix(
+      in srgb,
+      currentColor 18%,
+      transparent
+    );
+  border-radius: 18px;
+  text-align: center;
+}
+
+.loadingCard {
+  font-size: 13px;
+  opacity: 0.7;
+}
+
+.emptyState strong {
+  font-size: 15px;
+}
+
+.emptyState span {
+  max-width: 440px;
+  font-size: 12px;
+  line-height: 1.55;
+  opacity: 0.66;
+}
+
+.mobileList {
+  display: grid;
+  gap: 12px;
+}
+
+.stockCard {
+  display: grid;
+  gap: 14px;
+  padding: 16px;
+  border: 1px solid
+    color-mix(
+      in srgb,
+      currentColor 12%,
+      transparent
+    );
+  border-radius: 18px;
+  background:
+    color-mix(
+      in srgb,
+      currentColor 2%,
+      transparent
+    );
+}
+
+.cardHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.cardHeader h2 {
+  margin: 4px 0 0;
+  font-size: 15px;
+  line-height: 1.35;
+}
+
+.code {
+  display: block;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  opacity: 0.58;
+}
+
+.statusBadge {
+  display: inline-flex;
+  min-height: 28px;
+  align-items: center;
+  padding: 0 10px;
+  border-radius: 999px;
+  background:
+    color-mix(
+      in srgb,
+      currentColor 8%,
+      transparent
+    );
+  font-size: 11px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.balanceBlock {
+  display: grid;
+  gap: 4px;
+  padding: 14px;
+  border-radius: 14px;
+  background:
+    color-mix(
+      in srgb,
+      currentColor 6%,
+      transparent
+    );
+}
+
+.balanceBlock > span {
+  font-size: 11px;
+  opacity: 0.62;
+}
+
+.balanceBlock strong {
+  font-size: 25px;
+  line-height: 1.1;
+}
+
+.balanceBlock small {
+  font-size: 10px;
+  opacity: 0.58;
+}
+
+.metaGrid {
+  display: grid;
+  grid-template-columns:
+    repeat(
+      2,
+      minmax(0, 1fr)
+    );
+  gap: 12px;
+  margin: 0;
+}
+
+.metaGrid div {
+  min-width: 0;
+}
+
+.metaGrid dt {
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  opacity: 0.5;
+}
+
+.metaGrid dd {
+  margin: 4px 0 0;
+  overflow-wrap: anywhere;
+  font-size: 12px;
+  font-weight: 650;
+}
+
+.desktopTableWrap {
+  display: none;
+}
+
+@media (min-width: 720px) {
+  .summaryGrid {
+    grid-template-columns:
+      repeat(
+        3,
+        minmax(0, 1fr)
+      );
+  }
+
+  .toolbar {
+    grid-template-columns:
+      minmax(280px, 1fr)
+      auto;
+    align-items: center;
+  }
+}
+
+@media (min-width: 920px) {
+  .mobileList {
+    display: none;
+  }
+
+  .desktopTableWrap {
+    display: block;
+    overflow-x: auto;
+    border: 1px solid
+      color-mix(
+        in srgb,
+        currentColor 12%,
+        transparent
+      );
+    border-radius: 18px;
+  }
+
+  .table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+  }
+
+  .table th,
+  .table td {
+    padding: 14px 16px;
+    border-bottom: 1px solid
+      color-mix(
+        in srgb,
+        currentColor 10%,
+        transparent
+      );
+    text-align: left;
+    vertical-align: top;
+  }
+
+  .table th {
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    opacity: 0.54;
+  }
+
+  .table tbody tr:last-child td {
+    border-bottom: 0;
+  }
+
+  .table td strong {
+    display: block;
+  }
+
+  .table td > span {
+    display: block;
+    margin-top: 3px;
+    font-size: 10px;
+    opacity: 0.58;
+  }
+}

@@ -534,6 +534,265 @@ class InventoryMasterFoundationApiTest extends TestCase
             );
     }
 
+    public function test_stock_balances_are_ledger_derived_scoped_and_capability_guarded(): void
+    {
+        $first =
+            $this->workspace(
+                'stock-balance@example.test',
+                'Stock Balance'
+            );
+
+        $this->actingAsWorkspace(
+            $first
+        );
+
+        $tracked =
+            $this->postJson(
+                '/api/v1/inventory/materials',
+                [
+                    'code' =>
+                        'STOCK-TRACKED',
+
+                    'name' =>
+                        'Akrilik Stock',
+
+                    'stock_tracking' =>
+                        'TRACKED',
+
+                    'minimum_stock' =>
+                        '2.0000',
+
+                    'reorder_point' =>
+                        '3.0000',
+
+                    'maximum_stock' =>
+                        '10.0000',
+                ]
+            )
+                ->assertCreated();
+
+        $trackedId =
+            (string) $tracked->json(
+                'data.id'
+            );
+
+        $this->postJson(
+            '/api/v1/inventory/materials',
+            [
+                'code' =>
+                    'STOCK-NONTRACKED',
+
+                'name' =>
+                    'Barang Non Stock',
+
+                'stock_tracking' =>
+                    'NOT_TRACKED',
+            ]
+        )->assertCreated();
+
+        $warehouse =
+            $this->postJson(
+                '/api/v1/inventory/warehouses',
+                [
+                    'name' =>
+                        'Gudang Stock Test',
+                ]
+            )
+                ->assertCreated();
+
+        $warehouseId =
+            (string) $warehouse->json(
+                'data.id'
+            );
+
+        DB::table(
+            'stock_movements'
+        )->insert([
+            [
+                'id' =>
+                    (string) Str::ulid(),
+
+                'tenant_id' =>
+                    $first['tenant_id'],
+
+                'business_id' =>
+                    $first['business_id'],
+
+                'material_id' =>
+                    $trackedId,
+
+                'warehouse_id' =>
+                    $warehouseId,
+
+                'type' =>
+                    'RECEIPT',
+
+                'quantity_signed' =>
+                    '4.2500',
+
+                'source_type' =>
+                    'TEST_STOCK_BALANCE',
+
+                'source_id' =>
+                    (string) Str::ulid(),
+
+                'occurred_at' =>
+                    now(),
+
+                'actor_user_id' =>
+                    $first['user_id'],
+
+                'reason' =>
+                    'Test saldo masuk.',
+
+                'created_at' =>
+                    now(),
+            ],
+            [
+                'id' =>
+                    (string) Str::ulid(),
+
+                'tenant_id' =>
+                    $first['tenant_id'],
+
+                'business_id' =>
+                    $first['business_id'],
+
+                'material_id' =>
+                    $trackedId,
+
+                'warehouse_id' =>
+                    $warehouseId,
+
+                'type' =>
+                    'ISSUE',
+
+                'quantity_signed' =>
+                    '-1.0000',
+
+                'source_type' =>
+                    'TEST_STOCK_BALANCE',
+
+                'source_id' =>
+                    (string) Str::ulid(),
+
+                'occurred_at' =>
+                    now(),
+
+                'actor_user_id' =>
+                    $first['user_id'],
+
+                'reason' =>
+                    'Test saldo keluar.',
+
+                'created_at' =>
+                    now(),
+            ],
+        ]);
+
+        $this->getJson(
+            '/api/v1/inventory/stock-balances'
+        )
+            ->assertOk()
+            ->assertJsonCount(
+                1,
+                'data'
+            )
+            ->assertJsonPath(
+                'data.0.material_id',
+                $trackedId
+            )
+            ->assertJsonPath(
+                'data.0.code',
+                'STOCK-TRACKED'
+            )
+            ->assertJsonPath(
+                'data.0.on_hand',
+                '3.2500'
+            )
+            ->assertJsonPath(
+                'data.0.minimum_stock',
+                '2.0000'
+            )
+            ->assertJsonPath(
+                'data.0.reorder_point',
+                '3.0000'
+            )
+            ->assertJsonPath(
+                'data.0.maximum_stock',
+                '10.0000'
+            );
+
+        /*
+         * Business lain tidak boleh melihat saldo business pertama.
+         */
+        $second =
+            $this->secondBusinessWorkspace(
+                $first,
+                'Cabang Stock Dua'
+            );
+
+        $this->actingAsWorkspace(
+            $second
+        );
+
+        $secondMaterial =
+            $this->postJson(
+                '/api/v1/inventory/materials',
+                [
+                    'code' =>
+                        'STOCK-B2',
+
+                    'name' =>
+                        'Material Cabang Dua',
+
+                    'stock_tracking' =>
+                        'TRACKED',
+                ]
+            )
+                ->assertCreated();
+
+        $secondMaterialId =
+            (string) $secondMaterial->json(
+                'data.id'
+            );
+
+        $this->getJson(
+            '/api/v1/inventory/stock-balances'
+        )
+            ->assertOk()
+            ->assertJsonCount(
+                1,
+                'data'
+            )
+            ->assertJsonPath(
+                'data.0.material_id',
+                $secondMaterialId
+            )
+            ->assertJsonPath(
+                'data.0.on_hand',
+                '0.0000'
+            );
+
+        /*
+         * Read model tetap mengikuti capability inventory.view.
+         */
+        $this->revokeOwnerCapability(
+            $second,
+            'inventory.view'
+        );
+
+        $this->getJson(
+            '/api/v1/inventory/stock-balances'
+        )
+            ->assertForbidden()
+            ->assertJsonPath(
+                'error.code',
+                'FORBIDDEN_CAPABILITY'
+            );
+    }
+
+
     private function workspace(
         string $email,
         string $tenantName

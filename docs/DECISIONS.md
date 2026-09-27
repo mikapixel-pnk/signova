@@ -413,3 +413,92 @@ Pada 2026-09-26:
 - NOT_TRACKED dipetakan menjadi NON_STOCK_GOOD;
 - stock movement tidak bertambah saat UAT;
 - cash transaction tidak bertambah saat UAT.
+
+
+---
+
+## DEC-INV-2026-09-27 — Inventory Frontend IA & Stock Read Model
+
+Status: **LOCKED / IMPLEMENTED / STAGING UAT VERIFIED**
+
+### Context
+
+Manual UAT Inventory Master menemukan dua masalah usability:
+
+1. menu `Kategori` pada Master Data dan `Kategori` pada Inventory sulit
+   dibedakan;
+2. user tidak memiliki lokasi yang jelas untuk melihat saldo stok aktual.
+
+Backend sudah memiliki `StockMovement` sebagai ledger source of truth sehingga
+saldo tidak boleh dibuat sebagai nilai editable pada Material Master.
+
+### Decision
+
+1. Domain Inventory Master tetap mengikuti
+   `DEC-INV-2026-09-26`; sales catalog dan inventory master tetap terpisah.
+2. Label sales catalog category pada frontend adalah
+   **Kategori Penjualan**.
+3. Label primary inventory master pada frontend adalah
+   **Barang Persediaan**.
+4. Pekerjaan inventory pada grup **Operasional** menggunakan menu terpisah:
+   - **Stok**
+   - **Barang Persediaan**
+   - **Kategori Persediaan**
+   - **Gudang**
+5. Pemisahan menu adalah keputusan IA untuk memudahkan pencarian pekerjaan;
+   bukan pemisahan backend domain dan bukan penambahan top-level group.
+6. Halaman **Stok** bersifat read-only dan memakai capability
+   `inventory.view`.
+7. Read contract stok adalah
+   `GET /api/v1/inventory/stock-balances`.
+8. `on_hand` berasal dari
+   `SUM(stock_movements.quantity_signed)`.
+9. Material `TRACKED` tanpa movement tetap muncul dengan saldo `0`.
+10. Material `NOT_TRACKED` tidak diperlakukan sebagai physical stock balance
+    pada halaman Stok.
+11. Balance tidak boleh diedit langsung dari frontend ataupun Material Master.
+12. Versi awal halaman Stok menampilkan **total seluruh gudang**.
+13. Breakdown per gudang dapat ditambahkan melalui read model ketika
+    workflow membutuhkannya.
+14. Legacy `/app/operasional/stok-gudang` tetap menjadi redirect ke
+    `/app/operasional/barang-persediaan`.
+15. Issue, transfer, adjustment, stock opname, reservation, dan allocation
+    belum dianggap selesai oleh keputusan ini.
+
+### Reason
+
+User harus dapat membedakan kategori penjualan dengan kategori persediaan dan
+dapat menemukan saldo stok tanpa memahami struktur backend. Ledger tetap
+menjadi source of truth perubahan stok fisik.
+
+### Impact
+
+- navigasi Inventory lebih eksplisit;
+- Stock visibility dapat berkembang tanpa mutable balance;
+- read authorization tetap `inventory.view`;
+- write Inventory Master tetap `inventory.master.manage`;
+- Receiving tetap `inventory.receive`;
+- future stock transaction wajib menghasilkan movement ledger yang auditable.
+
+### Do not
+
+- jangan menyimpan editable `on_hand` pada Material Master;
+- jangan memasukkan `NOT_TRACKED` sebagai physical stock balance;
+- jangan menggunakan nama role sebagai authorization;
+- jangan menjadikan kalkulasi frontend sebagai source of truth saldo;
+- jangan menganggap Stock read-only menyelesaikan
+  issue/transfer/adjustment/reservation.
+
+### Verification — 2026-09-27
+
+- Stock Balance API registered dan tenant/business/capability scoped;
+- targeted Inventory Foundation test PASS;
+- full backend suite PASS: 699 tests / 3521 assertions;
+- frontend full ESLint dan TypeScript PASS;
+- Next.js 16.3.5 production build PASS;
+- staging BUILD_ID `VAuJb10muXa5poGcSoymO`;
+- route Stok, Barang Persediaan, Kategori Persediaan, dan Gudang HTTP 200;
+- legacy route redirect 307;
+- manual mobile UAT halaman Stok PASS;
+- protected staging counts tetap `cash_transactions=7` dan
+  `stock_movements=0`.
