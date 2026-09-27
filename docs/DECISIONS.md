@@ -288,13 +288,13 @@ Reason:
 Traceability dan correction history.
 
 Impact:
-Goods Receipt membuat stock movement untuk inventory item; flow issue/transfer/adjustment ke depan wajib menjaga movement semantics.
+Goods Receipt dan Stock Adjustment membuat stock movement sesuai domain rule; flow issue/transfer ke depan wajib menjaga movement semantics.
 
 Do not:
 Direct-edit physical stock balance.
 
 Evidence:
-`StockMovement`; State & Workflow.
+`StockMovement`; `StockAdjustmentService`; Goods Receipt/Stock Adjustment API tests; State & Workflow.
 
 ---
 
@@ -502,3 +502,86 @@ menjadi source of truth perubahan stok fisik.
 - manual mobile UAT halaman Stok PASS;
 - protected staging counts tetap `cash_transactions=7` dan
   `stock_movements=0`.
+
+---
+
+## DEC-INV-ADJ-2026-09-27 — Stock Adjustment Foundation
+
+Status: **LOCKED IMPLEMENTATION FOUNDATION / BACKEND IMPLEMENTED / STAGING DEFAULT-DENY UAT VERIFIED**
+
+### Context
+
+Master Capability Map D17 memasukkan adjustment sebagai stock movement.
+Kitab authorization menetapkan Stock Adjustment menggunakan capability khusus
+dan alasan wajib. Implementasi juga harus mempertahankan ledger sebagai source
+of truth dan tidak mengubah balance fisik secara langsung.
+
+### Decision
+
+1. Stock Adjustment adalah aggregate Inventory terpisah dari Goods Receipt.
+2. Lifecycle foundation yang diimplementasikan adalah
+   `DRAFT -> POSTED -> REVERSED`.
+3. Draft dapat dibuat/diperbarui sebelum POST; state tidak boleh dimutasi
+   melalui field status dari client.
+4. POST menghasilkan movement ledger bertipe `ADJUSTMENT`.
+5. REVERSE tidak menghapus/mengedit movement awal; ia menghasilkan
+   `ADJUSTMENT_REVERSAL` dengan reference ke movement yang dikoreksi.
+6. Quantity menggunakan exact decimal maksimal 4 digit desimal dan delta nol
+   tidak valid.
+7. Item adjustment hanya boleh material aktif dengan
+   `stock_tracking = TRACKED`.
+8. Warehouse/material wajib tenant/business scoped.
+9. Alasan adjustment wajib; reversal juga wajib mempunyai alasan.
+10. Read list/detail menggunakan `inventory.view`.
+11. Create/update/post/reverse menggunakan capability sensitif
+    `inventory.adjust`.
+12. `inventory.adjust` adalah **default deny** sampai role mapping diputuskan
+    secara sadar.
+13. `inventory.adjust` tidak otomatis diberikan kepada OWNER, ADMIN, atau role
+    standar lain pada milestone ini.
+14. Stock Adjustment tidak membuat cash transaction, supplier payable, atau
+    direct finance side effect.
+15. Backend adalah source of truth; frontend tidak boleh menganggap hidden
+    action sebagai authorization.
+
+### Do not
+
+- jangan direct-edit `on_hand`;
+- jangan memberi `inventory.adjust` otomatis karena user ber-role OWNER;
+- jangan menggunakan `inventory.receive` sebagai pengganti
+  `inventory.adjust`;
+- jangan menghapus movement asli ketika koreksi;
+- jangan hardcode negative-stock rule;
+- jangan hardcode threshold second approval;
+- jangan menganggap capability ALLOW sebagai bukti entitlement/package sudah
+  lolos bila entitlement gate belum diverifikasi.
+
+### UNKNOWN / NEEDS CONFIRMATION
+
+- negative-stock policy;
+- threshold dan mekanisme second approval;
+- baseline Master Role untuk `inventory.adjust`;
+- frontend action/visibility contract;
+- enforcement package/entitlement Pro pada endpoint Stock Adjustment;
+- public numbering/prefix policy di luar implementation foundation.
+
+### Verification
+
+Pada 2026-09-27:
+
+- migration Stock Adjustment staging batch 63;
+- 6 production API routes terdaftar;
+- OpenAPI contract parse PASS;
+- targeted + authorization regression:
+  32 tests / 278 assertions PASS;
+- full backend regression:
+  702 tests / 3593 assertions PASS;
+- staging authenticated GET -> 200;
+- staging valid POST tanpa `inventory.adjust` -> 403
+  `FORBIDDEN_CAPABILITY`;
+- `inventory_adjust_master_mappings=0`;
+- `inventory_adjust_role_grants=0`;
+- post-UAT `stock_adjustments=0`;
+- post-UAT `stock_movements=0`;
+- post-UAT `cash_transactions=7`;
+- temporary UAT token dihapus.

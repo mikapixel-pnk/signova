@@ -63,6 +63,15 @@ class DocumentNumberService
         );
     }
 
+    public function nextStockAdjustmentNumber(): string
+    {
+        return $this->nextDefaultNumber(
+            documentType: 'STOCK_ADJUSTMENT',
+            prefix: 'ADJ',
+            defaultPadding: 4
+        );
+    }
+
     public function nextSupplierBillNumber(): string
     {
         return $this->nextDefaultNumber(

@@ -27,6 +27,7 @@ use App\Http\Controllers\Api\V1\Inventory\MaterialController;
 use App\Http\Controllers\Api\V1\Inventory\StockBalanceController;
 use App\Http\Controllers\Api\V1\Inventory\WarehouseController;
 use App\Http\Controllers\Api\V1\Inventory\GoodsReceiptController;
+use App\Http\Controllers\Api\V1\Inventory\StockAdjustmentController;
 use App\Http\Controllers\Api\V1\Catalog\CatalogCategoryController;
 use App\Http\Controllers\Api\V1\Catalog\CatalogItemController;
 use App\Http\Controllers\Api\V1\Catalog\UnitController;
@@ -361,6 +362,54 @@ Route::prefix('v1')->group(function () {
         )->middleware([
             'business.context',
             'capability:inventory.receive',
+        ]);
+
+        Route::get(
+            '/inventory/adjustments',
+            [StockAdjustmentController::class, 'index']
+        )->middleware([
+            'business.context',
+            'capability:inventory.view',
+        ]);
+
+        Route::post(
+            '/inventory/adjustments',
+            [StockAdjustmentController::class, 'store']
+        )->middleware([
+            'business.context',
+            'capability:inventory.adjust',
+        ]);
+
+        Route::get(
+            '/inventory/adjustments/{stockAdjustmentId}',
+            [StockAdjustmentController::class, 'show']
+        )->middleware([
+            'business.context',
+            'capability:inventory.view',
+        ]);
+
+        Route::patch(
+            '/inventory/adjustments/{stockAdjustmentId}',
+            [StockAdjustmentController::class, 'update']
+        )->middleware([
+            'business.context',
+            'capability:inventory.adjust',
+        ]);
+
+        Route::post(
+            '/inventory/adjustments/{stockAdjustmentId}/actions/post',
+            [StockAdjustmentController::class, 'post']
+        )->middleware([
+            'business.context',
+            'capability:inventory.adjust',
+        ]);
+
+        Route::post(
+            '/inventory/adjustments/{stockAdjustmentId}/actions/reverse',
+            [StockAdjustmentController::class, 'reverse']
+        )->middleware([
+            'business.context',
+            'capability:inventory.adjust',
         ]);
 
         Route::get(

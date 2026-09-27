@@ -133,6 +133,7 @@ class SignovaAccessControlSeeder extends Seeder
             ['inventory', 'inventory.view', 'Melihat Stok & Gudang', false],
             ['inventory', 'inventory.master.manage', 'Mengelola Master Stok & Gudang', false],
             ['inventory', 'inventory.receive', 'Mencatat Penerimaan Barang', false],
+            ['inventory', 'inventory.adjust', 'Menyesuaikan Stok', true],
 
             ['team', 'team.user.view', 'Melihat Pengguna', false],
             ['team', 'team.user.manage', 'Mengelola Pengguna', true],

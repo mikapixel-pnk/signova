@@ -3,27 +3,29 @@
 **Terakhir diperbarui:** 2026-09-27
 
 **Branch audit:** `feat/foundation-backend`
-**Base HEAD sebelum milestone Inventory/Stock:** `582e69c`
+**Base HEAD sebelum milestone Stock Adjustment:** `b803bfa`
 
 Runtime evidence:
-- frontend staging aktif pada BUILD_ID `VAuJb10muXa5poGcSoymO`,
+- frontend staging aktif pada BUILD_ID `K1dQ9tvzKesja1IJgik1m`,
 - `signova-frontend.service` aktif,
 - local HTTP check menghasilkan 200,
 - `/app/operasional/stok`, `/barang-persediaan`, `/kategori-persediaan`, dan `/gudang` menghasilkan HTTP 200,
 - legacy `/app/operasional/stok-gudang` redirect 307 ke `/app/operasional/barang-persediaan`,
-- rollback build sebelumnya `geUtahpYy73GzrEurvAmN` masih dipertahankan sampai milestone di-commit dan worktree dinyatakan clean.
+- rollback frontend sebelum current BUILD_ID tetap dipertahankan di `/home/signovaops/signova-rollbacks/frontend/next-VAuJb10muXa5poGcSoymO-20260927-121559` sampai milestone di-commit dan worktree dinyatakan clean.
 
 ## Modul Aktif
 
 Purchasing / Inventory / Supplier Payables integration.
 
-Development fitur saat ini **PAUSE sementara** untuk membangun knowledge base dan governance AI Agent.
+Milestone aktif saat ini adalah **Stock Adjustment Foundation** pada domain Inventory.
 
 ## Tujuan Saat Ini
 
-Membuat knowledge base project yang akurat agar pengembangan pada chat/worktree berbeda tetap konsisten.
+Menyelesaikan Stock Adjustment backend yang ledger-based, tenant/business-scoped,
+capability-driven, dan tidak menimbulkan side effect ke finance.
 
-Jangan melanjutkan feature development sebelum dokumentasi baseline ini direview.
+Source, migration, API contract, automated test, staging default-deny UAT, backup,
+dan dokumentasi harus konsisten sebelum milestone di-commit.
 
 ## Selesai
 
@@ -70,24 +72,18 @@ Latest known checks:
 
 ## Sedang Berjalan
 
-Knowledge base saja:
+Stock Adjustment Foundation:
 
-- `AGENTS.md`
-- `docs/PROJECT_CHARTER.md`
-- `docs/ARCHITECTURE.md`
-- `docs/DOMAIN_RULES.md`
-- `docs/WORKFLOW.md`
-- `docs/PERMISSIONS.md`
-- `docs/DECISIONS.md`
-- `docs/CURRENT_STATE.md`
-
-Jangan campur feature patch ke milestone dokumentasi ini.
+- rekonsiliasi dokumentasi milestone;
+- final review `WORKFLOW.md` terhadap lifecycle Stock Adjustment;
+- explicit staging file setelah seluruh gate hijau;
+- commit, push, lalu verifikasi clean worktree.
 
 ## Known Issues / Observations
 
 1. Root README masih menggambarkan repository terutama sebagai Basic/Starter foundation dan sudah tertinggal dari implementasi aktual.
 2. `penerimaan/page.tsx` masih generic `ModulePage`; backend Goods Receipt sudah ada.
-3. Inventory Master frontend dan Stock visibility sudah implemented, tested, deployed ke staging, dan manual UAT verified. Flow transaksi stok lanjutan seperti issue, transfer, adjustment, stock opname, reservation/allocation masih pending sesuai roadmap.
+3. Inventory Master frontend dan Stock visibility sudah implemented, tested, deployed ke staging, dan manual UAT verified. Stock Adjustment backend foundation juga sudah implemented dan tested; frontend Stock Adjustment serta flow issue, transfer, stock opname, reservation/allocation masih pending sesuai roadmap.
 4. Payables page masih generic `ModulePage`; Supplier Bill/Payment backend tersedia.
 5. Frontend automated test belum terbukti.
 6. Redis queue dikonfigurasi, tetapi active SIGNOVA queue worker belum terbukti.
@@ -103,7 +99,7 @@ Jangan campur feature patch ke milestone dokumentasi ini.
 - root knowledge base sebelumnya belum ada,
 - README perlu future documentation refresh,
 - capability registry document lebih lama/kecil daripada capability seeder aktual,
-- Receiving/Payables UI masih tertinggal dari backend; Inventory Master dan read-only Stock visibility sudah tersedia, sedangkan workflow issue/transfer/adjustment/reservation masih pending,
+- Receiving/Payables UI masih tertinggal dari backend; Inventory Master dan read-only Stock visibility sudah tersedia; Stock Adjustment backend foundation tersedia tetapi frontend-nya belum, sedangkan issue/transfer/reservation masih pending,
 - platform/SaaS work berada pada worktree/branch terpisah dan harus direkonsiliasi secara sengaja,
 - generated `backend/AGENTS.md` menyarankan install Laravel Boost; dependency tidak boleh ditambahkan otomatis.
 
@@ -321,21 +317,131 @@ Current verified staging tenant hanya mempunyai system role OWNER aktual.
 
 Belum selesai:
 
-- frontend typed Material / Inventory Category contract;
-- frontend Inventory Master service;
-- UI Barang & Persediaan;
-- UI Kategori Persediaan;
-- UI Gudang;
-- supplier pricing/linkage;
+- frontend Stock Adjustment;
+- stock issue;
+- stock transfer;
+- stock opname;
 - stock reservation;
-- project allocation.
+- project allocation;
+- supplier pricing/linkage.
 
-### Next Safe Step
+Inventory Master frontend dan read-only Stock visibility sudah selesai,
+tested, deployed, dan staging UAT verified.
 
-1. final source + documentation diff review;
-2. commit Inventory Master Foundation backend milestone;
-3. verify clean worktree;
-4. lanjut frontend Master Barang & Persediaan.
+### Milestone Continuity
+
+Inventory Master backend/frontend bukan lagi next step aktif.
+Current next step mengikuti bagian **Stock Adjustment Foundation — 2026-09-27**
+di bawah.
 
 Receiving tetap downstream. Perubahan stock fisik harus terus melalui
 movement ledger dan mengikuti procurement semantics.
+
+## Stock Adjustment Foundation — 2026-09-27
+
+### Status
+
+**BACKEND IMPLEMENTED + TESTED + STAGING DEFAULT-DENY UAT VERIFIED**
+
+Stock Adjustment backend tersedia sebagai transaksi Inventory yang terpisah dari
+Inventory Master dan Goods Receipt.
+
+### Implemented
+
+- tabel `stock_adjustments`;
+- tabel `stock_adjustment_items`;
+- tabel immutable workflow history `stock_adjustment_status_history`;
+- lifecycle implementasi `DRAFT -> POSTED -> REVERSED`;
+- hanya material `TRACKED` aktif yang dapat menjadi item adjustment;
+- warehouse wajib aktif dan berada pada tenant/business context yang sama;
+- `reason` wajib;
+- quantity delta menggunakan exact decimal maksimum 4 digit desimal dan tidak
+  boleh nol;
+- POST membuat movement ledger `ADJUSTMENT`;
+- REVERSE membuat movement kompensasi `ADJUSTMENT_REVERSAL` dengan
+  `reversal_of_movement_id`;
+- tidak ada direct-edit stock balance;
+- tidak membuat cash transaction, supplier payable, atau finance side effect;
+- list/detail menggunakan `inventory.view`;
+- create/update/post/reverse menggunakan capability sensitif
+  `inventory.adjust`;
+- `inventory.adjust` default deny dan belum dipetakan ke Master Role maupun
+  existing tenant role;
+- production API terdiri dari 6 route di `/api/v1/inventory/adjustments`;
+- OpenAPI contract tersedia pada `docs/api/openapi.yaml`;
+- state conflict memakai canonical `ENTITY_STATE_CONFLICT` HTTP 409.
+
+### Migration
+
+`2026_09_27_123000_create_stock_adjustment_foundation`
+
+Staging:
+
+**Ran — batch 63**
+
+Applied migration telah diverifikasi immutable setelah deployment.
+
+### Verification — 2026-09-27
+
+Targeted + authorization regression:
+
+**32 tests / 278 assertions PASS**
+
+Full backend regression:
+
+**702 tests / 3593 assertions PASS**
+
+Staging authenticated UAT:
+
+- HTTPS health -> 200;
+- temporary Sanctum token dibuat melalui application model;
+- effective capability response memiliki `inventory.view`;
+- `inventory.adjust` tidak muncul pada effective capability actor;
+- authenticated GET `/api/v1/inventory/adjustments` -> 200;
+- valid POST tanpa `inventory.adjust` -> 403;
+- error code -> `FORBIDDEN_CAPABILITY`;
+- denied capability -> `inventory.adjust`;
+- temporary UAT token dihapus dan remaining token = 0.
+
+Post-UAT staging invariants:
+
+- `inventory_adjust_master_mappings=0`;
+- `inventory_adjust_role_grants=0`;
+- `stock_adjustments=0`;
+- `stock_adjustment_items=0`;
+- `stock_adjustment_status_history=0`;
+- `cash_transactions=7`;
+- `stock_movements=0`.
+
+### Recovery Evidence
+
+Schema backup:
+
+`/var/backups/signova/staging/2026/09/27/signova_stg-stock-adjustment-20260927-170523.dump`
+
+SHA-256:
+
+`be7a9ca19fe2b2dba06d148c45bcf13102f19dcc85e8d968533d444355ee1fa6`
+
+Pre-capability-activation backup:
+
+`/var/backups/signova/staging/2026/09/27/signova_stg-pre-stock-adjustment-capability-20260927-184125.dump`
+
+SHA-256:
+
+`4159f2b474d20d4b3f3f2a8db9cbf064b239b4b8f394679544d95edb016e0866`
+
+### UNKNOWN / NEEDS CONFIRMATION
+
+Belum dikunci dan tidak boleh di-hardcode:
+
+- negative-stock policy;
+- threshold/policy second approval Stock Adjustment;
+- baseline Master Role yang mendapat `inventory.adjust`;
+- exact frontend action/visibility untuk Stock Adjustment;
+- enforcement package/entitlement Pro pada endpoint Stock Adjustment;
+- public numbering/prefix policy Stock Adjustment di luar implementasi
+  foundation saat ini.
+
+Issue, transfer, stock opname, reservation, dan allocation tetap scope terpisah
+dan belum dianggap selesai oleh milestone ini.

@@ -259,6 +259,24 @@ return Application::configure(basePath: dirname(__DIR__))
 
         $exceptions->render(
             function (
+                \App\Exceptions\Inventory\StockAdjustmentStateConflictException $exception,
+                Request $request
+            ) {
+                if (! $request->is('api/*')) {
+                    return null;
+                }
+
+                return ApiResponse::error(
+                    $request,
+                    'ENTITY_STATE_CONFLICT',
+                    $exception->getMessage(),
+                    409
+                );
+            }
+        );
+
+        $exceptions->render(
+            function (
                 \App\Exceptions\Finance\SupplierPaymentStateConflictException $exception,
                 Request $request
             ) {

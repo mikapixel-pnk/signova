@@ -465,9 +465,90 @@ Forbidden:
 Direct arbitrary balance overwrite.
 
 Evidence:
-`StockMovement`; State & Workflow.
+`StockMovement`; `StockAdjustmentService`; State & Workflow.
 
 Status: IMPLEMENTED foundation + NORMATIVE.
+
+---
+
+RULE-ID: STOCK-002
+MODULE: Stock Adjustment
+
+Rule:
+Stock Adjustment memakai explicit lifecycle
+`DRAFT → POSTED → REVERSED`.
+
+Trigger:
+Koreksi stok fisik yang sah.
+
+Allowed:
+Create/update hanya pada draft, POST sesuai state, dan REVERSE pada adjustment
+yang sudah posted.
+
+Forbidden:
+Client mengubah canonical status secara langsung atau mengulang transition yang
+sudah tidak sah.
+
+Evidence:
+`StockAdjustmentService`, production routes, `StockAdjustmentApiTest`.
+
+Status:
+IMPLEMENTED.
+
+---
+
+RULE-ID: STOCK-003
+MODULE: Stock Adjustment / Inventory Ledger
+
+Rule:
+POST adjustment menghasilkan movement `ADJUSTMENT`; REVERSE tidak menghapus
+movement awal tetapi membuat `ADJUSTMENT_REVERSAL` sebagai compensating
+movement.
+
+Trigger:
+POST/REVERSE Stock Adjustment.
+
+Allowed:
+Signed exact-decimal movement maksimum 4 digit desimal dengan source reference,
+actor, reason, dan reversal link.
+
+Forbidden:
+Direct balance overwrite, destructive ledger correction, movement untuk
+material `NOT_TRACKED`, quantity nol, atau cross-tenant/cross-business
+warehouse/material.
+
+Evidence:
+`StockAdjustmentService`, `StockMovement`, `StockAdjustmentApiTest`.
+
+Status:
+IMPLEMENTED.
+
+---
+
+RULE-ID: STOCK-004
+MODULE: Stock Adjustment Authorization
+
+Rule:
+Read Stock Adjustment menggunakan `inventory.view`; create/update/post/reverse
+menggunakan capability sensitif `inventory.adjust`.
+
+Authorization baseline:
+`inventory.adjust` default deny dan tidak otomatis diberikan kepada Master Role
+atau existing tenant role pada milestone ini.
+
+Forbidden:
+Menggunakan role name sebagai authorization atau menganggap OWNER bypass
+`inventory.adjust`.
+
+Unresolved:
+negative-stock policy, second-approval threshold/policy, baseline role mapping,
+dan package/entitlement enforcement tetap `UNKNOWN / NEEDS CONFIRMATION`.
+
+Evidence:
+Stock Adjustment routes, access-control seeder, staging default-deny UAT.
+
+Status:
+IMPLEMENTED authorization foundation.
 
 ---
 

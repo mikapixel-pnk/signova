@@ -111,7 +111,9 @@ Finance capability pada seeder saat ini dikategorikan sensitif.
 
 ### Stok & Gudang
 - `inventory.view`
+- `inventory.master.manage`
 - `inventory.receive`
+- `inventory.adjust` — sensitif
 
 ### Tim & Hak Akses
 - `team.user.view`
@@ -140,7 +142,7 @@ Runtime audit mengonfirmasi OWNER memiliki baseline terluas, termasuk:
 - project create/update/view
 - supplier create/update/view/view_price
 - purchasing request/approve request/create PO/approve PO/cancel PO
-- inventory view/receive
+- inventory view/master manage/receive; `inventory.adjust` tidak mendapat baseline grant
 - team user/role view/manage
 - settings view/manage
 
@@ -206,6 +208,15 @@ Current master FINANCE baseline tidak memiliki `finance.expense.approve`; OWNER 
 - categories/materials/warehouses read → `inventory.view`
 - categories/materials/warehouses create/update → `inventory.master.manage`
 
+### Stock Adjustment
+- list/show → `inventory.view`
+- create/update/post/reverse → `inventory.adjust`
+- `inventory.adjust` dikategorikan sensitif
+- `reason` wajib pada domain flow
+- current baseline: tidak ada Master Role maupun existing tenant role yang
+  mendapat `inventory.adjust`
+- capability baru tetap default deny sampai mapping diputuskan secara sadar
+
 **Keputusan 2026-09-26:** write Inventory Master dipisahkan secara eksplisit
 dari Receiving.
 
@@ -217,6 +228,8 @@ Baseline Master Role:
 - ADMIN → `inventory.view`, `inventory.master.manage`
 - FINANCE → tidak mendapat `inventory.master.manage` secara default
 - SALES → tidak mendapat `inventory.master.manage` secara default
+- `inventory.adjust` → tidak diberikan sebagai baseline kepada role standar
+  pada milestone Stock Adjustment Foundation
 
 Capability tetap menjadi source of truth authorization. Role name tidak boleh
 digunakan sebagai business authorization check.
@@ -335,3 +348,40 @@ OWNER yang telah terinstansiasi. OWNER tersebut memperoleh
 
 Existing explicit tenant role-capability override tidak boleh ditimpa
 secara diam-diam oleh baseline synchronization.
+
+### Stock Adjustment Authorization Verification — 2026-09-27
+
+Capability registry:
+
+- `inventory.adjust`
+- `is_sensitive = true`
+- `is_active = true`
+
+Production route mapping:
+
+- GET list/detail -> `inventory.view`
+- POST create -> `inventory.adjust`
+- PATCH draft -> `inventory.adjust`
+- POST action/post -> `inventory.adjust`
+- POST action/reverse -> `inventory.adjust`
+
+Staging verification:
+
+- capability row = 1;
+- Master Role mapping = 0;
+- existing role grant = 0;
+- authenticated OWNER effective capability memiliki `inventory.view`;
+- authenticated OWNER effective capability tidak memiliki
+  `inventory.adjust`;
+- GET Stock Adjustment -> 200;
+- valid POST Stock Adjustment -> 403 `FORBIDDEN_CAPABILITY`;
+- denied capability = `inventory.adjust`;
+- temporary UAT token sudah dicabut.
+
+Status baseline:
+
+`inventory.adjust` tetap **DEFAULT DENY**.
+
+Role baseline, second-approval policy, dan package/entitlement enforcement untuk
+Stock Adjustment tetap `UNKNOWN / NEEDS CONFIRMATION` sampai diputuskan dan
+diverifikasi secara eksplisit.

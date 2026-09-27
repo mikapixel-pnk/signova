@@ -210,6 +210,59 @@ Status: BACKEND IMPLEMENTED. FRONTEND RECEIVING MASIH PLACEHOLDER.
 
 ---
 
+FLOW-ID: INV-002
+MODULE: Stock Adjustment
+
+Upstream:
+Selisih/koreksi stok fisik pada material `TRACKED` dan warehouse aktif dalam
+tenant/business context yang sama.
+
+Current:
+Stock Adjustment `DRAFT → POSTED → REVERSED`.
+
+Downstream:
+Stock Balance/read model berubah melalui movement ledger.
+
+Actor:
+Inventory/warehouse user sesuai effective capability.
+
+Capability:
+- list/detail → `inventory.view`
+- create/update/post/reverse → `inventory.adjust`
+
+Data affected:
+Stock adjustment, adjustment items, immutable status history, dan stock movement.
+
+Next action:
+- `DRAFT` → POST adjustment bila data sudah benar;
+- `POSTED` → REVERSE hanya bila perlu koreksi;
+- `REVERSED` → terminal untuk dokumen foundation ini.
+
+Allowed side effects:
+- POST membuat movement `ADJUSTMENT`;
+- REVERSE membuat movement kompensasi `ADJUSTMENT_REVERSAL`;
+- reversal mempertahankan movement asli dan menghubungkan
+  `reversal_of_movement_id`.
+
+Forbidden side effects:
+- direct-edit saldo/on-hand;
+- cash transaction atau supplier payable;
+- material `NOT_TRACKED`;
+- quantity delta nol;
+- quantity lebih dari 4 digit desimal;
+- cross-tenant/cross-business warehouse/material;
+- destructive correction terhadap movement awal.
+
+Status:
+BACKEND IMPLEMENTED + TESTED + STAGING DEFAULT-DENY UAT VERIFIED.
+FRONTEND STOCK ADJUSTMENT BELUM DIIMPLEMENTASIKAN.
+
+Unresolved:
+negative-stock policy, second-approval threshold/policy, baseline role mapping,
+dan package/entitlement enforcement tetap `UNKNOWN / NEEDS CONFIRMATION`.
+
+---
+
 FLOW-ID: AP-001
 MODULE: Supplier Bill
 
@@ -485,4 +538,5 @@ ditolak backend.
 - `inventory.receive`
   -> Receiving transaction
 
-Frontend Inventory Master masih pending.
+Frontend Inventory Master dan read-only Stock visibility sudah implemented,
+tested, deployed, dan staging UAT verified.
